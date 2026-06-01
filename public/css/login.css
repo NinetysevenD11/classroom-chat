@@ -1,0 +1,108 @@
+@import url("https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Jua&display=swap");
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: "Jua", "Malgun Gothic", sans-serif;
+  background: #1A3D2E;
+  background-image:
+    radial-gradient(ellipse 70% 55% at 15% 20%, rgba(255, 255, 255, 0.06) 0%, transparent 55%),
+    radial-gradient(ellipse 50% 45% at 85% 75%, rgba(0, 0, 0, 0.1) 0%, transparent 50%);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  -webkit-font-smoothing: antialiased;
+}
+
+.login-card {
+  background: #2A5C45;
+  width: 100%;
+  max-width: 400px;
+  border-radius: 22px;
+  padding: 36px 32px 32px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.28);
+  position: relative;
+  overflow: hidden;
+}
+.login-card::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #FFD93D, #58D68D, #FFD93D);
+}
+.login-card h1 {
+  text-align: center;
+  font-size: 26px;
+  margin-bottom: 24px;
+  color: #FAF7F0;
+  letter-spacing: -0.02em;
+}
+
+.tabs {
+  display: flex;
+  margin-bottom: 22px;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.15);
+}
+.tab {
+  flex: 1;
+  padding: 13px;
+  border: none;
+  background: transparent;
+  color: #B8D4C4;
+  font-size: 15px;
+  font-family: "Jua", sans-serif;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.tab.active {
+  background: linear-gradient(180deg, #FFE566, #FFD93D);
+  color: #3D2812;
+}
+
+#authForm { display: flex; flex-direction: column; gap: 12px; }
+#authForm input {
+  padding: 15px 16px;
+  font-size: 17px;
+  font-family: "Gaegu", cursive;
+  font-weight: 700;
+  border: 1.5px solid rgba(255, 255, 255, 0.14);
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.2);
+  color: #FAF7F0;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+#authForm input::placeholder { color: rgba(250, 247, 240, 0.45); }
+#authForm input:focus {
+  outline: none;
+  border-color: #FFD93D;
+  box-shadow: 0 0 0 3px rgba(255, 217, 61, 0.22);
+}
+#submitBtn {
+  padding: 15px;
+  font-size: 17px;
+  font-family: "Jua", sans-serif;
+  background: linear-gradient(180deg, #FFE566, #FFD93D);
+  color: #3D2812;
+  border: none;
+  border-radius: 14px;
+  cursor: pointer;
+  margin-top: 4px;
+  box-shadow: 0 4px 0 #E6B800;
+  transition: transform 0.15s;
+}
+#submitBtn:active { transform: translateY(2px); box-shadow: 0 2px 0 #E6B800; }
+#authError {
+  color: #FF6B6B;
+  font-size: 14px;
+  min-height: 20px;
+  text-align: center;
+  font-family: "Gaegu", cursive;
+  font-weight: 700;
+}

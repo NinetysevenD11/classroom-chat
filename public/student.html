@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>우리반 채팅 · 학생</title>
+  <link rel="stylesheet" href="/css/student.css" />
+</head>
+<body>
+  <button id="themeBtn" class="theme-btn" title="칠판/밝은 칠판 전환">🌙</button>
+
+  <!-- 참여 화면 -->
+  <section id="joinView" class="view">
+    <div class="card">
+      <h1>🙋 우리반 칠판 참여</h1>
+      <p>이름과 내 번호를 적고 참여하세요.</p>
+      <input id="nameInput" type="text" placeholder="이름 입력" maxlength="12" />
+      <input id="seatInput" type="number" inputmode="numeric" min="1" max="19" placeholder="내 번호 (1~19)" />
+      <p class="sub-hint">번호를 비워두면 빈 자리에 자동으로 배정돼요.</p>
+      <button id="joinBtn">참여하기</button>
+      <p id="joinError" class="error"></p>
+    </div>
+  </section>
+
+  <!-- 채팅 화면 -->
+  <section id="chatView" class="view hidden">
+    <div class="chat-header">
+      <div class="my-profile">
+        <button type="button" id="profilePhotoBtn" class="profile-photo-btn" title="프로필 사진 바꾸기">
+          <img id="profilePhotoImg" class="profile-photo-img hidden" alt="" />
+          <span id="profilePhotoEmoji" class="profile-photo-emoji">🙂</span>
+        </button>
+        <div class="my-profile-info">
+          <span id="myInfo" class="my-info"></span>
+          <span class="my-profile-hint">사진을 눌러 프로필을 바꿀 수 있어요</span>
+        </div>
+      </div>
+    </div>
+    <input type="file" id="profilePhotoInput" accept="image/*" hidden />
+    <div id="muteBanner" class="mute-banner hidden">🔇 선생님이 음소거했어요. 지금 보낸 메시지는 칠판에 보이지 않아요.</div>
+    <div id="chatLog" class="chat-log"></div>
+    <div class="chat-bottom">
+      <button type="button" id="raiseHandBtn" class="raise-hand-btn" title="발표하고 싶을 때 눌러요" disabled>
+        <span class="raise-hand-icon">🙋</span>
+        <span class="raise-hand-label">손들기</span>
+      </button>
+      <form id="chatForm" class="chat-form">
+        <input id="chatInput" type="text" placeholder="칠판에 쓸 메시지를 입력하세요" maxlength="200" autocomplete="off" disabled />
+        <button type="submit" id="chatSendBtn" class="send-btn" disabled>전송</button>
+      </form>
+      <p id="joinStatus" class="join-status hidden">교실에 연결하는 중...</p>
+    </div>
+  </section>
+
+  <!-- 퇴장 안내 -->
+  <div id="questionOverlay" class="question-overlay hidden">
+    <div class="question-card">
+      <button type="button" id="questionClose" class="question-close" title="질문 닫기">✕</button>
+      <div class="question-card-head">❓ 선생님 질문</div>
+      <div id="questionText" class="question-text"></div>
+      <button type="button" id="questionCloseBtn" class="question-close-btn">닫기</button>
+    </div>
+  </div>
+
+  <div id="kickedOverlay" class="kicked-overlay hidden">
+    <div class="kicked-box">
+      <div class="kicked-emoji">🚪</div>
+      <h2>퇴장되었습니다</h2>
+      <p>선생님이 채팅에서 내보냈어요.</p>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/student.js"></script>
+</body>
+</html>

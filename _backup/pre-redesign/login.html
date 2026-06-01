@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>우리반 채팅 · 로그인</title>
+  <link rel="stylesheet" href="/css/login.css" />
+</head>
+<body>
+  <div class="login-card">
+    <h1>🏫 우리반 칠판</h1>
+    <div class="tabs">
+      <button id="tabLogin" class="tab active">로그인</button>
+      <button id="tabSignup" class="tab">회원가입</button>
+    </div>
+
+    <form id="authForm">
+      <input id="idInput" type="text" placeholder="아이디" autocomplete="username" />
+      <input id="pwInput" type="password" placeholder="비밀번호" autocomplete="current-password" />
+      <button id="submitBtn" type="submit">로그인</button>
+      <p id="msg" class="msg"></p>
+    </form>
+  </div>
+
+  <script src="/js/login.js"></script>
+</body>
+</html>

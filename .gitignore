@@ -1,0 +1,4 @@
+node_modules/
+.session_secret
+users.json
+student_profiles.json

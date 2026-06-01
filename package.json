@@ -1,0 +1,16 @@
+{
+  "name": "classroom-chat",
+  "version": "0.1.0",
+  "description": "QR로 참여하는 줌 스타일 우리반 채팅",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "express-session": "^1.19.0",
+    "qrcode": "^1.5.4",
+    "socket.io": "^4.7.5"
+  }
+}
