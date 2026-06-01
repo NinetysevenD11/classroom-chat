@@ -224,51 +224,38 @@ html[data-theme="light"] body:not(.pip-mode) .icon-btn:hover {
   background: #fff !important;
 }
 
-/* 액션 버튼 (공통 코랄/세이지) */
+/* 상단 액션 버튼 — 우리반 학생과 동일 (하늘색 + 검정 글씨) */
 body:not(.pip-mode) .danger-btn,
-body:not(.pip-mode) .qr-btn {
-  background: var(--cozy-coral) !important;
-  color: #fff !important;
-  border: none !important;
-  border-radius: var(--cozy-radius-pill) !important;
-  box-shadow: 0 4px 0 var(--cozy-coral-dark) !important;
-  font-weight: 700;
-}
-
-body:not(.pip-mode) .float-btn {
-  border-radius: var(--cozy-radius-pill) !important;
-  font-weight: 700;
-  border: none !important;
-}
-
-html[data-theme="dark"] body:not(.pip-mode) .float-btn {
-  background: #4a8f72 !important;
-  color: #fff !important;
-  box-shadow: 0 4px 0 #2d5c48 !important;
-}
-
-html[data-theme="light"] body:not(.pip-mode) .float-btn {
-  background: #5a8f7a !important;
-  color: #fff !important;
-  box-shadow: 0 4px 0 #4a7d68 !important;
-}
-
-html[data-theme="dark"] body:not(.pip-mode) .class-btn {
-  background: #3d6a8a !important;
-  color: #e8f2ec !important;
-  box-shadow: 0 4px 0 #2a4d62 !important;
-}
-
-html[data-theme="light"] body:not(.pip-mode) .class-btn {
-  background: #a8d8ea !important;
-  color: #2d4a3e !important;
-  box-shadow: 0 4px 0 #7eb8d0 !important;
-}
-
+body:not(.pip-mode) .qr-btn,
+body:not(.pip-mode) .float-btn,
 body:not(.pip-mode) .class-btn {
-  border-radius: var(--cozy-radius-pill) !important;
-  font-weight: 700;
+  background: #a8d8ea !important;
+  color: #1a1a1a !important;
   border: none !important;
+  border-radius: var(--cozy-radius-pill) !important;
+  box-shadow: 0 4px 0 #7eb8d0 !important;
+  font-weight: 700;
+  font-family: var(--font-ui);
+  padding: 9px 16px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: filter 0.15s, transform 0.15s;
+}
+
+body:not(.pip-mode) .danger-btn:hover,
+body:not(.pip-mode) .qr-btn:hover,
+body:not(.pip-mode) .float-btn:hover,
+body:not(.pip-mode) .class-btn:hover {
+  background: #b8e4f2 !important;
+  filter: brightness(1.02);
+}
+
+body:not(.pip-mode) .danger-btn:active,
+body:not(.pip-mode) .qr-btn:active,
+body:not(.pip-mode) .float-btn:active,
+body:not(.pip-mode) .class-btn:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 #7eb8d0 !important;
 }
 
 /* 툴바 */
