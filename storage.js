@@ -31,7 +31,9 @@ const DATA_DIR = resolveDataDir();
 const USERS_FILE = path.join(DATA_DIR, "users.json");
 const PROFILES_FILE = path.join(DATA_DIR, "student_profiles.json");
 const ROSTERS_FILE = path.join(DATA_DIR, "class_rosters.json");
+const LOGIN_LOGS_FILE = path.join(DATA_DIR, "login_logs.json");
 const SECRET_FILE = path.join(DATA_DIR, ".session_secret");
+const MAX_LOGIN_LOGS = 500;
 
 let mongoClient = null;
 let mongoDb = null;
@@ -39,7 +41,21 @@ let mongoDb = null;
 export let users = {};
 export let studentProfiles = {};
 export let classRosters = {};
+export let loginLogs = [];
 export let sessionSecret = "";
+
+export function getAdminIdsFromEnv() {
+  return (process.env.ADMIN_IDS || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+export function isAdminUserId(userId) {
+  if (!userId) return false;
+  if (getAdminIdsFromEnv().includes(userId)) return true;
+  return users[userId]?.isAdmin === true;
+}
 
 function ensureDataDir() {
   try {
@@ -84,6 +100,20 @@ function loadRostersFromFile() {
 function saveRostersToFile() {
   ensureDataDir();
   fs.writeFileSync(ROSTERS_FILE, JSON.stringify(classRosters, null, 2));
+}
+
+function loadLoginLogsFromFile() {
+  try {
+    loginLogs = JSON.parse(fs.readFileSync(LOGIN_LOGS_FILE, "utf8"));
+    if (!Array.isArray(loginLogs)) loginLogs = [];
+  } catch (_) {
+    loginLogs = [];
+  }
+}
+
+function saveLoginLogsToFile() {
+  ensureDataDir();
+  fs.writeFileSync(LOGIN_LOGS_FILE, JSON.stringify(loginLogs.slice(-MAX_LOGIN_LOGS), null, 2));
 }
 
 async function loadSessionSecret() {
@@ -134,7 +164,7 @@ async function importFileDataToMongo() {
       users[id] = data;
       await mongoDb.collection("users").updateOne(
         { _id: id },
-        { $set: { salt: data.salt, hash: data.hash, room: data.room } },
+        { $set: { salt: data.salt, hash: data.hash, room: data.room, isAdmin: !!data.isAdmin } },
         { upsert: true }
       );
     }
@@ -180,8 +210,26 @@ export async function initStorage() {
       users = {};
       const userDocs = await mongoDb.collection("users").find().toArray();
       for (const doc of userDocs) {
-        users[doc._id] = { salt: doc.salt, hash: doc.hash, room: doc.room };
+        users[doc._id] = {
+          salt: doc.salt,
+          hash: doc.hash,
+          room: doc.room,
+          isAdmin: !!doc.isAdmin,
+        };
       }
+
+      loginLogs = [];
+      const logDocs = await mongoDb
+        .collection("login_logs")
+        .find()
+        .sort({ at: -1 })
+        .limit(MAX_LOGIN_LOGS)
+        .toArray();
+      loginLogs = logDocs.map((d) => ({
+        userId: d.userId,
+        at: d.at,
+        ip: d.ip || null,
+      }));
 
       const profileDoc = await mongoDb.collection("profiles").findOne({ _id: "main" });
       studentProfiles = profileDoc?.data || {};
@@ -203,6 +251,7 @@ export async function initStorage() {
   loadUsersFromFile();
   loadProfilesFromFile();
   loadRostersFromFile();
+  loadLoginLogsFromFile();
   await loadSessionSecret();
 
   if (process.env.RENDER === "true") {
@@ -221,12 +270,85 @@ export async function saveUser(id, userData) {
   if (mongoDb) {
     await mongoDb.collection("users").updateOne(
       { _id: id },
-      { $set: { salt: userData.salt, hash: userData.hash, room: userData.room } },
+      {
+        $set: {
+          salt: userData.salt,
+          hash: userData.hash,
+          room: userData.room,
+          isAdmin: !!userData.isAdmin,
+        },
+      },
       { upsert: true }
     );
     return;
   }
   saveUsersToFile();
+}
+
+export async function recordLogin(userId, meta = {}) {
+  const entry = {
+    userId,
+    at: Date.now(),
+    ip: meta.ip || null,
+  };
+  loginLogs.push(entry);
+  if (loginLogs.length > MAX_LOGIN_LOGS) {
+    loginLogs = loginLogs.slice(-MAX_LOGIN_LOGS);
+  }
+  if (mongoDb) {
+    await mongoDb.collection("login_logs").insertOne(entry);
+    return;
+  }
+  saveLoginLogsToFile();
+}
+
+export function getLastLoginByUser() {
+  const map = {};
+  for (let i = loginLogs.length - 1; i >= 0; i--) {
+    const e = loginLogs[i];
+    if (e?.userId && !map[e.userId]) map[e.userId] = e.at;
+  }
+  return map;
+}
+
+export function getRecentLoginLogs(limit = 80) {
+  return [...loginLogs].slice(-limit).reverse();
+}
+
+/** Render/로컬 환경 변수 ADMIN_ID, ADMIN_PASSWORD 로 관리자 계정 생성 */
+export async function ensureAdminAccount(makeUserFn) {
+  const adminId = (process.env.ADMIN_ID || "").trim();
+  const adminPassword = process.env.ADMIN_PASSWORD || "";
+  if (!adminId) return null;
+
+  const envAdmins = getAdminIdsFromEnv();
+  if (!envAdmins.includes(adminId)) {
+    process.env.ADMIN_IDS = envAdmins.length ? `${envAdmins.join(",")},${adminId}` : adminId;
+  }
+
+  if (!users[adminId]) {
+    if (!adminPassword) {
+      console.warn("[관리자] ADMIN_ID만 있고 ADMIN_PASSWORD가 없어 계정을 만들지 않습니다.");
+      return null;
+    }
+    const u = makeUserFn(adminPassword);
+    u.isAdmin = true;
+    await saveUser(adminId, u);
+    console.log(`[관리자] 계정 '${adminId}' 생성됨 (환경 변수)`);
+    return adminId;
+  }
+
+  if (!users[adminId].isAdmin) {
+    users[adminId].isAdmin = true;
+    await saveUser(adminId, users[adminId]);
+  }
+  if (adminPassword) {
+    const u = makeUserFn(adminPassword);
+    u.isAdmin = true;
+    await saveUser(adminId, u);
+    console.log(`[관리자] 계정 '${adminId}' 비밀번호·권한 갱신 (환경 변수)`);
+  }
+  return adminId;
 }
 
 export async function saveStudentProfilesData() {

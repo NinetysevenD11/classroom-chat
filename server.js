@@ -18,6 +18,11 @@ import {
   saveStudentProfilesData,
   getClassRoster,
   saveClassRoster,
+  isAdminUserId,
+  recordLogin,
+  getLastLoginByUser,
+  getRecentLoginLogs,
+  ensureAdminAccount,
 } from "./storage.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -116,6 +121,20 @@ function requireAuth(req, res, next) {
   res.redirect("/login");
 }
 
+function requireAdmin(req, res, next) {
+  if (req.session?.userId && isAdminUserId(req.session.userId)) return next();
+  if (req.path.startsWith("/api/")) {
+    return res.status(403).json({ ok: false, error: "관리자 권한이 필요합니다." });
+  }
+  res.redirect("/login");
+}
+
+function clientIp(req) {
+  const fwd = req.headers["x-forwarded-for"];
+  if (typeof fwd === "string" && fwd.length) return fwd.split(",")[0].trim();
+  return req.socket?.remoteAddress || null;
+}
+
 // ----- 교실 (선생님 계정별, 입장 코드 없음) -----
 // rooms[userId] = { seats, socketSeat, seatSocket }
 const rooms = {};
@@ -131,6 +150,43 @@ function getRoomForUser(userId) {
 
 function teacherChannel(userId) {
   return `teacher:${userId}`;
+}
+
+function isTeacherOnline(userId) {
+  const ch = io.sockets.adapter.rooms.get(teacherChannel(userId));
+  return !!(ch && ch.size > 0);
+}
+
+function buildAdminOverview() {
+  const lastLogin = getLastLoginByUser();
+  const teachers = Object.keys(users)
+    .filter((id) => !isAdminUserId(id))
+    .sort((a, b) => a.localeCompare(b, "ko"))
+    .map((id) => {
+      const roster = getClassRoster(id);
+      const students = [];
+      for (let seat = 1; seat <= STUDENT_SEATS; seat++) {
+        const name = roster[seat] || roster[String(seat)];
+        if (name) students.push({ seat, name });
+      }
+      students.sort((a, b) => a.seat - b.seat);
+      return {
+        id,
+        lastLoginAt: lastLogin[id] || null,
+        teacherOnline: isTeacherOnline(id),
+        rosterCount: students.length,
+        students,
+      };
+    });
+
+  return {
+    teachers,
+    recentLogins: getRecentLoginLogs(100).map((e) => ({
+      ...e,
+      isAdmin: isAdminUserId(e.userId),
+    })),
+    activeTeacherId: activeTeacherId && !isAdminUserId(activeTeacherId) ? activeTeacherId : null,
+  };
 }
 
 function getTeacherUserId(socket) {
@@ -162,6 +218,7 @@ app.set("trust proxy", 1);
 const isProd = process.env.NODE_ENV === "production";
 
 await initStorage();
+await ensureAdminAccount(makeUser);
 
 const sessionMiddleware = session({
   secret: sessionSecret,
@@ -189,11 +246,17 @@ app.post("/api/signup", async (req, res) => {
   if (id.length < 3) return res.json({ ok: false, error: "아이디는 3자 이상이어야 합니다." });
   if (password.length < 4) return res.json({ ok: false, error: "비밀번호는 4자 이상이어야 합니다." });
   if (users[id]) return res.json({ ok: false, error: "이미 존재하는 아이디입니다." });
+  const reservedAdmin = (process.env.ADMIN_ID || "").trim();
+  if (reservedAdmin && id === reservedAdmin) {
+    return res.json({ ok: false, error: "사용할 수 없는 아이디입니다." });
+  }
+  if (isAdminUserId(id)) return res.json({ ok: false, error: "사용할 수 없는 아이디입니다." });
   const u = makeUser(password);
   try {
     await saveUser(id, u);
     req.session.userId = id;
-    res.json({ ok: true });
+    await recordLogin(id, { ip: clientIp(req) });
+    res.json({ ok: true, isAdmin: false });
   } catch (err) {
     console.error("[저장] 회원가입 저장 실패:", err);
     res.json({ ok: false, error: "회원 정보를 저장하지 못했습니다. 잠시 후 다시 시도해 주세요." });
@@ -201,14 +264,19 @@ app.post("/api/signup", async (req, res) => {
 });
 
 // 로그인
-app.post("/api/login", (req, res) => {
+app.post("/api/login", async (req, res) => {
   const id = (req.body && req.body.id || "").trim();
   const password = (req.body && req.body.password) || "";
   if (!verifyPassword(password, users[id])) {
     return res.json({ ok: false, error: "아이디 또는 비밀번호가 올바르지 않습니다." });
   }
   req.session.userId = id;
-  res.json({ ok: true });
+  try {
+    await recordLogin(id, { ip: clientIp(req) });
+  } catch (err) {
+    console.error("[저장] 로그인 기록 실패:", err);
+  }
+  res.json({ ok: true, isAdmin: isAdminUserId(id) });
 });
 
 // 로그아웃
@@ -216,8 +284,20 @@ app.post("/api/logout", (req, res) => {
   req.session.destroy(() => res.json({ ok: true }));
 });
 
-// 교사 화면(로그인 필요)
+// 관리자 대시보드
+app.get("/admin", requireAdmin, (req, res) => {
+  res.sendFile(path.join(__dirname, "views", "admin.html"));
+});
+
+app.get("/api/admin/overview", requireAdmin, (req, res) => {
+  res.json({ ok: true, ...buildAdminOverview() });
+});
+
+// 교사 화면(로그인 필요, 관리자는 관리 페이지로)
 app.get("/", requireAuth, (req, res) => {
+  if (isAdminUserId(req.session.userId)) {
+    return res.redirect("/admin");
+  }
   res.sendFile(path.join(__dirname, "views", "teacher.html"));
 });
 
@@ -285,6 +365,7 @@ function getLocalIP() {
 // 학생 참여용 QR 코드
 app.get("/qr", requireAuth, async (req, res) => {
   const userId = req.session.userId;
+  if (isAdminUserId(userId)) return res.status(403).json({ error: "관리자 계정은 QR을 사용할 수 없습니다." });
   if (!users[userId]) return res.status(401).json({ error: "로그인이 필요합니다." });
   let base;
   if (publicUrl) base = publicUrl;

@@ -42,7 +42,11 @@ authForm.addEventListener("submit", async (e) => {
       return;
     }
     showMsg(mode === "login" ? "로그인 성공!" : "가입 완료!", false);
-    window.location.href = "/";
+    if (mode === "login" && data.isAdmin) {
+      window.location.href = "/admin";
+    } else {
+      window.location.href = "/";
+    }
   } catch (err) {
     showMsg("서버에 연결할 수 없습니다.", true);
     submitBtn.disabled = false;
