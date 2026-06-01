@@ -93,7 +93,10 @@ html:not([data-theme="light"]) body:not(.pip-mode)::before {
     radial-gradient(ellipse 72% 68% at 50% 50%, transparent 42%, rgba(0, 0, 0, 0.18) 100%),
     linear-gradient(180deg, rgba(0, 0, 0, 0.12) 0%, transparent 18%, transparent 82%, rgba(0, 0, 0, 0.14) 100%);
 }
-html:not([data-theme="light"]) body:not(.pip-mode) > * {
+html:not([data-theme="light"]) body:not(.pip-mode) > .topbar,
+html:not([data-theme="light"]) body:not(.pip-mode) > .toolbar,
+html:not([data-theme="light"]) body:not(.pip-mode) > .grid,
+html:not([data-theme="light"]) body:not(.pip-mode) > .teacher-chat {
   position: relative;
   z-index: 1;
 }
@@ -134,7 +137,10 @@ html[data-theme="light"] body:not(.pip-mode)::before {
     inset 0 0 0 22px var(--wood-highlight),
     inset 0 0 0 26px var(--wood-shadow);
 }
-html[data-theme="light"] body:not(.pip-mode) > * {
+html[data-theme="light"] body:not(.pip-mode) > .topbar,
+html[data-theme="light"] body:not(.pip-mode) > .toolbar,
+html[data-theme="light"] body:not(.pip-mode) > .grid,
+html[data-theme="light"] body:not(.pip-mode) > .teacher-chat {
   position: relative;
   z-index: 1;
 }
@@ -912,7 +918,10 @@ body:not(.pip-mode) .grid::before { display: none; }
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 50;
+  padding: max(16px, env(safe-area-inset-top, 0px)) 16px max(16px, env(safe-area-inset-bottom, 0px));
+  z-index: 200;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
 }
 .modal.hidden { display: none; }
 .modal-box {
@@ -1230,7 +1239,7 @@ body:not(.pip-mode) .grid::before { display: none; }
 .question-overlay {
   position: fixed;
   inset: 0;
-  z-index: 50;
+  z-index: 150;
   display: flex;
   align-items: center;
   justify-content: center;
