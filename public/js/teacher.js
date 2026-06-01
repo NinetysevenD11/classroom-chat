@@ -406,7 +406,8 @@ kickAllBtn.addEventListener("click", async () => {
 const themeBtn = document.getElementById("themeBtn");
 function applyTheme(theme) {
   document.documentElement.setAttribute("data-theme", theme);
-  themeBtn.textContent = theme === "light" ? "☀️" : "🌿";
+  themeBtn.textContent = theme === "light" ? "☀️" : "🌙";
+  themeBtn.title = theme === "light" ? "밝은 낮 모드 (라이트)" : "밤하늘 모드 (다크)";
   localStorage.setItem("theme", theme);
   if (pipWindow && !pipWindow.closed) {
     pipWindow.document.documentElement.setAttribute("data-theme", theme);

@@ -1,128 +1,143 @@
 /**
- * 우리반 칠판 — Cozy / Quiet Place 감성 오버라이드
- * 픽셀·파스텔 민트 + 코랄 포인트
+ * 우리반 칠판 — Cozy 테마
+ * dark: 밤하늘 (진한 다크)  |  light: 낮 (파스텔 민트)
  */
 
 :root {
-  --cozy-mint: #d6ebe3;
-  --cozy-mint-deep: #c5e0d6;
-  --cozy-cream: #fffcf7;
   --cozy-coral: #f06c64;
   --cozy-coral-dark: #d85a52;
-  --cozy-forest: #2d4a3e;
-  --cozy-sage: #5a8f7a;
-  --cozy-water: #a8d8ea;
-  --cozy-pine: #6b9e7d;
   --cozy-yellow: #ffeaa7;
-  --cozy-shadow: 0 4px 0 rgba(45, 74, 62, 0.08), 0 8px 24px rgba(45, 74, 62, 0.06);
   --cozy-radius: 20px;
   --cozy-radius-pill: 999px;
 }
 
-/* 기본(칠판) → 코지 민트 */
+/* ═══ 다크 모드 — 밤 ═══ */
 [data-theme="dark"] {
-  --bg: var(--cozy-mint);
-  --board: rgba(255, 252, 247, 0.72);
-  --text: var(--cozy-forest);
-  --topbar-bg: var(--cozy-cream);
-  --topbar-border: rgba(45, 74, 62, 0.08);
-  --tile: var(--cozy-cream);
-  --tile-empty: rgba(255, 252, 247, 0.55);
-  --avatar-bg: rgba(168, 216, 234, 0.35);
-  --hint: #6b8f80;
-  --teacher-tile: rgba(255, 234, 167, 0.55);
-  --chalk-line: rgba(45, 74, 62, 0.1);
-  --bubble-bg: var(--cozy-cream);
-  --bubble-text: var(--cozy-forest);
-  --panel-bg: var(--cozy-cream);
-  --input-bg: var(--cozy-cream);
-  --input-border: rgba(45, 74, 62, 0.12);
+  --bg: #151f28;
+  --board: rgba(36, 52, 66, 0.75);
+  --text: #e8f2ec;
+  --hint: #8faf9e;
+  --topbar-bg: #243442;
+  --tile: #2a3d4d;
+  --tile-empty: rgba(30, 45, 58, 0.85);
+  --avatar-bg: rgba(30, 60, 80, 0.5);
+  --teacher-tile: rgba(255, 234, 167, 0.18);
+  --chalk-line: rgba(255, 255, 255, 0.1);
+  --bubble-bg: #2d4150;
+  --bubble-text: #e8f2ec;
+  --panel-bg: #243442;
+  --input-bg: #1e2d3a;
+  --input-border: rgba(255, 255, 255, 0.12);
   --accent: var(--cozy-coral);
-  --teacher: var(--cozy-yellow);
-  --wood: var(--cozy-sage);
+  --cozy-surface: #243442;
+  --cozy-surface-2: #2d4150;
+  --cozy-surface-hover: #354d5f;
+  --cozy-text: #e8f2ec;
+  --cozy-text-muted: #9bb5a8;
+  --cozy-shadow: 0 4px 0 rgba(0, 0, 0, 0.25), 0 8px 28px rgba(0, 0, 0, 0.35);
 }
 
-/* 밝은 모드 → 따뜻한 크림 */
+/* ═══ 라이트 모드 — 낮 ═══ */
 [data-theme="light"] {
   --bg: #e8f4ef;
   --board: rgba(255, 253, 248, 0.85);
-  --text: var(--cozy-forest);
-  --topbar-bg: #fffdf9;
+  --text: #2d4a3e;
   --hint: #6b8f80;
+  --topbar-bg: #fffdf9;
+  --tile: #fffcf7;
+  --tile-empty: rgba(255, 252, 247, 0.55);
+  --avatar-bg: rgba(168, 216, 234, 0.35);
   --teacher-tile: rgba(255, 234, 167, 0.65);
+  --chalk-line: rgba(45, 74, 62, 0.1);
+  --bubble-bg: #fffcf7;
+  --bubble-text: #2d4a3e;
+  --panel-bg: #fffcf7;
+  --input-bg: #ffffff;
+  --input-border: rgba(45, 74, 62, 0.12);
   --accent: var(--cozy-coral);
+  --cozy-surface: #fffcf7;
+  --cozy-surface-2: #ffffff;
+  --cozy-surface-hover: #ffffff;
+  --cozy-text: #2d4a3e;
+  --cozy-text-muted: #6b8f80;
+  --cozy-shadow: 0 4px 0 rgba(45, 74, 62, 0.06), 0 8px 24px rgba(45, 74, 62, 0.08);
 }
 
-/* 배경: 칠판 일러스트 제거, 민트 하늘 + 픽셀 풍경 */
-html:not([data-theme="light"]) body:not(.pip-mode) {
-  background-color: var(--cozy-mint) !important;
+/* ── 배경: 다크 = 밤하늘 ── */
+html[data-theme="dark"] body:not(.pip-mode) {
+  background-color: #121a22 !important;
   background-image:
-    radial-gradient(ellipse 120px 40px at 15% 12%, rgba(255, 255, 255, 0.65) 0%, transparent 70%),
-    radial-gradient(ellipse 100px 36px at 78% 8%, rgba(255, 255, 255, 0.5) 0%, transparent 70%),
-    radial-gradient(ellipse 80px 30px at 42% 6%, rgba(255, 255, 255, 0.4) 0%, transparent 70%),
-    linear-gradient(180deg, #d6ebe3 0%, #c8e4da 55%, #b8ddd4 100%) !important;
+    radial-gradient(1px 1px at 10% 15%, rgba(255, 255, 255, 0.7) 0%, transparent 100%),
+    radial-gradient(1px 1px at 25% 8%, rgba(255, 255, 255, 0.5) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 55% 12%, rgba(255, 255, 255, 0.6) 0%, transparent 100%),
+    radial-gradient(1px 1px at 80% 18%, rgba(255, 255, 255, 0.45) 0%, transparent 100%),
+    radial-gradient(1px 1px at 92% 6%, rgba(255, 255, 255, 0.55) 0%, transparent 100%),
+    radial-gradient(ellipse 90px 36px at 88% 10%, rgba(255, 248, 220, 0.15) 0%, transparent 70%),
+    linear-gradient(180deg, #1a2834 0%, #152228 45%, #121c24 100%) !important;
   background-attachment: fixed;
 }
 
-html:not([data-theme="light"]) body:not(.pip-mode)::before {
+html[data-theme="dark"] body:not(.pip-mode)::before {
   background: none !important;
 }
 
-html:not([data-theme="light"]) body:not(.pip-mode)::after {
+html[data-theme="dark"] body:not(.pip-mode)::after {
   content: "";
   position: fixed;
   left: 0;
   right: 0;
   bottom: 0;
-  height: 140px;
+  height: 130px;
   pointer-events: none;
   z-index: 0;
   background:
-    /* 물 */
-    linear-gradient(180deg, transparent 0%, rgba(168, 216, 234, 0.5) 35%, var(--cozy-water) 100%),
-    /* 섬 */
-    radial-gradient(ellipse 55% 80% at 72% 100%, #8fbc9a 0%, #6b9e7d 45%, transparent 46%),
-    radial-gradient(ellipse 40% 70% at 25% 100%, #7aad88 0%, transparent 50%),
-    /* 나무 실루엣 */
-    linear-gradient(180deg, transparent 55%, #5a9a6e 55%, #5a9a6e 62%, transparent 62%),
-    linear-gradient(180deg, transparent 48%, #4d8f62 48%, #4d8f62 70%, transparent 70%);
-  background-size: 100% 100%, 100% 100%, 100% 100%, 8px 100%, 12px 100%;
-  background-position: 0 0, 0 0, 0 0, 18% 0, 82% 0;
-  image-rendering: pixelated;
-  opacity: 0.85;
+    linear-gradient(180deg, transparent 0%, rgba(20, 50, 65, 0.6) 40%, #1a3344 100%),
+    radial-gradient(ellipse 50% 90% at 70% 100%, #2d4a3a 0%, #1e3d30 40%, transparent 45%),
+    radial-gradient(ellipse 35% 70% at 22% 100%, #254535 0%, transparent 50%);
+  opacity: 0.95;
 }
 
+/* ── 배경: 라이트 = 낮 민트 ── */
 html[data-theme="light"] body:not(.pip-mode) {
   background-color: #e8f4ef !important;
   background-image:
-    radial-gradient(ellipse 100px 40px at 20% 10%, rgba(255, 255, 255, 0.8) 0%, transparent 70%),
-    linear-gradient(180deg, #e8f4ef 0%, #dceee6 100%) !important;
+    radial-gradient(ellipse 120px 40px at 15% 12%, rgba(255, 255, 255, 0.75) 0%, transparent 70%),
+    radial-gradient(ellipse 100px 36px at 78% 8%, rgba(255, 255, 255, 0.55) 0%, transparent 70%),
+    linear-gradient(180deg, #e8f4ef 0%, #d6ebe3 55%, #c8e4da 100%) !important;
+  background-attachment: fixed;
 }
 
 html[data-theme="light"] body:not(.pip-mode)::before {
-  box-shadow: none !important;
   background: none !important;
+  box-shadow: none !important;
 }
 
-html:not([data-theme="light"]) body:not(.pip-mode) > .topbar,
-html:not([data-theme="light"]) body:not(.pip-mode) > .toolbar,
-html:not([data-theme="light"]) body:not(.pip-mode) > .grid,
-html:not([data-theme="light"]) body:not(.pip-mode) > .teacher-chat,
-html[data-theme="light"] body:not(.pip-mode) > .topbar,
-html[data-theme="light"] body:not(.pip-mode) > .toolbar,
-html[data-theme="light"] body:not(.pip-mode) > .grid,
-html[data-theme="light"] body:not(.pip-mode) > .teacher-chat {
+html[data-theme="light"] body:not(.pip-mode)::after {
+  content: "";
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 130px;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    linear-gradient(180deg, transparent 0%, rgba(168, 216, 234, 0.45) 35%, #a8d8ea 100%),
+    radial-gradient(ellipse 55% 80% at 72% 100%, #8fbc9a 0%, #6b9e7d 45%, transparent 46%),
+    radial-gradient(ellipse 40% 70% at 25% 100%, #7aad88 0%, transparent 50%);
+  opacity: 0.85;
+}
+
+html[data-theme="dark"] body:not(.pip-mode) > *,
+html[data-theme="light"] body:not(.pip-mode) > * {
   position: relative;
   z-index: 1;
 }
 
-/* ── 상단바 ── */
+/* ── 공통 레이아웃 카드 ── */
 body:not(.pip-mode) .topbar {
-  background: rgba(255, 252, 247, 0.92) !important;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border-bottom: 2px solid rgba(45, 74, 62, 0.06) !important;
-  box-shadow: var(--cozy-shadow) !important;
   padding: 14px clamp(16px, 4vw, 40px) 12px !important;
   margin: 10px clamp(12px, 3vw, 28px) 0;
   border-radius: var(--cozy-radius) var(--cozy-radius) 0 0;
@@ -133,115 +148,166 @@ body:not(.pip-mode) .topbar::after {
   display: none !important;
 }
 
-body:not(.pip-mode) .topbar h1 {
-  color: var(--cozy-forest) !important;
-  text-shadow: none !important;
-  font-size: 21px;
-  letter-spacing: -0.02em;
+html[data-theme="dark"] body:not(.pip-mode) .topbar {
+  background: rgba(36, 52, 66, 0.94) !important;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.06) !important;
+  box-shadow: var(--cozy-shadow) !important;
 }
 
-body:not(.pip-mode) .topbar h1::before {
+html[data-theme="light"] body:not(.pip-mode) .topbar {
+  background: rgba(255, 252, 247, 0.94) !important;
+  border-bottom: 2px solid rgba(45, 74, 62, 0.06) !important;
+  box-shadow: var(--cozy-shadow) !important;
+}
+
+body:not(.pip-mode) .topbar h1 {
+  text-shadow: none !important;
+  font-size: 21px;
+  color: var(--cozy-text) !important;
+}
+
+html[data-theme="dark"] body:not(.pip-mode) .topbar h1::before {
+  content: "🌙 ";
+}
+
+html[data-theme="light"] body:not(.pip-mode) .topbar h1::before {
   content: "🐰 ";
 }
 
-body:not(.pip-mode) .topbar .hint {
-  color: var(--cozy-sage) !important;
-  background: rgba(214, 235, 227, 0.8) !important;
+html[data-theme="dark"] body:not(.pip-mode) .topbar .hint {
+  color: var(--cozy-text-muted) !important;
+  background: rgba(0, 0, 0, 0.2) !important;
+  border: 2px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+html[data-theme="light"] body:not(.pip-mode) .topbar .hint {
+  color: var(--cozy-text-muted) !important;
+  background: rgba(214, 235, 227, 0.85) !important;
   border: 2px solid rgba(45, 74, 62, 0.06) !important;
-  box-shadow: none !important;
-  font-family: var(--font-chalk);
 }
 
 body:not(.pip-mode) .topbar .hint b {
   color: var(--cozy-coral) !important;
 }
 
-/* 아이콘·보조 버튼 */
-body:not(.pip-mode) .icon-btn {
-  background: var(--cozy-cream) !important;
+/* 아이콘 */
+html[data-theme="dark"] body:not(.pip-mode) .icon-btn {
+  background: var(--cozy-surface-2) !important;
+  border: 2px solid rgba(255, 255, 255, 0.1) !important;
+  color: var(--cozy-text) !important;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.3) !important;
+}
+
+html[data-theme="light"] body:not(.pip-mode) .icon-btn {
+  background: #fffcf7 !important;
   border: 2px solid rgba(45, 74, 62, 0.08) !important;
-  color: var(--cozy-forest) !important;
+  color: var(--cozy-text) !important;
+  box-shadow: 0 3px 0 rgba(45, 74, 62, 0.05) !important;
+}
+
+body:not(.pip-mode) .icon-btn {
   border-radius: 14px !important;
-  box-shadow: 0 3px 0 rgba(45, 74, 62, 0.06) !important;
   width: 42px;
   height: 42px;
 }
 
 body:not(.pip-mode) .icon-btn:hover {
-  background: #fff !important;
   border-color: var(--cozy-coral) !important;
   transform: translateY(-2px);
 }
 
-body:not(.pip-mode) .danger-btn {
-  background: var(--cozy-coral) !important;
-  border: none !important;
-  color: #fff !important;
-  border-radius: var(--cozy-radius-pill) !important;
-  box-shadow: 0 4px 0 var(--cozy-coral-dark) !important;
-  font-weight: 700;
+html[data-theme="dark"] body:not(.pip-mode) .icon-btn:hover {
+  background: var(--cozy-surface-hover) !important;
 }
 
-body:not(.pip-mode) .danger-btn:active {
-  transform: translateY(3px);
-  box-shadow: 0 1px 0 var(--cozy-coral-dark) !important;
+html[data-theme="light"] body:not(.pip-mode) .icon-btn:hover {
+  background: #fff !important;
 }
 
-body:not(.pip-mode) .qr-btn,
-body:not(.pip-mode) .float-btn,
-body:not(.pip-mode) .class-btn {
-  border-radius: var(--cozy-radius-pill) !important;
-  font-weight: 700;
-  border: none !important;
-}
-
+/* 액션 버튼 (공통 코랄/세이지) */
+body:not(.pip-mode) .danger-btn,
 body:not(.pip-mode) .qr-btn {
   background: var(--cozy-coral) !important;
   color: #fff !important;
+  border: none !important;
+  border-radius: var(--cozy-radius-pill) !important;
   box-shadow: 0 4px 0 var(--cozy-coral-dark) !important;
+  font-weight: 700;
 }
 
 body:not(.pip-mode) .float-btn {
-  background: var(--cozy-sage) !important;
+  border-radius: var(--cozy-radius-pill) !important;
+  font-weight: 700;
+  border: none !important;
+}
+
+html[data-theme="dark"] body:not(.pip-mode) .float-btn {
+  background: #4a8f72 !important;
+  color: #fff !important;
+  box-shadow: 0 4px 0 #2d5c48 !important;
+}
+
+html[data-theme="light"] body:not(.pip-mode) .float-btn {
+  background: #5a8f7a !important;
   color: #fff !important;
   box-shadow: 0 4px 0 #4a7d68 !important;
 }
 
-body:not(.pip-mode) .class-btn {
-  background: var(--cozy-water) !important;
-  color: var(--cozy-forest) !important;
+html[data-theme="dark"] body:not(.pip-mode) .class-btn {
+  background: #3d6a8a !important;
+  color: #e8f2ec !important;
+  box-shadow: 0 4px 0 #2a4d62 !important;
+}
+
+html[data-theme="light"] body:not(.pip-mode) .class-btn {
+  background: #a8d8ea !important;
+  color: #2d4a3e !important;
   box-shadow: 0 4px 0 #7eb8d0 !important;
 }
 
-body:not(.pip-mode) .qr-btn:active,
-body:not(.pip-mode) .float-btn:active,
-body:not(.pip-mode) .class-btn:active {
-  transform: translateY(3px);
-  box-shadow: 0 1px 0 rgba(45, 74, 62, 0.2) !important;
+body:not(.pip-mode) .class-btn {
+  border-radius: var(--cozy-radius-pill) !important;
+  font-weight: 700;
+  border: none !important;
 }
 
-/* ── 툴바 ── */
+/* 툴바 */
 body:not(.pip-mode) .toolbar {
-  background: rgba(255, 252, 247, 0.88) !important;
-  backdrop-filter: blur(8px);
-  border-bottom: 2px solid rgba(45, 74, 62, 0.05) !important;
-  box-shadow: none !important;
   margin: 0 clamp(12px, 3vw, 28px);
   padding: 12px clamp(16px, 3vw, 32px) !important;
   border-radius: 0;
 }
 
-body:not(.pip-mode) .tool-btn {
-  background: var(--cozy-cream) !important;
-  color: var(--cozy-forest) !important;
+html[data-theme="dark"] body:not(.pip-mode) .toolbar {
+  background: rgba(30, 45, 58, 0.92) !important;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.05) !important;
+}
+
+html[data-theme="light"] body:not(.pip-mode) .toolbar {
+  background: rgba(255, 252, 247, 0.9) !important;
+  border-bottom: 2px solid rgba(45, 74, 62, 0.05) !important;
+}
+
+html[data-theme="dark"] body:not(.pip-mode) .tool-btn {
+  background: var(--cozy-surface-2) !important;
+  color: var(--cozy-text) !important;
+  border: 2px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.25) !important;
+}
+
+html[data-theme="light"] body:not(.pip-mode) .tool-btn {
+  background: #fffcf7 !important;
+  color: var(--cozy-text) !important;
   border: 2px solid rgba(45, 74, 62, 0.08) !important;
-  border-radius: var(--cozy-radius-pill) !important;
   box-shadow: 0 3px 0 rgba(45, 74, 62, 0.05) !important;
+}
+
+body:not(.pip-mode) .tool-btn {
+  border-radius: var(--cozy-radius-pill) !important;
 }
 
 body:not(.pip-mode) .tool-btn:hover {
   border-color: var(--cozy-coral) !important;
-  background: #fff !important;
 }
 
 body:not(.pip-mode) .tool-btn.green {
@@ -251,77 +317,127 @@ body:not(.pip-mode) .tool-btn.green {
   box-shadow: 0 4px 0 var(--cozy-coral-dark) !important;
 }
 
-body:not(.pip-mode) .question-box input,
-body:not(.pip-mode) .timer-box input {
-  border: 2px solid rgba(45, 74, 62, 0.1) !important;
-  border-radius: 14px !important;
-  background: #fff !important;
-  color: var(--cozy-forest) !important;
+html[data-theme="dark"] body:not(.pip-mode) .question-box input,
+html[data-theme="dark"] body:not(.pip-mode) .timer-box input {
+  background: var(--input-bg) !important;
+  color: var(--cozy-text) !important;
+  border: 2px solid rgba(255, 255, 255, 0.1) !important;
 }
 
-body:not(.pip-mode) .timer-display {
-  background: var(--cozy-forest) !important;
-  color: #fff !important;
+html[data-theme="light"] body:not(.pip-mode) .question-box input,
+html[data-theme="light"] body:not(.pip-mode) .timer-box input {
+  background: #fff !important;
+  color: var(--cozy-text) !important;
+  border: 2px solid rgba(45, 74, 62, 0.1) !important;
+}
+
+body:not(.pip-mode) .question-box input,
+body:not(.pip-mode) .timer-box input {
   border-radius: 14px !important;
+}
+
+html[data-theme="dark"] body:not(.pip-mode) .timer-display {
+  background: #1a3344 !important;
+  color: #a8d8ea !important;
+  border: 2px solid rgba(168, 216, 234, 0.25) !important;
+}
+
+html[data-theme="light"] body:not(.pip-mode) .timer-display {
+  background: #2d4a3e !important;
+  color: #fff !important;
   border: none !important;
 }
 
-[data-theme="light"] body:not(.pip-mode) .timer-display {
-  background: var(--cozy-sage) !important;
+body:not(.pip-mode) .timer-display {
+  border-radius: 14px !important;
 }
 
-/* ── 칠판 그리드 ── */
+/* 그리드 */
 body:not(.pip-mode) .grid {
   margin: 0 clamp(12px, 3vw, 28px) 8px !important;
   padding: 16px !important;
-  background: rgba(255, 252, 247, 0.55) !important;
-  backdrop-filter: blur(6px);
   border-radius: 0 0 var(--cozy-radius) var(--cozy-radius);
-  border: 2px solid rgba(255, 255, 255, 0.6);
   border-top: none;
+}
+
+html[data-theme="dark"] body:not(.pip-mode) .grid {
+  background: rgba(30, 45, 58, 0.65) !important;
+  border: 2px solid rgba(255, 255, 255, 0.06);
   box-shadow: var(--cozy-shadow) !important;
 }
 
-body:not(.pip-mode) .tile {
-  background: var(--cozy-cream) !important;
+html[data-theme="light"] body:not(.pip-mode) .grid {
+  background: rgba(255, 252, 247, 0.6) !important;
+  border: 2px solid rgba(255, 255, 255, 0.65);
+  box-shadow: var(--cozy-shadow) !important;
+}
+
+html[data-theme="dark"] body:not(.pip-mode) .tile {
+  background: var(--cozy-surface-2) !important;
+  border: 3px solid rgba(255, 255, 255, 0.06) !important;
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.2) !important;
+}
+
+html[data-theme="light"] body:not(.pip-mode) .tile {
+  background: #fffcf7 !important;
   border: 3px solid rgba(45, 74, 62, 0.06) !important;
-  border-radius: 16px !important;
   box-shadow: 0 4px 0 rgba(45, 74, 62, 0.04) !important;
+}
+
+body:not(.pip-mode) .tile {
+  border-radius: 16px !important;
   backdrop-filter: none;
 }
 
 body:not(.pip-mode) .tile:hover {
   border-color: var(--cozy-coral) !important;
   transform: translateY(-3px);
-  box-shadow: 0 6px 0 rgba(240, 108, 100, 0.15) !important;
 }
 
-body:not(.pip-mode) .tile.occupied {
+html[data-theme="dark"] body:not(.pip-mode) .tile.occupied {
+  background: #354d5f !important;
+  border-color: rgba(90, 143, 122, 0.35) !important;
+}
+
+html[data-theme="light"] body:not(.pip-mode) .tile.occupied {
   background: #fff !important;
   border-color: rgba(90, 143, 122, 0.25) !important;
 }
 
-body:not(.pip-mode) .tile.teacher {
+html[data-theme="dark"] body:not(.pip-mode) .tile.teacher {
+  background: linear-gradient(145deg, #3d4a35, rgba(255, 234, 167, 0.25)) !important;
+  border-color: rgba(240, 108, 100, 0.45) !important;
+}
+
+html[data-theme="light"] body:not(.pip-mode) .tile.teacher {
   background: linear-gradient(145deg, #fff9e6, var(--cozy-yellow)) !important;
   border-color: rgba(240, 108, 100, 0.35) !important;
 }
 
 body:not(.pip-mode) .tile.hand-raised {
   border-color: var(--cozy-coral) !important;
-  box-shadow: 0 0 0 3px rgba(240, 108, 100, 0.25) !important;
+  box-shadow: 0 0 0 3px rgba(240, 108, 100, 0.35) !important;
 }
 
-body:not(.pip-mode) .video-area {
-  background: linear-gradient(180deg, rgba(168, 216, 234, 0.25), rgba(214, 235, 227, 0.15)) !important;
+html[data-theme="dark"] body:not(.pip-mode) .video-area {
+  background: linear-gradient(180deg, rgba(30, 60, 80, 0.5), rgba(20, 35, 48, 0.3)) !important;
 }
 
-body:not(.pip-mode) .seat-head {
+html[data-theme="light"] body:not(.pip-mode) .video-area {
+  background: linear-gradient(180deg, rgba(168, 216, 234, 0.3), rgba(214, 235, 227, 0.15)) !important;
+}
+
+html[data-theme="dark"] body:not(.pip-mode) .seat-head {
+  background: linear-gradient(180deg, rgba(20, 30, 40, 0.9), transparent) !important;
+}
+
+html[data-theme="light"] body:not(.pip-mode) .seat-head {
   background: linear-gradient(180deg, rgba(255, 252, 247, 0.95), transparent) !important;
 }
 
 body:not(.pip-mode) .seat-head .name,
 body:not(.pip-mode) .seat-head .seat-no {
-  color: var(--cozy-forest) !important;
+  color: var(--cozy-text) !important;
   text-shadow: none !important;
 }
 
@@ -330,29 +446,55 @@ body:not(.pip-mode) .hand-badge {
   border-radius: 10px !important;
 }
 
-body:not(.pip-mode) .bubble {
-  background: var(--cozy-cream) !important;
-  color: var(--cozy-forest) !important;
+html[data-theme="dark"] body:not(.pip-mode) .bubble {
+  background: var(--cozy-surface-2) !important;
+  color: var(--cozy-text) !important;
+  border: 2px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.2) !important;
+}
+
+html[data-theme="light"] body:not(.pip-mode) .bubble {
+  background: #fffcf7 !important;
+  color: var(--cozy-text) !important;
   border: 2px solid rgba(45, 74, 62, 0.08);
-  border-radius: 14px !important;
   box-shadow: 0 3px 0 rgba(45, 74, 62, 0.05) !important;
 }
 
-body:not(.pip-mode) .controls button {
-  background: var(--cozy-cream) !important;
+body:not(.pip-mode) .bubble {
+  border-radius: 14px !important;
+}
+
+html[data-theme="dark"] body:not(.pip-mode) .controls button {
+  background: var(--cozy-surface) !important;
+  border: 2px solid rgba(255, 255, 255, 0.1) !important;
+  color: var(--cozy-text);
+}
+
+html[data-theme="light"] body:not(.pip-mode) .controls button {
+  background: #fffcf7 !important;
   border: 2px solid rgba(45, 74, 62, 0.08) !important;
+}
+
+body:not(.pip-mode) .controls button {
   border-radius: 10px !important;
 }
 
-/* ── 하단 채팅 ── */
+/* 하단 채팅 */
 body:not(.pip-mode) .teacher-chat {
-  background: rgba(255, 252, 247, 0.95) !important;
-  backdrop-filter: blur(12px);
   border-top: none !important;
-  box-shadow: 0 -4px 24px rgba(45, 74, 62, 0.06) !important;
   margin: 0 clamp(12px, 3vw, 28px) 14px;
   border-radius: var(--cozy-radius);
   padding: 14px clamp(16px, 3vw, 28px) !important;
+}
+
+html[data-theme="dark"] body:not(.pip-mode) .teacher-chat {
+  background: rgba(36, 52, 66, 0.96) !important;
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.35) !important;
+}
+
+html[data-theme="light"] body:not(.pip-mode) .teacher-chat {
+  background: rgba(255, 252, 247, 0.96) !important;
+  box-shadow: 0 -4px 24px rgba(45, 74, 62, 0.06) !important;
 }
 
 body:not(.pip-mode) .teacher-chat::before,
@@ -362,18 +504,35 @@ body:not(.pip-mode) .teacher-chat::after {
 
 body:not(.pip-mode) .teacher-chat .tc-label {
   color: var(--cozy-coral) !important;
-  background: rgba(240, 108, 100, 0.12) !important;
-  border: 2px solid rgba(240, 108, 100, 0.2) !important;
   border-radius: var(--cozy-radius-pill) !important;
   text-shadow: none !important;
 }
 
-body:not(.pip-mode) .teacher-chat input {
+html[data-theme="dark"] body:not(.pip-mode) .teacher-chat .tc-label {
+  background: rgba(240, 108, 100, 0.2) !important;
+  border: 2px solid rgba(240, 108, 100, 0.35) !important;
+}
+
+html[data-theme="light"] body:not(.pip-mode) .teacher-chat .tc-label {
+  background: rgba(240, 108, 100, 0.12) !important;
+  border: 2px solid rgba(240, 108, 100, 0.2) !important;
+}
+
+html[data-theme="dark"] body:not(.pip-mode) .teacher-chat input {
+  background: var(--input-bg) !important;
+  color: var(--cozy-text) !important;
+  border: 2px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.25) !important;
+}
+
+html[data-theme="light"] body:not(.pip-mode) .teacher-chat input {
   background: #fff !important;
+  color: var(--cozy-text) !important;
   border: 2px solid rgba(45, 74, 62, 0.1) !important;
+}
+
+body:not(.pip-mode) .teacher-chat input {
   border-radius: var(--cozy-radius-pill) !important;
-  color: var(--cozy-forest) !important;
-  box-shadow: inset 0 2px 4px rgba(45, 74, 62, 0.04) !important;
 }
 
 body:not(.pip-mode) .teacher-chat button {
@@ -385,15 +544,39 @@ body:not(.pip-mode) .teacher-chat button {
   font-weight: 700;
 }
 
-body:not(.pip-mode) .teacher-chat button:active {
-  transform: translateY(3px);
-  box-shadow: 0 1px 0 var(--cozy-coral-dark) !important;
+/* 모달 */
+html[data-theme="dark"] .modal {
+  background: rgba(0, 0, 0, 0.55) !important;
 }
 
-/* ── 모달·오버레이 ── */
-.modal {
+html[data-theme="light"] .modal {
   background: rgba(45, 74, 62, 0.35) !important;
+}
+
+.modal {
   backdrop-filter: blur(8px);
+}
+
+html[data-theme="dark"] .help-box,
+html[data-theme="dark"] .roster-box,
+html[data-theme="dark"] .confirm-box,
+html[data-theme="dark"] .modal-box,
+html[data-theme="dark"] .panel-box,
+html[data-theme="dark"] .alarm-box {
+  background: var(--cozy-surface) !important;
+  color: var(--cozy-text) !important;
+  border: 3px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+html[data-theme="light"] .help-box,
+html[data-theme="light"] .roster-box,
+html[data-theme="light"] .confirm-box,
+html[data-theme="light"] .modal-box,
+html[data-theme="light"] .panel-box,
+html[data-theme="light"] .alarm-box {
+  background: #fffcf7 !important;
+  color: var(--cozy-text) !important;
+  border: 3px solid rgba(45, 74, 62, 0.08) !important;
 }
 
 .help-box,
@@ -402,54 +585,64 @@ body:not(.pip-mode) .teacher-chat button:active {
 .modal-box,
 .panel-box,
 .alarm-box {
-  background: var(--cozy-cream) !important;
-  color: var(--cozy-forest) !important;
-  border: 3px solid rgba(45, 74, 62, 0.08) !important;
   border-radius: var(--cozy-radius) !important;
   box-shadow: var(--cozy-shadow) !important;
 }
 
-.panel-head,
-.help-head,
-.roster-head {
-  background: linear-gradient(180deg, #fff, var(--cozy-mint-deep)) !important;
-  color: var(--cozy-forest) !important;
+html[data-theme="dark"] .panel-head,
+html[data-theme="dark"] .help-head,
+html[data-theme="dark"] .roster-head {
+  background: linear-gradient(180deg, #2d4150, #243442) !important;
+  color: var(--cozy-text) !important;
+  border-bottom: 2px dashed rgba(255, 255, 255, 0.1) !important;
+}
+
+html[data-theme="light"] .panel-head,
+html[data-theme="light"] .help-head,
+html[data-theme="light"] .roster-head {
+  background: linear-gradient(180deg, #fff, #e8f4ef) !important;
+  color: var(--cozy-text) !important;
   border-bottom: 2px dashed rgba(45, 74, 62, 0.1) !important;
 }
 
 .help-head h2,
 .roster-head h2,
-.panel-head h2 {
-  color: var(--cozy-forest) !important;
+.panel-head h2,
+.help-body,
+.roster-desc,
+.help-body b {
+  color: inherit;
+}
+
+html[data-theme="dark"] .help-body {
+  color: #c5d8ce !important;
+}
+
+html[data-theme="dark"] .help-body h3,
+html[data-theme="dark"] .help-body b {
+  color: var(--cozy-text) !important;
+}
+
+html[data-theme="dark"] .roster-row input {
+  background: var(--input-bg) !important;
+  color: var(--cozy-text) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+html[data-theme="dark"] .confirm-btn.cancel {
+  background: var(--cozy-surface-2) !important;
+  color: var(--cozy-text) !important;
+  border: 2px solid rgba(255, 255, 255, 0.12) !important;
+}
+
+html[data-theme="light"] .confirm-btn.cancel {
+  background: #fffcf7 !important;
+  color: var(--cozy-text) !important;
+  border: 2px solid rgba(45, 74, 62, 0.12) !important;
 }
 
 .close-btn,
-.confirm-btn.ok {
-  background: var(--cozy-coral) !important;
-  color: #fff !important;
-  border: none !important;
-  border-radius: var(--cozy-radius-pill) !important;
-  box-shadow: 0 4px 0 var(--cozy-coral-dark);
-}
-
-.confirm-btn.cancel {
-  background: var(--cozy-cream) !important;
-  color: var(--cozy-forest) !important;
-  border: 2px solid rgba(45, 74, 62, 0.12) !important;
-  border-radius: var(--cozy-radius-pill) !important;
-}
-
-.question-overlay {
-  background: rgba(45, 74, 62, 0.3) !important;
-}
-
-.question-card {
-  background: var(--cozy-cream) !important;
-  border: 3px solid rgba(45, 74, 62, 0.08) !important;
-  border-radius: var(--cozy-radius) !important;
-  color: var(--cozy-forest) !important;
-}
-
+.confirm-btn.ok,
 .question-close-btn {
   background: var(--cozy-coral) !important;
   color: #fff !important;
@@ -458,16 +651,45 @@ body:not(.pip-mode) .teacher-chat button:active {
   box-shadow: 0 4px 0 var(--cozy-coral-dark);
 }
 
-/* 플로팅 모드 — 심플 민트 */
-body.pip-mode {
-  background: var(--cozy-mint) !important;
+html[data-theme="dark"] .question-card {
+  background: var(--cozy-surface) !important;
+  color: var(--cozy-text) !important;
+  border: 3px solid rgba(255, 255, 255, 0.1) !important;
 }
 
-body.pip-mode .pip-list-header {
-  background: rgba(255, 252, 247, 0.9) !important;
-  color: var(--cozy-forest) !important;
+html[data-theme="light"] .question-card {
+  background: #fffcf7 !important;
+  color: var(--cozy-text) !important;
+}
+
+.question-card {
+  border-radius: var(--cozy-radius) !important;
+}
+
+/* 플로팅 */
+html[data-theme="dark"] body.pip-mode {
+  background: #121a22 !important;
+}
+
+html[data-theme="light"] body.pip-mode {
+  background: #e8f4ef !important;
+}
+
+html[data-theme="dark"] body.pip-mode .pip-list-header {
+  background: rgba(36, 52, 66, 0.95) !important;
+  color: var(--cozy-text) !important;
+}
+
+html[data-theme="light"] body.pip-mode .pip-list-header {
+  background: rgba(255, 252, 247, 0.95) !important;
+  color: var(--cozy-text) !important;
+}
+
+html[data-theme="dark"] body.pip-mode .name,
+html[data-theme="dark"] body.pip-mode .tile {
+  color: var(--cozy-text);
 }
 
 body.pip-mode .tile:hover {
-  background: rgba(240, 108, 100, 0.12) !important;
+  background: rgba(240, 108, 100, 0.15) !important;
 }
