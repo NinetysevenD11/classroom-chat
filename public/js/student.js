@@ -36,6 +36,7 @@ const profilePhotoBtn = document.getElementById("profilePhotoBtn");
 const profilePhotoInput = document.getElementById("profilePhotoInput");
 const profilePhotoImg = document.getElementById("profilePhotoImg");
 const profilePhotoEmoji = document.getElementById("profilePhotoEmoji");
+const chatBottom = document.querySelector(".chat-bottom");
 
 const SEAT_AVATAR = {
   1: "👸", 2: "🧚‍♀️", 3: "🦸‍♀️", 4: "👩‍🚀", 5: "👩‍🍳",
@@ -114,13 +115,73 @@ function hideQuestion() {
   questionText.textContent = "";
 }
 
+function scrollChatToBottom() {
+  chatLog.scrollTop = chatLog.scrollHeight;
+}
+
 function appendMyMsg(text) {
   const msg = document.createElement("div");
   msg.className = "msg";
   msg.textContent = text;
   chatLog.appendChild(msg);
-  chatLog.scrollTop = chatLog.scrollHeight;
+  scrollChatToBottom();
 }
+
+/** 모바일 키보드가 올라올 때 입력창을 키보드 바로 위로 이동 */
+function setupKeyboardAvoidance() {
+  if (!chatBottom) return;
+
+  const syncChatBarHeight = () => {
+    document.documentElement.style.setProperty(
+      "--chat-bar-h",
+      `${Math.ceil(chatBottom.offsetHeight)}px`
+    );
+  };
+
+  const updateKeyboardOffset = () => {
+    const vv = window.visualViewport;
+    if (!vv) {
+      document.documentElement.style.setProperty("--keyboard-offset", "0px");
+      return;
+    }
+    const offset = Math.max(0, Math.round(window.innerHeight - vv.offsetTop - vv.height));
+    document.documentElement.style.setProperty("--keyboard-offset", `${offset}px`);
+    if (offset > 0 && document.activeElement === chatInput) {
+      scrollChatToBottom();
+    }
+  };
+
+  const onViewportChange = () => {
+    syncChatBarHeight();
+    updateKeyboardOffset();
+  };
+
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener("resize", onViewportChange);
+    window.visualViewport.addEventListener("scroll", onViewportChange);
+  }
+  window.addEventListener("resize", onViewportChange);
+  window.addEventListener("orientationchange", () => {
+    setTimeout(onViewportChange, 120);
+  });
+
+  chatInput.addEventListener("focus", () => {
+    onViewportChange();
+    requestAnimationFrame(onViewportChange);
+    setTimeout(onViewportChange, 80);
+    setTimeout(onViewportChange, 280);
+  });
+  chatInput.addEventListener("blur", () => {
+    setTimeout(onViewportChange, 80);
+  });
+
+  if (typeof ResizeObserver !== "undefined") {
+    new ResizeObserver(syncChatBarHeight).observe(chatBottom);
+  }
+
+  onViewportChange();
+}
+setupKeyboardAvoidance();
 
 function sendChat(text) {
   if (!text || isKicked) return;
@@ -314,7 +375,7 @@ socket.on("teacher:dm", ({ text }) => {
   wrap.className = "msg-teacher";
   wrap.innerHTML = `<span class="dm-from">👩‍🏫 선생님</span>${escapeHtml(text)}`;
   chatLog.appendChild(wrap);
-  chatLog.scrollTop = chatLog.scrollHeight;
+  scrollChatToBottom();
 });
 
 function escapeHtml(s) {
