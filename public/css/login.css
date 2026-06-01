@@ -1,45 +1,86 @@
 @import url("https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Jua&display=swap");
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
   font-family: "Jua", "Malgun Gothic", sans-serif;
-  background: #1A3D2E;
-  background-image:
-    radial-gradient(ellipse 70% 55% at 15% 20%, rgba(255, 255, 255, 0.06) 0%, transparent 55%),
-    radial-gradient(ellipse 50% 45% at 85% 75%, rgba(0, 0, 0, 0.1) 0%, transparent 50%);
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px;
+  padding: 24px 20px;
   -webkit-font-smoothing: antialiased;
+  background-color: #eef2f8;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+body.bg-light::before {
+  background: radial-gradient(
+    ellipse 60% 75% at 50% 50%,
+    rgba(255, 255, 255, 0.05) 0%,
+    rgba(255, 255, 255, 0.42) 100%
+  );
+}
+
+body.bg-dark {
+  background-color: #1a2744;
+}
+
+body.bg-dark::before {
+  background: radial-gradient(
+    ellipse 55% 70% at 50% 50%,
+    rgba(10, 18, 38, 0.1) 0%,
+    rgba(10, 18, 38, 0.48) 100%
+  );
+}
+
+.login-wrap {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 420px;
 }
 
 .login-card {
-  background: #2A5C45;
+  background: rgba(255, 252, 245, 0.94);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   width: 100%;
-  max-width: 400px;
-  border-radius: 22px;
-  padding: 36px 32px 32px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.28);
-  position: relative;
-  overflow: hidden;
+  border-radius: 24px;
+  padding: 36px 32px 30px;
+  border: 3px solid rgba(255, 255, 255, 0.65);
+  box-shadow:
+    0 24px 64px rgba(0, 0, 0, 0.35),
+    0 0 0 1px rgba(255, 255, 255, 0.2) inset;
 }
-.login-card::before {
-  content: "";
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, #FFD93D, #58D68D, #FFD93D);
-}
+
 .login-card h1 {
   text-align: center;
-  font-size: 26px;
-  margin-bottom: 24px;
-  color: #FAF7F0;
+  font-size: 28px;
+  margin-bottom: 6px;
+  color: #1a2744;
   letter-spacing: -0.02em;
+}
+
+.login-sub {
+  text-align: center;
+  font-family: "Gaegu", cursive;
+  font-size: 15px;
+  font-weight: 700;
+  color: #5a6b8a;
+  margin-bottom: 24px;
 }
 
 .tabs {
@@ -47,62 +88,117 @@ body {
   margin-bottom: 22px;
   border-radius: 14px;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(0, 0, 0, 0.15);
+  border: 2px solid #d4dce8;
+  background: #eef2f8;
+  padding: 4px;
+  gap: 4px;
 }
+
 .tab {
   flex: 1;
-  padding: 13px;
+  padding: 11px 8px;
   border: none;
+  border-radius: 10px;
   background: transparent;
-  color: #B8D4C4;
+  color: #6b7a96;
   font-size: 15px;
   font-family: "Jua", sans-serif;
   cursor: pointer;
-  transition: all 0.2s;
-}
-.tab.active {
-  background: linear-gradient(180deg, #FFE566, #FFD93D);
-  color: #3D2812;
+  transition: all 0.2s ease;
 }
 
-#authForm { display: flex; flex-direction: column; gap: 12px; }
+.tab.active {
+  background: linear-gradient(180deg, #fff 0%, #f5f8fc 100%);
+  color: #1a2744;
+  box-shadow: 0 2px 8px rgba(26, 39, 68, 0.12);
+}
+
+#authForm {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
 #authForm input {
   padding: 15px 16px;
   font-size: 17px;
   font-family: "Gaegu", cursive;
   font-weight: 700;
-  border: 1.5px solid rgba(255, 255, 255, 0.14);
+  border: 2px solid #d4dce8;
   border-radius: 14px;
-  background: rgba(0, 0, 0, 0.2);
-  color: #FAF7F0;
+  background: #fff;
+  color: #1a2744;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
-#authForm input::placeholder { color: rgba(250, 247, 240, 0.45); }
+
+#authForm input::placeholder {
+  color: #a0aec0;
+}
+
 #authForm input:focus {
   outline: none;
-  border-color: #FFD93D;
-  box-shadow: 0 0 0 3px rgba(255, 217, 61, 0.22);
+  border-color: #4a90d9;
+  box-shadow: 0 0 0 3px rgba(74, 144, 217, 0.2);
 }
+
 #submitBtn {
   padding: 15px;
   font-size: 17px;
   font-family: "Jua", sans-serif;
-  background: linear-gradient(180deg, #FFE566, #FFD93D);
-  color: #3D2812;
+  background: linear-gradient(180deg, #5dade2 0%, #3498db 100%);
+  color: #fff;
   border: none;
   border-radius: 14px;
   cursor: pointer;
   margin-top: 4px;
-  box-shadow: 0 4px 0 #E6B800;
-  transition: transform 0.15s;
+  box-shadow: 0 4px 0 #2471a3, 0 8px 20px rgba(52, 152, 219, 0.35);
+  transition: transform 0.15s, box-shadow 0.15s;
 }
-#submitBtn:active { transform: translateY(2px); box-shadow: 0 2px 0 #E6B800; }
-#authError {
-  color: #FF6B6B;
+
+#submitBtn:hover {
+  filter: brightness(1.05);
+}
+
+#submitBtn:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 #2471a3, 0 4px 12px rgba(52, 152, 219, 0.3);
+}
+
+#submitBtn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.msg {
   font-size: 14px;
   min-height: 20px;
   text-align: center;
   font-family: "Gaegu", cursive;
   font-weight: 700;
+}
+
+.msg.error { color: #e74c3c; }
+.msg.ok { color: #27ae60; }
+
+@media (max-width: 520px) {
+  body {
+    background-position: center 30%;
+    padding: 16px;
+  }
+
+  .login-card {
+    padding: 28px 22px 24px;
+    border-radius: 20px;
+  }
+
+  .login-card h1 {
+    font-size: 24px;
+  }
+}
+
+@media (orientation: portrait) and (max-height: 700px) {
+  body {
+    align-items: flex-start;
+    padding-top: 32px;
+  }
 }

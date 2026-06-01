@@ -4,24 +4,27 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>우리반 채팅 · 로그인</title>
-  <link rel="stylesheet" href="/css/login.css" />
+  <link rel="stylesheet" href="/css/login.css?v=3" />
 </head>
 <body>
-  <div class="login-card">
-    <h1>🏫 우리반 칠판</h1>
-    <div class="tabs">
-      <button id="tabLogin" class="tab active">로그인</button>
-      <button id="tabSignup" class="tab">회원가입</button>
-    </div>
+  <div class="login-wrap">
+    <div class="login-card">
+      <h1>🏫 우리반 칠판</h1>
+      <p class="login-sub">선생님 로그인 · 회원가입</p>
+      <div class="tabs">
+        <button id="tabLogin" type="button" class="tab active">로그인</button>
+        <button id="tabSignup" type="button" class="tab">회원가입</button>
+      </div>
 
-    <form id="authForm">
-      <input id="idInput" type="text" placeholder="아이디" autocomplete="username" />
-      <input id="pwInput" type="password" placeholder="비밀번호" autocomplete="current-password" />
-      <button id="submitBtn" type="submit">로그인</button>
-      <p id="msg" class="msg"></p>
-    </form>
+      <form id="authForm">
+        <input id="idInput" type="text" placeholder="아이디" maxlength="24" autocomplete="username" />
+        <input id="pwInput" type="password" placeholder="비밀번호" autocomplete="current-password" />
+        <button id="submitBtn" type="submit">로그인</button>
+        <p id="msg" class="msg"></p>
+      </form>
+    </div>
   </div>
 
-  <script src="/js/login.js"></script>
+  <script src="/js/login.js?v=2"></script>
 </body>
 </html>
