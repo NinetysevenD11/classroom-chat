@@ -9,6 +9,14 @@ import fs from "fs";
 import crypto from "crypto";
 import { spawn } from "child_process";
 import { fileURLToPath } from "url";
+import {
+  initStorage,
+  users,
+  studentProfiles,
+  sessionSecret,
+  saveUser,
+  saveStudentProfilesData,
+} from "./storage.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -27,39 +35,7 @@ const io = new Server(httpServer, {
   pingInterval: 25000,
 });
 
-// ----- 회원/세션 -----
-const USERS_FILE = path.join(__dirname, "users.json");
-const SECRET_FILE = path.join(__dirname, ".session_secret");
-
-let users = {};
-function loadUsers() {
-  try {
-    users = JSON.parse(fs.readFileSync(USERS_FILE, "utf8"));
-  } catch (_) {
-    users = {};
-  }
-}
-function saveUsers() {
-  fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
-}
-loadUsers();
-
 // ----- 학생 프로필 (교사별, 번호+이름으로 저장) -----
-const PROFILES_FILE = path.join(__dirname, "student_profiles.json");
-let studentProfiles = {};
-
-function loadStudentProfiles() {
-  try {
-    studentProfiles = JSON.parse(fs.readFileSync(PROFILES_FILE, "utf8"));
-  } catch (_) {
-    studentProfiles = {};
-  }
-}
-function saveStudentProfiles() {
-  fs.writeFileSync(PROFILES_FILE, JSON.stringify(studentProfiles, null, 2));
-}
-loadStudentProfiles();
-
 function profileKey(seat, name) {
   const n = String(name || "").trim();
   if (!n) return null;
@@ -86,7 +62,7 @@ function setStudentProfilePhoto(userId, seat, name, photo) {
     delete studentProfiles[userId][key];
     if (!Object.keys(studentProfiles[userId]).length) delete studentProfiles[userId];
   }
-  saveStudentProfiles();
+  saveStudentProfilesData().catch((err) => console.error("[저장] 프로필 저장 실패:", err));
 }
 
 function validatePhotoData(photo) {
@@ -117,14 +93,6 @@ function applyStudentPhoto(room, userId, seat, photo) {
   const sid = room.seatSocket[seat];
   if (sid) io.to(sid).emit("you:photo", { photo: s.photo });
   return { ok: true, photo: s.photo };
-}
-
-let sessionSecret;
-try {
-  sessionSecret = fs.readFileSync(SECRET_FILE, "utf8");
-} catch (_) {
-  sessionSecret = crypto.randomBytes(32).toString("hex");
-  try { fs.writeFileSync(SECRET_FILE, sessionSecret); } catch (_) {}
 }
 
 function hashPassword(password, salt) {
@@ -190,6 +158,9 @@ function findTeacherRoom() {
 app.set("trust proxy", 1);
 
 const isProd = process.env.NODE_ENV === "production";
+
+await initStorage();
+
 const sessionMiddleware = session({
   secret: sessionSecret,
   resave: false,
@@ -209,7 +180,7 @@ app.get("/login", (req, res) => {
 });
 
 // 회원가입 (아이디 + 비밀번호만)
-app.post("/api/signup", (req, res) => {
+app.post("/api/signup", async (req, res) => {
   const id = (req.body && req.body.id || "").trim();
   const password = (req.body && req.body.password) || "";
   if (!id || !password) return res.json({ ok: false, error: "아이디와 비밀번호를 입력하세요." });
@@ -217,10 +188,14 @@ app.post("/api/signup", (req, res) => {
   if (password.length < 4) return res.json({ ok: false, error: "비밀번호는 4자 이상이어야 합니다." });
   if (users[id]) return res.json({ ok: false, error: "이미 존재하는 아이디입니다." });
   const u = makeUser(password);
-  users[id] = u;
-  saveUsers();
-  req.session.userId = id;
-  res.json({ ok: true });
+  try {
+    await saveUser(id, u);
+    req.session.userId = id;
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("[저장] 회원가입 저장 실패:", err);
+    res.json({ ok: false, error: "회원 정보를 저장하지 못했습니다. 잠시 후 다시 시도해 주세요." });
+  }
 });
 
 // 로그인
