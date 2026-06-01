@@ -406,7 +406,7 @@ kickAllBtn.addEventListener("click", async () => {
 const themeBtn = document.getElementById("themeBtn");
 function applyTheme(theme) {
   document.documentElement.setAttribute("data-theme", theme);
-  themeBtn.textContent = theme === "light" ? "☀️" : "🌙";
+  themeBtn.textContent = theme === "light" ? "☀️" : "🌿";
   localStorage.setItem("theme", theme);
   if (pipWindow && !pipWindow.closed) {
     pipWindow.document.documentElement.setAttribute("data-theme", theme);
