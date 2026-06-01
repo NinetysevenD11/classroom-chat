@@ -5,7 +5,22 @@ import { MongoClient } from "mongodb";
 import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const MONGODB_URI = process.env.MONGODB_URI;
+
+function getMongoUri() {
+  return (process.env.MONGODB_URI || "").trim();
+}
+
+function normalizeMongoUri(uri) {
+  if (!uri) return uri;
+  let out = uri;
+  if (!/\/[a-zA-Z0-9_-]+(\?|$)/.test(out.replace(/\/\/[^/]+@/, "//x@"))) {
+    out = out.replace(/\.mongodb\.net(\/?)(\?|$)/, ".mongodb.net/classroom_chat$2");
+  }
+  if (!/retryWrites=/.test(out)) {
+    out += (out.includes("?") ? "&" : "?") + "retryWrites=true&w=majority";
+  }
+  return out;
+}
 
 function resolveDataDir() {
   if (process.env.DATA_DIR) return process.env.DATA_DIR;
@@ -150,27 +165,39 @@ async function importFileDataToMongo() {
 export async function initStorage() {
   ensureDataDir();
 
-  if (MONGODB_URI) {
-    mongoClient = new MongoClient(MONGODB_URI);
-    await mongoClient.connect();
-    mongoDb = mongoClient.db(process.env.MONGODB_DB || "classroom_chat");
+  const mongoUri = getMongoUri();
+  if (mongoUri) {
+    const uri = normalizeMongoUri(mongoUri);
+    console.log("[저장] MongoDB 연결 시도 중...");
+    try {
+      mongoClient = new MongoClient(uri, {
+        serverSelectionTimeoutMS: 15000,
+        connectTimeoutMS: 15000,
+      });
+      await mongoClient.connect();
+      mongoDb = mongoClient.db(process.env.MONGODB_DB || "classroom_chat");
 
-    users = {};
-    const userDocs = await mongoDb.collection("users").find().toArray();
-    for (const doc of userDocs) {
-      users[doc._id] = { salt: doc.salt, hash: doc.hash, room: doc.room };
+      users = {};
+      const userDocs = await mongoDb.collection("users").find().toArray();
+      for (const doc of userDocs) {
+        users[doc._id] = { salt: doc.salt, hash: doc.hash, room: doc.room };
+      }
+
+      const profileDoc = await mongoDb.collection("profiles").findOne({ _id: "main" });
+      studentProfiles = profileDoc?.data || {};
+
+      const rosterDoc = await mongoDb.collection("rosters").findOne({ _id: "main" });
+      classRosters = rosterDoc?.data || {};
+
+      await importFileDataToMongo();
+      await loadSessionSecret();
+      console.log("[저장] MongoDB 연결됨 — 회원·프로필이 배포 후에도 유지됩니다.");
+      return;
+    } catch (err) {
+      console.error("[저장] MongoDB 연결 실패:", err.message);
+      console.error("       Atlas → Network Access에 0.0.0.0/0 이 있는지 확인하세요.");
+      throw err;
     }
-
-    const profileDoc = await mongoDb.collection("profiles").findOne({ _id: "main" });
-    studentProfiles = profileDoc?.data || {};
-
-    const rosterDoc = await mongoDb.collection("rosters").findOne({ _id: "main" });
-    classRosters = rosterDoc?.data || {};
-
-    await importFileDataToMongo();
-    await loadSessionSecret();
-    console.log("[저장] MongoDB 연결됨 — 회원·프로필이 배포 후에도 유지됩니다.");
-    return;
   }
 
   loadUsersFromFile();
