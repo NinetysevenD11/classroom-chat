@@ -20,11 +20,11 @@
     <div class="join-wrap">
       <div class="join-logo">💬</div>
       <h1>우리반 칠판</h1>
-      <p class="join-desc">이름과 번호를 입력하고 참여하세요</p>
+      <p class="join-desc">매번 이름과 번호를 입력해야 참여할 수 있어요</p>
       <div class="join-form">
-        <input id="nameInput" type="text" placeholder="이름" maxlength="12" autocomplete="name" />
-        <input id="seatInput" type="number" inputmode="numeric" min="1" max="19" placeholder="번호 (1~19)" />
-        <p class="sub-hint">번호를 비우면 빈 자리에 자동 배정돼요</p>
+        <input id="nameInput" type="text" placeholder="이름" maxlength="12" autocomplete="off" />
+        <input id="seatInput" type="number" inputmode="numeric" min="1" max="19" placeholder="번호 (1~19)" required autocomplete="off" />
+        <p class="sub-hint">본인 자리 번호를 정확히 입력해 주세요</p>
         <button id="joinBtn" type="button">참여하기</button>
         <p id="joinError" class="error"></p>
       </div>
@@ -81,6 +81,6 @@
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
-  <script src="/js/student.js?v=3"></script>
+  <script src="/js/student.js?v=4"></script>
 </body>
 </html>

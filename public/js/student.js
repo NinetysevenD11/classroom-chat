@@ -59,13 +59,15 @@ if (window.location.search.includes("room=")) {
 }
 
 const clientId = (() => {
-  let id = localStorage.getItem("chatClientId");
+  let id = sessionStorage.getItem("chatClientId");
   if (!id) {
     id = Math.random().toString(36).slice(2) + Date.now().toString(36);
-    localStorage.setItem("chatClientId", id);
+    sessionStorage.setItem("chatClientId", id);
   }
   return id;
 })();
+
+localStorage.removeItem("chatSession");
 
 function showEl(el) {
   if (!el) return;
@@ -168,6 +170,9 @@ function showJoinView() {
   hideEl(questionOverlay);
   showEl(joinView);
   setJoined(false);
+  nameInput.value = "";
+  seatInput.value = "";
+  joinError.textContent = "";
 }
 
 function updateMyPhoto(photo) {
@@ -233,7 +238,6 @@ function doJoin(name, seatRaw, opts = {}) {
       setJoined(false);
       if (opts.auto) {
         active = false;
-        localStorage.removeItem("chatSession");
         showJoinView();
       } else {
         joinError.textContent = (res && res.error) || "참여에 실패했습니다.";
@@ -247,7 +251,6 @@ function doJoin(name, seatRaw, opts = {}) {
     isMuted = !!res.muted;
     if (isMuted) showEl(muteBanner);
     else hideEl(muteBanner);
-    localStorage.setItem("chatSession", JSON.stringify({ name: myName, seat: mySeat }));
     showChatView();
     setJoined(true);
     updateHandBtn(!!res.handRaised);
@@ -268,30 +271,19 @@ function join() {
     joinError.textContent = "이름을 입력해 주세요.";
     return;
   }
-  if (seatRaw !== "") {
-    const n = Number(seatRaw);
-    if (!Number.isInteger(n) || n < 1 || n > 19) {
-      joinError.textContent = "번호는 1~19 사이로 입력해 주세요.";
-      return;
-    }
+  if (!seatRaw) {
+    joinError.textContent = "번호를 입력해 주세요.";
+    return;
+  }
+  const n = Number(seatRaw);
+  if (!Number.isInteger(n) || n < 1 || n > 19) {
+    joinError.textContent = "번호는 1~19 사이로 입력해 주세요.";
+    return;
   }
   joinBtn.disabled = true;
   joinError.textContent = "";
   doJoin(name, seatRaw, {});
 }
-
-(function restoreSession() {
-  if (isKicked) return;
-  try {
-    const saved = JSON.parse(localStorage.getItem("chatSession") || "null");
-    if (saved && saved.name) {
-      active = true;
-      myName = saved.name;
-      mySeat = saved.seat;
-      showChatView();
-    }
-  } catch (_) {}
-})();
 
 socket.on("connect", () => {
   if (active && myName && !isKicked) {
@@ -365,7 +357,6 @@ socket.on("you:kicked", () => {
   isKicked = true;
   active = false;
   setJoined(false);
-  localStorage.removeItem("chatSession");
   hideEl(joinView);
   hideEl(chatView);
   hideEl(questionOverlay);

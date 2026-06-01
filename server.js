@@ -378,51 +378,38 @@ io.on("connection", (socket) => {
     socket.data.userId = userId;
     socket.data.role = "student";
 
-    // 같은 기기(clientId)가 이 교실에서 이미 가진 자리가 있으면 되찾기
+    const trimmedName = String(name || "").trim();
+    if (!trimmedName) {
+      cb && cb({ ok: false, error: "이름을 입력해 주세요." });
+      return;
+    }
+
+    const chosen = Number(seat);
+    if (!Number.isInteger(chosen) || chosen < 1 || chosen > STUDENT_SEATS) {
+      cb && cb({ ok: false, error: `번호는 1~${STUDENT_SEATS} 사이로 입력해 주세요.` });
+      return;
+    }
+    if (seats[chosen].online) {
+      cb && cb({ ok: false, error: `${chosen}번은 이미 사용 중이에요. 다른 번호를 입력해 주세요.` });
+      return;
+    }
+
     if (clientId) {
-      const ownedKey = Object.keys(seats).find((i) => seats[i].clientId === clientId);
-      if (ownedKey) {
-        const s = Number(ownedKey);
-        const oldSid = seatSocket[s];
-        if (oldSid && oldSid !== socket.id) delete socketSeat[oldSid];
-        seats[s].online = true;
-        if (name) seats[s].name = String(name).slice(0, 12);
-        seats[s].photo = loadSeatProfilePhoto(userId, s, seats[s].name);
-        socketSeat[socket.id] = s;
-        seatSocket[s] = socket.id;
-        cb &&
-          cb({
-            ok: true,
-            seat: s,
-            name: seats[s].name,
-            muted: seats[s].muted,
-            photo: seats[s].photo,
-            handRaised: !!seats[s].handRaised,
-            question: room.activeQuestion || null,
-          });
-        notifyTeachers(userId, "seat:update", { seat: s, data: seats[s] });
-        return;
+      for (let i = 1; i <= STUDENT_SEATS; i++) {
+        if (i !== chosen && seats[i].clientId === clientId) {
+          clearOccupant(seats[i]);
+          delete seatSocket[i];
+          notifyTeachers(userId, "seat:update", { seat: i, data: seats[i] });
+        }
       }
     }
 
-    let chosen = Number(seat);
-    if (seat === "" || seat === null || seat === undefined || Number.isNaN(chosen)) {
-      chosen = nextFreeSeat(seats);
-      if (!chosen) {
-        cb && cb({ ok: false, error: "자리가 모두 찼습니다." });
-        return;
-      }
-    } else {
-      if (chosen < 1 || chosen > STUDENT_SEATS) {
-        cb && cb({ ok: false, error: `번호는 1~${STUDENT_SEATS} 사이여야 합니다.` });
-        return;
-      }
-      if (seats[chosen].name) {
-        cb && cb({ ok: false, error: `${chosen}번은 이미 사용 중이에요. 다른 번호를 입력해 주세요.` });
-        return;
-      }
+    if (!seats[chosen].online) {
+      seats[chosen].messages = [];
+      seats[chosen].lastMessage = null;
+      seats[chosen].handRaised = false;
     }
-    seats[chosen].name = (name || `학생${chosen}`).slice(0, 12);
+    seats[chosen].name = trimmedName.slice(0, 12);
     seats[chosen].online = true;
     seats[chosen].muted = false;
     seats[chosen].clientId = clientId || null;

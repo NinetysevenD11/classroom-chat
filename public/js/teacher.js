@@ -259,9 +259,19 @@ function speakText(text, tile) {
   window.speechSynthesis.speak(utter);
 }
 
+function lowerHandIfRaised(seat) {
+  if (seat === TEACHER_SEAT) return;
+  const tile = tiles[seat];
+  if (!tile || !tile.classList.contains("hand-raised")) return;
+  socket.emit("teacher:lowerHand", { seat });
+}
+
 function speakSeat(seat, tile) {
   if (mutedSeats[seat]) return; // 음소거된 학생은 읽지 않음
-  speakText(lastMessages[seat], tile);
+  const text = lastMessages[seat];
+  if (!text) return;
+  lowerHandIfRaised(seat);
+  speakText(text, tile);
 }
 
 // ----- 소켓 이벤트 -----
@@ -439,6 +449,21 @@ qrModal.addEventListener("click", (e) => {
   if (e.target === qrModal) qrModal.classList.add("hidden");
 });
 
+// ----- 사용 설명서 -----
+const helpModal = document.getElementById("helpModal");
+document.getElementById("helpBtn").addEventListener("click", () => {
+  helpModal.classList.remove("hidden");
+});
+document.getElementById("helpClose").addEventListener("click", () =>
+  helpModal.classList.add("hidden")
+);
+document.getElementById("helpCloseBtn").addEventListener("click", () =>
+  helpModal.classList.add("hidden")
+);
+helpModal.addEventListener("click", (e) => {
+  if (e.target === helpModal) helpModal.classList.add("hidden");
+});
+
 // ===== 전체 질문 (화면 중앙) =====
 const questionOverlay = document.getElementById("questionOverlay");
 const questionText = document.getElementById("questionText");
@@ -611,7 +636,10 @@ function renderPanelLog() {
     const speak = document.createElement("button");
     speak.textContent = "🔊";
     speak.title = "읽기";
-    speak.addEventListener("click", () => speakText(m.text, tiles[panelSeat]));
+    speak.addEventListener("click", () => {
+      lowerHandIfRaised(panelSeat);
+      speakText(m.text, tiles[panelSeat]);
+    });
     const edit = document.createElement("button");
     edit.textContent = "✏️";
     edit.title = "수정";
