@@ -4,44 +4,176 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>우리반 칠판 · 관리자</title>
-  <link rel="stylesheet" href="/css/admin.css?v=2" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/admin.css?v=3" />
 </head>
 <body>
-  <header class="admin-top">
-    <h1>🛡️ 관리자</h1>
-    <p class="admin-sub">선생님 비밀번호 · 명단 확인 · 탈퇴 처리</p>
-    <div class="admin-actions">
-      <button type="button" id="refreshBtn" class="btn secondary">새로고침</button>
-      <button type="button" id="logoutBtn" class="btn secondary">로그아웃</button>
-    </div>
-  </header>
-
-  <main class="admin-main">
-    <p id="loadError" class="load-error hidden"></p>
-
-    <section class="panel">
-      <h2>선생님 계정 <span id="teacherCount" class="badge">0</span></h2>
-      <p class="panel-hint" id="activeHint"></p>
-      <div id="teacherList" class="teacher-list"></div>
-    </section>
-
-    <section class="panel">
-      <h2>최근 로그인 기록</h2>
-      <div class="table-wrap">
-        <table class="log-table">
-          <thead>
-            <tr>
-              <th>시간</th>
-              <th>아이디</th>
-              <th>구분</th>
-            </tr>
-          </thead>
-          <tbody id="loginLogBody"></tbody>
-        </table>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <span class="brand-icon">🏫</span>
+        <span class="brand-name">우리반 칠판</span>
       </div>
-    </section>
-  </main>
+      <div class="clinic-card">
+        <span class="clinic-label">관리 콘솔</span>
+        <span class="clinic-name">Classroom Admin</span>
+      </div>
 
-  <script src="/js/admin.js?v=2"></script>
+      <nav class="side-nav">
+        <p class="nav-group">계정</p>
+        <button type="button" class="nav-item active" data-tab="teachers">
+          <span class="nav-icon">👥</span> 선생님 계정
+        </button>
+        <button type="button" class="nav-item" data-tab="logs">
+          <span class="nav-icon">📋</span> 로그인 기록
+        </button>
+      </nav>
+
+      <div class="sidebar-foot">
+        <a href="/login" class="nav-item subtle" id="logoutLink">🚪 로그아웃</a>
+      </div>
+    </aside>
+
+    <div class="main-wrap">
+      <header class="topbar">
+        <div class="topbar-left">
+          <h1 class="page-title" id="pageTitle">선생님 계정</h1>
+        </div>
+        <div class="topbar-center">
+          <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="search" id="globalSearch" placeholder="아이디·학생 이름 검색..." autocomplete="off" />
+          </div>
+        </div>
+        <div class="topbar-right">
+          <button type="button" class="icon-btn" id="refreshBtn" title="새로고침">↻</button>
+          <div class="user-chip">
+            <span class="user-avatar">🛡️</span>
+            <div class="user-meta">
+              <span class="user-name">관리자</span>
+              <span class="user-role">Super admin</span>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main class="content">
+        <p id="loadError" class="alert-error hidden"></p>
+
+        <section class="stats-grid">
+          <article class="stat-card">
+            <span class="stat-label">등록 선생님</span>
+            <span class="stat-value" id="statTeachers">0</span>
+          </article>
+          <article class="stat-card">
+            <span class="stat-label">접속 중</span>
+            <span class="stat-value accent-green" id="statOnline">0</span>
+          </article>
+          <article class="stat-card">
+            <span class="stat-label">등록 학생 (명단)</span>
+            <span class="stat-value accent-blue" id="statStudents">0</span>
+          </article>
+          <article class="stat-card wide">
+            <span class="stat-label">활성 교사 화면</span>
+            <p class="stat-hint" id="activeHint">—</p>
+            <div class="progress-legend" id="onlineLegend"></div>
+          </article>
+        </section>
+
+        <section class="panel" id="panelTeachers">
+          <div class="panel-head">
+            <div class="tabs">
+              <button type="button" class="tab active" data-tab="teachers">선생님 목록</button>
+              <button type="button" class="tab" data-tab="logs">로그인 기록</button>
+            </div>
+            <span class="record-count" id="teacherCount">0 records</span>
+          </div>
+          <div class="table-toolbar">
+            <div class="search-box compact">
+              <span class="search-icon">🔍</span>
+              <input type="search" id="tableSearch" placeholder="테이블 검색..." autocomplete="off" />
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>아이디</th>
+                  <th>상태</th>
+                  <th>마지막 로그인</th>
+                  <th>비밀번호</th>
+                  <th>우리반 학생</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="teacherTableBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="panel hidden" id="panelLogs">
+          <div class="panel-head">
+            <div class="tabs">
+              <button type="button" class="tab" data-tab="teachers">선생님 목록</button>
+              <button type="button" class="tab active" data-tab="logs">로그인 기록</button>
+            </div>
+            <span class="record-count" id="logCount">0 records</span>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>시간</th>
+                  <th>아이디</th>
+                  <th>구분</th>
+                </tr>
+              </thead>
+              <tbody id="loginLogBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <!-- 명단 모달 -->
+  <div id="rosterModal" class="modal hidden">
+    <div class="modal-dialog">
+      <div class="modal-head">
+        <h2 id="rosterModalTitle">우리반 학생</h2>
+        <button type="button" class="modal-close" data-close="rosterModal">✕</button>
+      </div>
+      <div class="modal-body" id="rosterModalBody"></div>
+    </div>
+  </div>
+
+  <!-- 비밀번호 변경 모달 -->
+  <div id="pwModal" class="modal hidden">
+    <div class="modal-dialog small">
+      <div class="modal-head">
+        <h2 id="pwModalTitle">비밀번호 변경</h2>
+        <button type="button" class="modal-close" data-close="pwModal">✕</button>
+      </div>
+      <div class="modal-body">
+        <label class="field-label">새 비밀번호 (4자 이상)</label>
+        <input type="password" id="pwModalInput" class="field-input" maxlength="32" autocomplete="new-password" />
+        <div class="modal-actions">
+          <button type="button" class="btn ghost" data-close="pwModal">취소</button>
+          <button type="button" class="btn primary" id="pwModalSave">저장</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 행 메뉴 -->
+  <div id="rowMenu" class="row-menu hidden">
+    <button type="button" data-menu="roster">📋 명단 보기</button>
+    <button type="button" data-menu="reset-pw">🔑 비밀번호 변경</button>
+    <button type="button" data-menu="delete" class="danger">🗑️ 탈퇴</button>
+  </div>
+
+  <script src="/js/admin.js?v=3"></script>
 </body>
 </html>
