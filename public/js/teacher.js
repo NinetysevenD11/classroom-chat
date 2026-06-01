@@ -513,6 +513,81 @@ helpModal.addEventListener("click", (e) => {
   if (e.target === helpModal) helpModal.classList.add("hidden");
 });
 
+// ----- 우리반 학생 명단 -----
+const rosterModal = document.getElementById("rosterModal");
+const rosterList = document.getElementById("rosterList");
+const rosterError = document.getElementById("rosterError");
+const rosterSaveBtn = document.getElementById("rosterSave");
+let savedRoster = {};
+
+function escapeAttr(s) {
+  return String(s).replace(/[&<>"]/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])
+  );
+}
+
+function buildRosterForm(roster = {}) {
+  rosterList.innerHTML = "";
+  for (let i = 1; i <= 19; i++) {
+    const row = document.createElement("div");
+    row.className = "roster-row";
+    const val = roster[i] || roster[String(i)] || "";
+    row.innerHTML = `<span class="roster-no">${i}번</span><input type="text" data-seat="${i}" maxlength="12" placeholder="이름" value="${escapeAttr(val)}" autocomplete="off" />`;
+    rosterList.appendChild(row);
+  }
+}
+
+function openRosterModal() {
+  rosterError.textContent = "";
+  buildRosterForm(savedRoster);
+  rosterModal.classList.remove("hidden");
+}
+
+function closeRosterModal() {
+  rosterModal.classList.add("hidden");
+  rosterError.textContent = "";
+}
+
+function collectRosterFromForm() {
+  const roster = {};
+  rosterList.querySelectorAll("input[data-seat]").forEach((inp) => {
+    const v = inp.value.trim();
+    if (v) roster[inp.dataset.seat] = v;
+  });
+  return roster;
+}
+
+document.getElementById("rosterBtn").addEventListener("click", () => {
+  socket.emit("teacher:getRoster", (res) => {
+    if (res && res.ok) savedRoster = res.roster || {};
+    openRosterModal();
+  });
+});
+
+rosterSaveBtn.addEventListener("click", () => {
+  rosterError.textContent = "";
+  rosterSaveBtn.disabled = true;
+  socket.emit("teacher:setRoster", { roster: collectRosterFromForm() }, (res) => {
+    rosterSaveBtn.disabled = false;
+    if (res && res.ok) {
+      savedRoster = res.roster || {};
+      closeRosterModal();
+      return;
+    }
+    rosterError.textContent = (res && res.error) || "저장에 실패했습니다.";
+  });
+});
+
+document.getElementById("rosterClose").addEventListener("click", closeRosterModal);
+document.getElementById("rosterCloseBtn").addEventListener("click", closeRosterModal);
+rosterModal.addEventListener("click", (e) => {
+  if (e.target === rosterModal) closeRosterModal();
+});
+
+socket.on("roster:data", (roster) => {
+  savedRoster = roster || {};
+});
+
 // ===== 전체 질문 (화면 중앙) =====
 const questionOverlay = document.getElementById("questionOverlay");
 const questionText = document.getElementById("questionText");

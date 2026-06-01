@@ -16,6 +16,8 @@ import {
   sessionSecret,
   saveUser,
   saveStudentProfilesData,
+  getClassRoster,
+  saveClassRoster,
 } from "./storage.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -329,6 +331,34 @@ function nextFreeSeat(seats) {
   return null;
 }
 
+function normalizeRoster(raw) {
+  const roster = {};
+  if (!raw || typeof raw !== "object") return roster;
+  for (let i = 1; i <= STUDENT_SEATS; i++) {
+    const name = String(raw[i] ?? raw[String(i)] ?? "").trim().slice(0, 12);
+    if (name) roster[i] = name;
+  }
+  return roster;
+}
+
+function rosterHasEntries(roster) {
+  return Object.keys(roster).some((k) => roster[k]);
+}
+
+function validateStudentAgainstRoster(userId, seat, name) {
+  const roster = getClassRoster(userId);
+  if (!rosterHasEntries(roster)) return null;
+
+  const expected = roster[seat];
+  if (!expected) {
+    return `${seat}번은 우리반 명단에 없어요. 선생님께 확인해 주세요.`;
+  }
+  if (expected !== name) {
+    return `${seat}번 자리는 '${expected}' 학생이에요. 이름을 확인해 주세요.`;
+  }
+  return null;
+}
+
 io.on("connection", (socket) => {
   socket.on("teacher:join", () => {
     const userId = getTeacherUserId(socket);
@@ -339,7 +369,33 @@ io.on("connection", (socket) => {
     activeTeacherId = userId;
     socket.join(teacherChannel(userId));
     socket.emit("state", room.seats);
+    socket.emit("roster:data", getClassRoster(userId));
     if (room.activeQuestion) socket.emit("question:show", room.activeQuestion);
+  });
+
+  socket.on("teacher:getRoster", (cb) => {
+    const userId = getTeacherUserId(socket);
+    if (!userId) {
+      cb && cb({ ok: false, error: "로그인이 필요합니다." });
+      return;
+    }
+    cb && cb({ ok: true, roster: getClassRoster(userId) });
+  });
+
+  socket.on("teacher:setRoster", async ({ roster }, cb) => {
+    const userId = getTeacherUserId(socket);
+    if (!userId) {
+      cb && cb({ ok: false, error: "로그인이 필요합니다." });
+      return;
+    }
+    try {
+      const normalized = normalizeRoster(roster);
+      await saveClassRoster(userId, normalized);
+      cb && cb({ ok: true, roster: normalized });
+    } catch (err) {
+      console.error("[저장] 명단 저장 실패:", err);
+      cb && cb({ ok: false, error: "명단을 저장하지 못했습니다." });
+    }
   });
 
   socket.on("student:join", ({ name, seat, clientId }, cb) => {
@@ -366,6 +422,12 @@ io.on("connection", (socket) => {
     }
     if (seats[chosen].online) {
       cb && cb({ ok: false, error: `${chosen}번은 이미 사용 중이에요. 다른 번호를 입력해 주세요.` });
+      return;
+    }
+
+    const rosterError = validateStudentAgainstRoster(userId, chosen, trimmedName);
+    if (rosterError) {
+      cb && cb({ ok: false, error: rosterError });
       return;
     }
 

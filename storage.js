@@ -15,6 +15,7 @@ function resolveDataDir() {
 const DATA_DIR = resolveDataDir();
 const USERS_FILE = path.join(DATA_DIR, "users.json");
 const PROFILES_FILE = path.join(DATA_DIR, "student_profiles.json");
+const ROSTERS_FILE = path.join(DATA_DIR, "class_rosters.json");
 const SECRET_FILE = path.join(DATA_DIR, ".session_secret");
 
 let mongoClient = null;
@@ -22,6 +23,7 @@ let mongoDb = null;
 
 export let users = {};
 export let studentProfiles = {};
+export let classRosters = {};
 export let sessionSecret = "";
 
 function ensureDataDir() {
@@ -56,6 +58,19 @@ function saveProfilesToFile() {
   fs.writeFileSync(PROFILES_FILE, JSON.stringify(studentProfiles, null, 2));
 }
 
+function loadRostersFromFile() {
+  try {
+    classRosters = JSON.parse(fs.readFileSync(ROSTERS_FILE, "utf8"));
+  } catch (_) {
+    classRosters = {};
+  }
+}
+
+function saveRostersToFile() {
+  ensureDataDir();
+  fs.writeFileSync(ROSTERS_FILE, JSON.stringify(classRosters, null, 2));
+}
+
 async function loadSessionSecret() {
   if (process.env.SESSION_SECRET) {
     sessionSecret = process.env.SESSION_SECRET;
@@ -88,11 +103,15 @@ async function loadSessionSecret() {
 async function importFileDataToMongo() {
   const fileUsers = {};
   const fileProfiles = {};
+  const fileRosters = {};
   try {
     Object.assign(fileUsers, JSON.parse(fs.readFileSync(USERS_FILE, "utf8")));
   } catch (_) {}
   try {
     Object.assign(fileProfiles, JSON.parse(fs.readFileSync(PROFILES_FILE, "utf8")));
+  } catch (_) {}
+  try {
+    Object.assign(fileRosters, JSON.parse(fs.readFileSync(ROSTERS_FILE, "utf8")));
   } catch (_) {}
 
   if (!Object.keys(users).length && Object.keys(fileUsers).length) {
@@ -116,6 +135,16 @@ async function importFileDataToMongo() {
     );
     console.log("[저장] 기존 student_profiles.json을 MongoDB로 옮겼습니다.");
   }
+
+  if (!Object.keys(classRosters).length && Object.keys(fileRosters).length) {
+    classRosters = fileRosters;
+    await mongoDb.collection("rosters").updateOne(
+      { _id: "main" },
+      { $set: { data: classRosters } },
+      { upsert: true }
+    );
+    console.log("[저장] 기존 class_rosters.json을 MongoDB로 옮겼습니다.");
+  }
 }
 
 export async function initStorage() {
@@ -135,6 +164,9 @@ export async function initStorage() {
     const profileDoc = await mongoDb.collection("profiles").findOne({ _id: "main" });
     studentProfiles = profileDoc?.data || {};
 
+    const rosterDoc = await mongoDb.collection("rosters").findOne({ _id: "main" });
+    classRosters = rosterDoc?.data || {};
+
     await importFileDataToMongo();
     await loadSessionSecret();
     console.log("[저장] MongoDB 연결됨 — 회원·프로필이 배포 후에도 유지됩니다.");
@@ -143,6 +175,7 @@ export async function initStorage() {
 
   loadUsersFromFile();
   loadProfilesFromFile();
+  loadRostersFromFile();
   await loadSessionSecret();
 
   if (process.env.RENDER === "true") {
@@ -179,4 +212,21 @@ export async function saveStudentProfilesData() {
     return;
   }
   saveProfilesToFile();
+}
+
+export function getClassRoster(userId) {
+  return classRosters[userId] || {};
+}
+
+export async function saveClassRoster(userId, roster) {
+  classRosters[userId] = roster;
+  if (mongoDb) {
+    await mongoDb.collection("rosters").updateOne(
+      { _id: "main" },
+      { $set: { data: classRosters } },
+      { upsert: true }
+    );
+    return;
+  }
+  saveRostersToFile();
 }

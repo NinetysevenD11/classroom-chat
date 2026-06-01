@@ -11,10 +11,11 @@
     <h1>🏫 우리반 칠판</h1>
     <div class="hint">아바타를 <b>클릭</b>하면 마지막 채팅을 분필로 읽어줍니다 🔊</div>
     <button id="kickAllBtn" class="danger-btn" title="모든 학생을 한 번에 내보내기">전체 강퇴</button>
-    <button id="themeBtn" class="icon-btn" title="칠판/밝은 칠판 전환">🌙</button>
     <button id="pipBtn" class="float-btn" title="PPT 위에 떠 있는 작은 창으로 보기">🪟 플로팅 창</button>
+    <button id="rosterBtn" class="class-btn" title="우리반 학생 명단">👥 우리반 학생</button>
     <button id="qrBtn" class="qr-btn">📱 참여 QR 코드</button>
     <button id="helpBtn" class="icon-btn" title="사용 설명서">📖</button>
+    <button id="themeBtn" class="icon-btn" title="칠판/밝은 칠판 전환">🌙</button>
     <button id="logoutBtn" class="icon-btn" title="로그아웃">🚪</button>
   </header>
 
@@ -89,6 +90,23 @@
     </div>
   </div>
 
+  <!-- 우리반 학생 명단 -->
+  <div id="rosterModal" class="modal hidden">
+    <div class="roster-box">
+      <div class="roster-head">
+        <h2>👥 우리반 학생 명단</h2>
+        <button type="button" id="rosterClose" class="help-close" title="닫기">✕</button>
+      </div>
+      <p class="roster-desc">번호와 이름을 입력해 저장하세요. 저장 후 학생은 <b>같은 번호·이름</b>으로만 입장할 수 있어요.</p>
+      <div id="rosterList" class="roster-list"></div>
+      <p id="rosterError" class="roster-error"></p>
+      <div class="roster-actions">
+        <button type="button" id="rosterSave" class="close-btn">저장</button>
+        <button type="button" id="rosterCloseBtn" class="confirm-btn cancel">닫기</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 확인 창 (전체 강퇴, 채팅 초기화 등) -->
   <div id="confirmModal" class="modal hidden">
     <div class="confirm-box">
@@ -120,9 +138,11 @@
         <section>
           <h3>1. 수업 시작하기</h3>
           <ul>
-            <li>교사 화면에 로그인한 뒤, 상단 <b>📱 참여 QR 코드</b>를 눌러 학생들에게 QR을 보여 주세요.</li>
+            <li>교사 화면에 로그인한 뒤, <b>👥 우리반 학생</b>에서 번호·이름 명단을 저장하세요.</li>
+            <li>상단 <b>📱 참여 QR 코드</b>를 눌러 학생들에게 QR을 보여 주세요.</li>
             <li>학생은 휴대폰으로 QR을 스캔해 <b>/student</b> 페이지에 들어갑니다.</li>
             <li>학생은 <b>매번 이름과 자리 번호</b>를 입력해야 참여할 수 있습니다.</li>
+            <li>명단을 저장한 경우, 학생은 <b>선생님이 등록한 이름·번호와 같을 때만</b> 입장할 수 있어요.</li>
           </ul>
         </section>
         <section>
