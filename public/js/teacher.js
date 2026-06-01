@@ -214,10 +214,54 @@ function toggleMute(seat) {
   socket.emit("teacher:mute", { seat, muted: !mutedSeats[seat] });
 }
 
-function kickSeat(seat) {
+// ----- 확인 창 (브라우저 confirm 대체) -----
+const confirmModal = document.getElementById("confirmModal");
+const confirmMessage = document.getElementById("confirmMessage");
+const confirmOk = document.getElementById("confirmOk");
+const confirmCancel = document.getElementById("confirmCancel");
+let confirmResolve = null;
+
+function showConfirm(message, options = {}) {
+  return new Promise((resolve) => {
+    confirmResolve = resolve;
+    confirmMessage.textContent = message;
+    confirmOk.textContent = options.okText || "확인";
+    confirmCancel.textContent = options.cancelText || "취소";
+    confirmOk.classList.toggle("danger", !!options.danger);
+    confirmModal.classList.remove("hidden");
+    confirmOk.focus();
+  });
+}
+
+function closeConfirm(result) {
+  confirmModal.classList.add("hidden");
+  confirmOk.classList.remove("danger");
+  if (confirmResolve) {
+    const fn = confirmResolve;
+    confirmResolve = null;
+    fn(result);
+  }
+}
+
+confirmOk.addEventListener("click", () => closeConfirm(true));
+confirmCancel.addEventListener("click", () => closeConfirm(false));
+confirmModal.addEventListener("click", (e) => {
+  if (e.target === confirmModal) closeConfirm(false);
+});
+document.addEventListener("keydown", (e) => {
+  if (confirmModal.classList.contains("hidden")) return;
+  if (e.key === "Escape") closeConfirm(false);
+});
+
+async function kickSeat(seat) {
   const tile = tiles[seat];
   const name = tile.querySelector(".name").textContent;
-  if (confirm(`${seat}번 (${name}) 학생을 퇴장시킬까요?`)) {
+  if (
+    await showConfirm(`${seat}번 (${name}) 학생을 퇴장시킬까요?`, {
+      danger: true,
+      okText: "퇴장",
+    })
+  ) {
     socket.emit("teacher:kick", { seat });
   }
 }
@@ -338,7 +382,7 @@ teacherChatForm.addEventListener("submit", (e) => {
 
 // ----- 로그아웃 -----
 document.getElementById("logoutBtn").addEventListener("click", async () => {
-  if (!confirm("로그아웃할까요?")) return;
+  if (!(await showConfirm("로그아웃할까요?", { okText: "로그아웃" }))) return;
   try {
     await fetch("/api/logout", { method: "POST" });
   } catch (_) {}
@@ -347,8 +391,13 @@ document.getElementById("logoutBtn").addEventListener("click", async () => {
 
 // ----- 전체 강퇴 -----
 const kickAllBtn = document.getElementById("kickAllBtn");
-kickAllBtn.addEventListener("click", () => {
-  if (confirm("모든 학생을 한 번에 내보낼까요?\n(자리는 비워지고, 각 학생 프로필은 저장돼요.)")) {
+kickAllBtn.addEventListener("click", async () => {
+  if (
+    await showConfirm(
+      "모든 학생을 한 번에 내보낼까요?\n(자리는 비워지고, 각 학생 프로필은 저장돼요.)",
+      { danger: true, okText: "전체 강퇴" }
+    )
+  ) {
     socket.emit("teacher:kickAll");
   }
 });
@@ -503,8 +552,13 @@ socket.on("question:show", (q) => showQuestion(q));
 socket.on("question:clear", () => hideQuestion());
 
 // ===== 채팅 초기화 =====
-document.getElementById("resetChatsBtn").addEventListener("click", () => {
-  if (confirm("교사 화면의 모든 채팅을 지울까요?\n(학생 휴대폰 화면은 그대로 남습니다.)")) {
+document.getElementById("resetChatsBtn").addEventListener("click", async () => {
+  if (
+    await showConfirm(
+      "교사 화면의 모든 채팅을 지울까요?\n(학생 휴대폰 화면은 그대로 남습니다.)",
+      { okText: "초기화" }
+    )
+  ) {
     socket.emit("teacher:resetChats");
   }
 });

@@ -752,6 +752,59 @@ body.pip-mode .teacher-chat button {
   font-family: var(--font-ui);
 }
 
+.confirm-box {
+  background: #fff8e7;
+  color: #2a3d2e;
+  width: min(420px, 92vw);
+  padding: 28px 26px 22px;
+  border-radius: var(--radius-xl);
+  border: 12px solid var(--wood);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+  font-family: var(--font-ui);
+  text-align: center;
+}
+.confirm-message {
+  font-size: 16px;
+  line-height: 1.65;
+  color: #2a3d2e;
+  margin-bottom: 22px;
+  white-space: pre-line;
+  font-family: var(--font-chalk);
+  font-weight: 700;
+}
+.confirm-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.confirm-btn {
+  min-width: 96px;
+  padding: 10px 22px;
+  border-radius: var(--radius-md);
+  font-size: 15px;
+  font-family: var(--font-ui);
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: filter 0.15s;
+}
+.confirm-btn:hover { filter: brightness(1.05); }
+.confirm-btn.cancel {
+  background: rgba(42, 93, 62, 0.1);
+  color: #2a5d3e;
+  border-color: rgba(42, 93, 62, 0.25);
+}
+.confirm-btn.ok {
+  background: #2a5d3e;
+  color: #fff8e7;
+  border-color: #1e4620;
+}
+.confirm-btn.ok.danger {
+  background: #c0392b;
+  border-color: #922b21;
+  color: #fff;
+}
+
 .toolbar {
   display: flex;
   flex-wrap: wrap;
