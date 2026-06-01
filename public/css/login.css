@@ -11,7 +11,8 @@ body {
   justify-content: center;
   padding: 24px 20px;
   -webkit-font-smoothing: antialiased;
-  background-color: #eef2f8;
+  background-color: #f5f5f5;
+  background-image: url("/images/login-bg-doodle-light.png");
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -24,25 +25,10 @@ body::before {
   inset: 0;
   pointer-events: none;
   z-index: 0;
-}
-
-body.bg-light::before {
   background: radial-gradient(
     ellipse 60% 75% at 50% 50%,
-    rgba(255, 255, 255, 0.05) 0%,
-    rgba(255, 255, 255, 0.42) 100%
-  );
-}
-
-body.bg-dark {
-  background-color: #1a2744;
-}
-
-body.bg-dark::before {
-  background: radial-gradient(
-    ellipse 55% 70% at 50% 50%,
-    rgba(10, 18, 38, 0.1) 0%,
-    rgba(10, 18, 38, 0.48) 100%
+    rgba(255, 255, 255, 0.08) 0%,
+    rgba(255, 255, 255, 0.38) 100%
   );
 }
 

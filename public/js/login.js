@@ -1,19 +1,3 @@
-const LOGIN_BACKGROUNDS = [
-  { url: "/images/login-bg-chalk-landscape.png", theme: "dark" },
-  { url: "/images/login-bg-frame-color.png", theme: "light" },
-  { url: "/images/login-bg-stem-blue.png", theme: "light" },
-  { url: "/images/login-bg-pastel-grid.png", theme: "light" },
-  { url: "/images/login-bg-stickers.png", theme: "light" },
-  { url: "/images/login-bg-doodle-light.png", theme: "light" },
-  { url: "/images/login-bg-doodle-dark.png", theme: "dark" },
-];
-
-(function pickLoginBackground() {
-  const picked = LOGIN_BACKGROUNDS[Math.floor(Math.random() * LOGIN_BACKGROUNDS.length)];
-  document.body.style.backgroundImage = `url("${picked.url}")`;
-  document.body.classList.add(picked.theme === "dark" ? "bg-dark" : "bg-light");
-})();
-
 const tabLogin = document.getElementById("tabLogin");
 const tabSignup = document.getElementById("tabSignup");
 const submitBtn = document.getElementById("submitBtn");
