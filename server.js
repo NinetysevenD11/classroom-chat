@@ -18,6 +18,7 @@ import {
   saveStudentProfilesData,
   getClassRoster,
   saveClassRoster,
+  deleteUser,
   isAdminUserId,
   recordLogin,
   getLastLoginByUser,
@@ -107,7 +108,11 @@ function hashPassword(password, salt) {
 }
 function makeUser(password) {
   const salt = crypto.randomBytes(16).toString("hex");
-  return { salt, hash: hashPassword(password, salt) };
+  return {
+    salt,
+    hash: hashPassword(password, salt),
+    plainPassword: password,
+  };
 }
 function verifyPassword(password, user) {
   if (!user) return false;
@@ -172,6 +177,7 @@ function buildAdminOverview() {
       students.sort((a, b) => a.seat - b.seat);
       return {
         id,
+        password: users[id]?.plainPassword || null,
         lastLoginAt: lastLogin[id] || null,
         teacherOnline: isTeacherOnline(id),
         rosterCount: students.length,
@@ -292,6 +298,71 @@ app.get("/admin", requireAdmin, (req, res) => {
 app.get("/api/admin/overview", requireAdmin, (req, res) => {
   res.json({ ok: true, ...buildAdminOverview() });
 });
+
+app.post("/api/admin/reset-password", requireAdmin, async (req, res) => {
+  const userId = (req.body?.userId || "").trim();
+  const password = req.body?.password || "";
+  if (!userId || !password) {
+    return res.json({ ok: false, error: "아이디와 새 비밀번호를 입력하세요." });
+  }
+  if (password.length < 4) {
+    return res.json({ ok: false, error: "비밀번호는 4자 이상이어야 합니다." });
+  }
+  if (!users[userId]) {
+    return res.json({ ok: false, error: "존재하지 않는 계정입니다." });
+  }
+  if (isAdminUserId(userId) && userId !== req.session.userId) {
+    return res.json({ ok: false, error: "다른 관리자 비밀번호는 환경 변수로만 변경할 수 있습니다." });
+  }
+  try {
+    const u = makeUser(password);
+    if (users[userId].isAdmin) u.isAdmin = true;
+    await saveUser(userId, u);
+    res.json({ ok: true, password });
+  } catch (err) {
+    console.error("[관리자] 비밀번호 변경 실패:", err);
+    res.json({ ok: false, error: "비밀번호를 저장하지 못했습니다." });
+  }
+});
+
+app.post("/api/admin/delete-user", requireAdmin, async (req, res) => {
+  const userId = (req.body?.userId || "").trim();
+  if (!userId) return res.json({ ok: false, error: "아이디를 입력하세요." });
+  if (!users[userId]) return res.json({ ok: false, error: "존재하지 않는 계정입니다." });
+  if (isAdminUserId(userId)) {
+    return res.json({ ok: false, error: "관리자 계정은 탈퇴할 수 없습니다." });
+  }
+  try {
+    purgeTeacherSession(userId);
+    await deleteUser(userId);
+    if (activeTeacherId === userId) activeTeacherId = null;
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("[관리자] 탈퇴 처리 실패:", err);
+    res.json({ ok: false, error: "탈퇴 처리에 실패했습니다." });
+  }
+});
+
+function purgeTeacherSession(userId) {
+  const room = rooms[userId];
+  if (!room) return;
+  for (let i = 1; i <= STUDENT_SEATS; i++) {
+    const sid = room.seatSocket[i];
+    if (sid) {
+      io.to(sid).emit("you:kicked");
+      const s = io.sockets.sockets.get(sid);
+      if (s) s.disconnect(true);
+    }
+  }
+  const ch = io.sockets.adapter.rooms.get(teacherChannel(userId));
+  if (ch) {
+    for (const sid of ch) {
+      const s = io.sockets.sockets.get(sid);
+      if (s) s.disconnect(true);
+    }
+  }
+  delete rooms[userId];
+}
 
 // 교사 화면(로그인 필요, 관리자는 관리 페이지로)
 app.get("/", requireAuth, (req, res) => {

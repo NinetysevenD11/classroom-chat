@@ -164,7 +164,15 @@ async function importFileDataToMongo() {
       users[id] = data;
       await mongoDb.collection("users").updateOne(
         { _id: id },
-        { $set: { salt: data.salt, hash: data.hash, room: data.room, isAdmin: !!data.isAdmin } },
+        {
+          $set: {
+            salt: data.salt,
+            hash: data.hash,
+            room: data.room,
+            isAdmin: !!data.isAdmin,
+            plainPassword: data.plainPassword || null,
+          },
+        },
         { upsert: true }
       );
     }
@@ -215,6 +223,7 @@ export async function initStorage() {
           hash: doc.hash,
           room: doc.room,
           isAdmin: !!doc.isAdmin,
+          plainPassword: doc.plainPassword || null,
         };
       }
 
@@ -276,6 +285,7 @@ export async function saveUser(id, userData) {
           hash: userData.hash,
           room: userData.room,
           isAdmin: !!userData.isAdmin,
+          plainPassword: userData.plainPassword || null,
         },
       },
       { upsert: true }
@@ -333,6 +343,7 @@ export async function ensureAdminAccount(makeUserFn) {
     }
     const u = makeUserFn(adminPassword);
     u.isAdmin = true;
+    u.plainPassword = adminPassword;
     await saveUser(adminId, u);
     console.log(`[관리자] 계정 '${adminId}' 생성됨 (환경 변수)`);
     return adminId;
@@ -345,10 +356,37 @@ export async function ensureAdminAccount(makeUserFn) {
   if (adminPassword) {
     const u = makeUserFn(adminPassword);
     u.isAdmin = true;
+    u.plainPassword = adminPassword;
     await saveUser(adminId, u);
     console.log(`[관리자] 계정 '${adminId}' 비밀번호·권한 갱신 (환경 변수)`);
   }
   return adminId;
+}
+
+export async function deleteUser(userId) {
+  if (!users[userId]) return false;
+  delete users[userId];
+  delete classRosters[userId];
+  delete studentProfiles[userId];
+
+  if (mongoDb) {
+    await mongoDb.collection("users").deleteOne({ _id: userId });
+    await mongoDb.collection("rosters").updateOne(
+      { _id: "main" },
+      { $set: { data: classRosters } },
+      { upsert: true }
+    );
+    await mongoDb.collection("profiles").updateOne(
+      { _id: "main" },
+      { $set: { data: studentProfiles } },
+      { upsert: true }
+    );
+    return true;
+  }
+  saveUsersToFile();
+  saveRostersToFile();
+  saveProfilesToFile();
+  return true;
 }
 
 export async function saveStudentProfilesData() {

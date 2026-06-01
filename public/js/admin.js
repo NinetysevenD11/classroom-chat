@@ -24,6 +24,15 @@ function escapeHtml(s) {
     .replace(/"/g, "&quot;");
 }
 
+function escapeAttr(s) {
+  return escapeHtml(s).replace(/'/g, "&#39;");
+}
+
+function passwordLabel(pw) {
+  if (pw) return escapeHtml(pw);
+  return '<span class="pw-unknown">미확인 (아래에서 재설정)</span>';
+}
+
 function renderTeachers(teachers, activeTeacherId) {
   teacherCount.textContent = String(teachers.length);
   if (activeTeacherId) {
@@ -46,13 +55,22 @@ function renderTeachers(teachers, activeTeacherId) {
         : '<p class="roster-empty">우리반 학생 명단이 비어 있습니다.</p>';
 
       return `
-        <article class="teacher-card">
+        <article class="teacher-card" data-user-id="${escapeAttr(t.id)}">
           <div class="teacher-card-head">
             <span class="teacher-id">${escapeHtml(t.id)}</span>
             <span class="status ${t.teacherOnline ? "online" : "offline"}">${
         t.teacherOnline ? "교사 화면 접속 중" : "오프라인"
       }</span>
             <span class="last-login">마지막 로그인: ${fmtTime(t.lastLoginAt)}</span>
+          </div>
+          <div class="pw-row">
+            <span class="pw-label">비밀번호</span>
+            <code class="pw-value">${passwordLabel(t.password)}</code>
+          </div>
+          <div class="admin-row">
+            <input type="password" class="pw-input" data-pw-for="${escapeAttr(t.id)}" placeholder="새 비밀번호 (4자 이상)" maxlength="32" autocomplete="new-password" />
+            <button type="button" class="btn small" data-action="reset-pw" data-user-id="${escapeAttr(t.id)}">비밀번호 변경</button>
+            <button type="button" class="btn small danger" data-action="delete-user" data-user-id="${escapeAttr(t.id)}">탈퇴</button>
           </div>
           <div class="roster-title">우리반 학생 (${t.rosterCount}명)</div>
           ${rosterHtml}
@@ -96,6 +114,76 @@ async function loadOverview() {
     loadError.classList.remove("hidden");
   }
 }
+
+async function resetPassword(userId, password) {
+  const res = await fetch("/api/admin/reset-password", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ userId, password }),
+  });
+  const data = await res.json();
+  if (!data.ok) throw new Error(data.error || "비밀번호 변경 실패");
+  return data.password;
+}
+
+async function deleteUser(userId) {
+  const res = await fetch("/api/admin/delete-user", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ userId }),
+  });
+  const data = await res.json();
+  if (!data.ok) throw new Error(data.error || "탈퇴 실패");
+}
+
+teacherList.addEventListener("click", async (e) => {
+  const btn = e.target.closest("button[data-action]");
+  if (!btn) return;
+  const userId = btn.dataset.userId;
+  const action = btn.dataset.action;
+
+  if (action === "reset-pw") {
+    const card = btn.closest(".teacher-card");
+    const inp = card?.querySelector(".pw-input");
+    const password = inp?.value?.trim();
+    if (!password || password.length < 4) {
+      alert("새 비밀번호는 4자 이상이어야 합니다.");
+      return;
+    }
+    btn.disabled = true;
+    try {
+      const newPw = await resetPassword(userId, password);
+      alert(`'${userId}' 비밀번호가 변경되었습니다.\n\n새 비밀번호: ${newPw}`);
+      if (inp) inp.value = "";
+      await loadOverview();
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      btn.disabled = false;
+    }
+    return;
+  }
+
+  if (action === "delete-user") {
+    if (
+      !confirm(
+        `'${userId}' 계정을 탈퇴 처리할까요?\n\n명단·프로필 데이터도 함께 삭제되며 되돌릴 수 없습니다.`
+      )
+    ) {
+      return;
+    }
+    btn.disabled = true;
+    try {
+      await deleteUser(userId);
+      alert(`'${userId}' 계정이 삭제되었습니다.`);
+      await loadOverview();
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      btn.disabled = false;
+    }
+  }
+});
 
 document.getElementById("refreshBtn").addEventListener("click", loadOverview);
 document.getElementById("logoutBtn").addEventListener("click", async () => {

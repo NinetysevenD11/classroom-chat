@@ -136,6 +136,55 @@ body {
   border-radius: 8px;
 }
 
+.pw-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+.pw-label { font-weight: 600; color: #555; flex-shrink: 0; }
+.pw-value {
+  font-family: Consolas, "Malgun Gothic", monospace;
+  background: #fff;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid #dde1e6;
+  word-break: break-all;
+}
+.pw-unknown { color: #999; font-style: italic; font-family: inherit; }
+
+.admin-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.pw-input {
+  flex: 1;
+  min-width: 140px;
+  padding: 8px 12px;
+  font-size: 14px;
+  border: 1px solid #dde1e6;
+  border-radius: 8px;
+  font-family: inherit;
+}
+.btn.small {
+  padding: 7px 12px;
+  font-size: 13px;
+  background: #3498db;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.btn.small:hover { filter: brightness(1.05); }
+.btn.small.danger {
+  background: #c0392b;
+}
+.btn.small:disabled { opacity: 0.5; cursor: not-allowed; }
+
 .table-wrap { overflow-x: auto; }
 .log-table {
   width: 100%;
