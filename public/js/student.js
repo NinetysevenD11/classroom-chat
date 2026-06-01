@@ -5,8 +5,6 @@ const socket = io({
   reconnectionDelayMax: 4000,
 });
 
-// 화면이 다시 보이거나(잠금 해제/탭 복귀) 인터넷이 돌아오면 즉시 재연결한다.
-// (모바일은 백그라운드에서 JS가 멈춰 연결이 끊길 수 있는데, 돌아오면 바로 복구)
 function ensureConnected() {
   if (socket.disconnected) socket.connect();
 }
@@ -32,7 +30,6 @@ const raiseHandBtn = document.getElementById("raiseHandBtn");
 const joinStatus = document.getElementById("joinStatus");
 const muteBanner = document.getElementById("muteBanner");
 const kickedOverlay = document.getElementById("kickedOverlay");
-const themeBtn = document.getElementById("themeBtn");
 const questionOverlay = document.getElementById("questionOverlay");
 const questionText = document.getElementById("questionText");
 const profilePhotoBtn = document.getElementById("profilePhotoBtn");
@@ -52,17 +49,15 @@ let myName = null;
 let myPhoto = null;
 let isMuted = false;
 let isKicked = false;
-let active = false; // 한 번이라도 참여에 성공했는지
-let joined = false; // 서버에 등록 완료 여부 (채팅 가능)
+let active = false;
+let joined = false;
 let handRaised = false;
 let pendingChat = null;
 
-// 예전 QR(?room=...) 북마크 정리
 if (window.location.search.includes("room=")) {
   history.replaceState({}, "", "/student");
 }
 
-// 기기 고유 ID (재연결/새로고침 시 같은 자리를 되찾기 위함)
 const clientId = (() => {
   let id = localStorage.getItem("chatClientId");
   if (!id) {
@@ -72,51 +67,48 @@ const clientId = (() => {
   return id;
 })();
 
-// ----- 라이트/다크 모드 -----
-function applyTheme(theme) {
-  document.documentElement.setAttribute("data-theme", theme);
-  themeBtn.textContent = theme === "light" ? "☀️" : "🌙";
-  localStorage.setItem("theme", theme);
+function showEl(el) {
+  if (!el) return;
+  el.hidden = false;
+  el.classList.remove("hidden");
 }
-applyTheme(localStorage.getItem("theme") || "dark");
-themeBtn.addEventListener("click", () => {
-  const cur = document.documentElement.getAttribute("data-theme");
-  applyTheme(cur === "light" ? "dark" : "light");
-});
+function hideEl(el) {
+  if (!el) return;
+  el.hidden = true;
+  el.classList.add("hidden");
+}
 
 function setJoined(on) {
   joined = on;
   chatInput.disabled = !on || isKicked;
   chatSendBtn.disabled = !on || isKicked;
   raiseHandBtn.disabled = !on || isKicked;
-  joinStatus.classList.toggle("hidden", on || !active);
-  if (on) chatInput.placeholder = "칠판에 쓸 메시지를 입력하세요";
-  else if (active) chatInput.placeholder = "연결 중... 잠시만 기다려 주세요";
+  if (on || !active) hideEl(joinStatus);
+  else showEl(joinStatus);
+  chatInput.placeholder = on ? "메시지를 입력하세요" : "연결 중...";
 }
 
 function updateHandBtn(raised) {
   handRaised = !!raised;
   raiseHandBtn.classList.toggle("active", handRaised);
-  raiseHandBtn.querySelector(".raise-hand-label").textContent = handRaised ? "손 내리기" : "손들기";
+  raiseHandBtn.title = handRaised ? "손 내리기" : "손들기";
 }
 
 function toggleRaiseHand() {
   if (!joined || isKicked) return;
   socket.emit("student:raiseHand", { raised: !handRaised, clientId }, (res) => {
     if (res && res.ok) updateHandBtn(res.handRaised);
-    else if (res && res.error) {
-      doJoin(myName, mySeat, { auto: true });
-    }
+    else if (res && res.error) doJoin(myName, mySeat, { auto: true });
   });
 }
 
 function showQuestion(q) {
   if (!q || !q.text) return;
   questionText.textContent = q.text;
-  questionOverlay.classList.remove("hidden");
+  showEl(questionOverlay);
 }
 function hideQuestion() {
-  questionOverlay.classList.add("hidden");
+  hideEl(questionOverlay);
   questionText.textContent = "";
 }
 
@@ -132,8 +124,8 @@ function sendChat(text) {
   if (!text || isKicked) return;
   if (!joined) {
     pendingChat = text;
-    joinStatus.classList.remove("hidden");
-    joinStatus.textContent = "교실에 연결하는 중...";
+    joinStatus.textContent = "연결 중...";
+    showEl(joinStatus);
     return;
   }
   socket.emit("student:chat", { text, clientId }, (res) => {
@@ -152,23 +144,29 @@ function sendChat(text) {
       doJoin(myName, mySeat, { auto: true });
       return;
     }
-    joinStatus.classList.remove("hidden");
-    joinStatus.textContent = "메시지 전송 실패. 다시 시도해 주세요.";
+    joinStatus.textContent = "전송 실패. 다시 시도해 주세요.";
+    showEl(joinStatus);
   });
 }
+
 function showChatView() {
   myInfo.textContent = `${mySeat}번 · ${myName}`;
   updateMyPhoto(myPhoto);
-  joinView.classList.add("hidden");
-  chatView.classList.remove("hidden");
+  hideEl(joinView);
+  showEl(chatView);
+  hideEl(kickedOverlay);
+  hideEl(questionOverlay);
   if (!joined) {
-    joinStatus.classList.remove("hidden");
-    joinStatus.textContent = "교실에 연결하는 중...";
+    joinStatus.textContent = "연결 중...";
+    showEl(joinStatus);
   }
 }
+
 function showJoinView() {
-  chatView.classList.add("hidden");
-  joinView.classList.remove("hidden");
+  hideEl(chatView);
+  hideEl(kickedOverlay);
+  hideEl(questionOverlay);
+  showEl(joinView);
   setJoined(false);
 }
 
@@ -176,12 +174,12 @@ function updateMyPhoto(photo) {
   myPhoto = photo || null;
   if (myPhoto) {
     profilePhotoImg.src = myPhoto;
-    profilePhotoImg.classList.remove("hidden");
-    profilePhotoEmoji.classList.add("hidden");
+    showEl(profilePhotoImg);
+    hideEl(profilePhotoEmoji);
   } else {
-    profilePhotoImg.classList.add("hidden");
+    hideEl(profilePhotoImg);
     profilePhotoImg.removeAttribute("src");
-    profilePhotoEmoji.classList.remove("hidden");
+    showEl(profilePhotoEmoji);
     profilePhotoEmoji.textContent = SEAT_AVATAR[mySeat] || "🙂";
   }
 }
@@ -227,7 +225,6 @@ function uploadMyPhoto(photo) {
   });
 }
 
-// 실제 참여 요청. opts.auto=true 면 재연결/복원용(실패해도 조용히 참여 화면으로).
 function doJoin(name, seatRaw, opts = {}) {
   setJoined(false);
   socket.emit("student:join", { name, seat: seatRaw, clientId }, (res) => {
@@ -248,7 +245,8 @@ function doJoin(name, seatRaw, opts = {}) {
     myName = res.name;
     myPhoto = res.photo || null;
     isMuted = !!res.muted;
-    muteBanner.classList.toggle("hidden", !isMuted);
+    if (isMuted) showEl(muteBanner);
+    else hideEl(muteBanner);
     localStorage.setItem("chatSession", JSON.stringify({ name: myName, seat: mySeat }));
     showChatView();
     setJoined(true);
@@ -282,7 +280,6 @@ function join() {
   doJoin(name, seatRaw, {});
 }
 
-// 새로고침 후 저장된 세션 자동 복원
 (function restoreSession() {
   if (isKicked) return;
   try {
@@ -296,7 +293,6 @@ function join() {
   } catch (_) {}
 })();
 
-// 최초 연결 + 재연결 때마다, 이미 참여한 적이 있으면 같은 자리로 자동 재참여
 socket.on("connect", () => {
   if (active && myName && !isKicked) {
     doJoin(myName, mySeat, { auto: true });
@@ -321,7 +317,6 @@ chatForm.addEventListener("submit", (e) => {
   chatInput.focus();
 });
 
-// 교사가 보낸 다이렉트 메시지
 socket.on("teacher:dm", ({ text }) => {
   const wrap = document.createElement("div");
   wrap.className = "msg-teacher";
@@ -336,25 +331,19 @@ function escapeHtml(s) {
   );
 }
 
-// 교사가 음소거/해제
 socket.on("you:muted", ({ muted }) => {
   isMuted = muted;
-  muteBanner.classList.toggle("hidden", !muted);
+  if (muted) showEl(muteBanner);
+  else hideEl(muteBanner);
 });
 
-// 프로필 사진 변경 (선생님 또는 본인)
-socket.on("you:photo", ({ photo }) => {
-  updateMyPhoto(photo);
-});
-
+socket.on("you:photo", ({ photo }) => updateMyPhoto(photo));
 socket.on("question:show", (q) => showQuestion(q));
 socket.on("question:clear", () => hideQuestion());
+socket.on("you:handLowered", () => updateHandBtn(false));
 
 document.getElementById("questionClose").addEventListener("click", hideQuestion);
 document.getElementById("questionCloseBtn").addEventListener("click", hideQuestion);
-
-socket.on("you:handLowered", () => updateHandBtn(false));
-
 raiseHandBtn.addEventListener("click", toggleRaiseHand);
 
 profilePhotoBtn.addEventListener("click", () => {
@@ -366,20 +355,19 @@ profilePhotoInput.addEventListener("change", async (e) => {
   e.target.value = "";
   if (!file || isKicked) return;
   try {
-    const dataUrl = await resizeImageFile(file);
-    uploadMyPhoto(dataUrl);
+    uploadMyPhoto(await resizeImageFile(file));
   } catch (_) {
     alert("사진을 불러오지 못했어요. 다른 사진을 선택해 주세요.");
   }
 });
 
-// 교사가 퇴장 → 자동 복귀하지 않도록 세션 정리
 socket.on("you:kicked", () => {
   isKicked = true;
   active = false;
   setJoined(false);
   localStorage.removeItem("chatSession");
-  kickedOverlay.classList.remove("hidden");
-  chatInput.disabled = true;
-  chatSendBtn.disabled = true;
+  hideEl(joinView);
+  hideEl(chatView);
+  hideEl(questionOverlay);
+  showEl(kickedOverlay);
 });
