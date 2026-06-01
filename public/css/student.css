@@ -61,7 +61,7 @@ html, body {
   font-size: 16px;
   font-family: var(--font);
   border: none;
-  border-radius: 12px;
+  border-radius: 16px;
   background: #fff;
   margin-bottom: 10px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
@@ -82,7 +82,7 @@ html, body {
   font-weight: 700;
   font-family: var(--font);
   border: none;
-  border-radius: 12px;
+  border-radius: 16px;
   background: var(--kakao-my);
   color: var(--text);
   cursor: pointer;
@@ -289,7 +289,7 @@ html, body {
   width: 100%;
   max-width: 480px;
   background: #fff;
-  border-radius: 16px 16px 0 0;
+  border-radius: 24px 24px 0 0;
   padding: 20px 20px calc(20px + env(safe-area-inset-bottom, 0px));
   animation: slideUp 0.25s ease;
 }
@@ -326,7 +326,7 @@ html, body {
   width: 100%;
   padding: 13px;
   border: none;
-  border-radius: 12px;
+  border-radius: 16px;
   background: var(--kakao-my);
   font-size: 15px;
   font-weight: 700;
@@ -347,7 +347,7 @@ html, body {
 }
 .kicked-box {
   background: #fff;
-  border-radius: 16px;
+  border-radius: 24px;
   padding: 36px 28px;
   text-align: center;
   max-width: 300px;
