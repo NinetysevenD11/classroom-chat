@@ -107,11 +107,42 @@ function getAllUnits() {
     for (const sub of exam.subjects || []) {
       if (sub.active === false) continue;
       for (const u of sub.units || []) {
-        units.push({ ...u, subjectName: sub.name, colLabel: `${sub.name}_${u.name}` });
+        units.push({ ...u, subjectName: sub.name, subjectId: sub.id, colLabel: `${sub.name}_${u.name}` });
       }
     }
   }
   return units;
+}
+
+/** 시험 관리에 등록된 활성 과목 목록 */
+function getExamSubjects() {
+  const exam = activeExam();
+  return (exam?.subjects || []).filter((s) => s.active !== false);
+}
+
+function getUnitsForSubject(subjectId) {
+  const exam = activeExam();
+  const sub = exam?.subjects?.find((s) => s.id === subjectId);
+  if (!sub || sub.active === false) return [];
+  return (sub.units || []).map((u) => ({
+    ...u,
+    subjectName: sub.name,
+    subjectId: sub.id,
+    colLabel: `${sub.name}_${u.name}`,
+  }));
+}
+
+/** 성적표에서 보고 있는 과목 (시험 관리 과목과 동일) */
+let gradesSubjectId = null;
+
+function getGradesSubject() {
+  const subjects = getExamSubjects();
+  if (!subjects.length) return null;
+  if (gradesSubjectId && subjects.some((s) => s.id === gradesSubjectId)) {
+    return subjects.find((s) => s.id === gradesSubjectId);
+  }
+  const fromActive = subjects.find((s) => s.id === state.activeSubjectId);
+  return fromActive || subjects[0];
 }
 
 function showAiOverlay(msg) {
@@ -521,9 +552,11 @@ function renderSidebar() {
 function selectSubject(sub) {
   state.activeSubjectId = sub.id;
   state.activeUnitId = sub.units?.[0]?.id || null;
+  gradesSubjectId = sub.id;
   scheduleSave();
   renderSidebar();
-  setView("exam");
+  if (currentView === "grades") renderView("grades");
+  else setView("exam");
 }
 
 function renderLockList() {
@@ -1306,18 +1339,19 @@ function getNumericScore(studentKey, unitId) {
   return Number.isFinite(n) ? n : null;
 }
 
-function buildTrendSeriesBySubject(studentKey) {
+function buildTrendSeriesBySubject(studentKey, subjectIdFilter) {
   const bySubject = {};
-  for (const exam of state?.exams || []) {
-    for (const sub of exam.subjects || []) {
-      if (sub.active === false) continue;
-      const subName = sub.name;
-      if (!bySubject[subName]) bySubject[subName] = [];
-      for (const u of sub.units || []) {
-        const score = getNumericScore(studentKey, u.id);
-        if (score !== null) {
-          bySubject[subName].push({ label: u.name, score, unitId: u.id });
-        }
+  const subjects = subjectIdFilter
+    ? getExamSubjects().filter((s) => s.id === subjectIdFilter)
+    : getExamSubjects();
+
+  for (const sub of subjects) {
+    const subName = sub.name;
+    if (!bySubject[subName]) bySubject[subName] = [];
+    for (const u of sub.units || []) {
+      const score = getNumericScore(studentKey, u.id);
+      if (score !== null) {
+        bySubject[subName].push({ label: u.name, score, unitId: u.id });
       }
     }
   }
@@ -1343,7 +1377,7 @@ function renderTrendCharts(studentKey) {
     return;
   }
 
-  const series = buildTrendSeriesBySubject(studentKey);
+  const series = buildTrendSeriesBySubject(studentKey, gradesSubjectId || undefined);
   const subjects = Object.keys(series);
   if (!subjects.length) {
     grid.innerHTML = `<p class="trend-empty">표시할 점수가 없습니다. 학생이 시험을 제출하면 그래프가 나타납니다.</p>`;
@@ -1554,11 +1588,26 @@ function bindMainNav() {
 function renderGrades() {
   if (!state || !mainEl) return;
   const preservedTrendStudent = trendSelectedStudentKey;
+  const preservedGradesSubject = gradesSubjectId;
   destroyTrendCharts();
   const cls = activeClass();
   const students = getStudentsForGrades();
-  const units = getAllUnits();
-  const unitHeaders = units.map((u) => `<th class="col-unit">${escapeHtml(u.colLabel || u.name)}</th>`).join("");
+  const examSubjects = getExamSubjects();
+  const gradesSub = getGradesSubject();
+  if (gradesSub) gradesSubjectId = gradesSub.id;
+  else gradesSubjectId = preservedGradesSubject;
+
+  const units = gradesSub ? getUnitsForSubject(gradesSub.id) : [];
+  const subjectTabs = examSubjects.length
+    ? examSubjects
+        .map(
+          (s) =>
+            `<button type="button" class="grades-subject-tab ${s.id === gradesSub?.id ? "is-active" : ""}" data-grades-subject="${escapeHtml(s.id)}">${escapeHtml(s.name)}</button>`
+        )
+        .join("")
+    : "";
+
+  const unitHeaders = units.map((u) => `<th class="col-unit">${escapeHtml(u.name)}</th>`).join("");
 
   const rows = students.length
     ? students
@@ -1584,7 +1633,11 @@ function renderGrades() {
             </tr>`;
         })
         .join("")
-    : `<tr><td colspan="${5 + units.length}">칠판 「우리반 학생」에서 명단을 저장하거나, 왼쪽에서 학반을 추가하세요.</td></tr>`;
+    : `<tr><td colspan="${5 + Math.max(units.length, 1)}">${
+        examSubjects.length
+          ? "칠판 「우리반 학생」에서 명단을 저장하거나, 학생이 시험을 제출하면 표시됩니다."
+          : "왼쪽 「+ 새 시험(과목) 추가」로 과목을 만든 뒤 단원을 설정하세요."
+      }</td></tr>`;
 
   mainEl.innerHTML = `
     <div class="view-grades">
@@ -1605,6 +1658,15 @@ function renderGrades() {
         </div>
       </div>
       ${cls ? `<span class="class-badge">${escapeHtml(cls.name)}</span>` : '<span class="class-badge">우리반</span>'}
+      ${
+        examSubjects.length
+          ? `<div class="grades-subject-bar">
+          <span class="grades-subject-label">과목</span>
+          <div class="grades-subject-tabs">${subjectTabs}</div>
+          ${gradesSub ? `<span class="grades-subject-hint">${escapeHtml(gradesSub.name)} · ${units.length}개 단원</span>` : ""}
+        </div>`
+          : `<p class="grades-no-subject">시험 관리에서 과목을 먼저 추가해 주세요.</p>`
+      }
       <div class="grades-table-wrap">
         <table class="grades-table">
           <thead>
@@ -1623,7 +1685,7 @@ function renderGrades() {
 
       <section class="grades-trend-section" aria-label="성적 변화 추이">
         <h2 class="trend-section-title">📈 성적 변화 추이</h2>
-        <p class="trend-section-desc">과목별 단원 시험 점수를 꺾은선 그래프로 확인하고, AI가 성적 변화·강약점·보완 방안을 분석합니다.</p>
+        <p class="trend-section-desc">${gradesSub ? `「${escapeHtml(gradesSub.name)}」` : "선택한 과목의"} 단원 점수 추이와 AI 학습 분석입니다.</p>
         <div class="trend-toolbar">
           <label>
             학생
@@ -1637,6 +1699,17 @@ function renderGrades() {
     </div>`;
 
   trendSelectedStudentKey = preservedTrendStudent;
+  if (preservedGradesSubject) gradesSubjectId = preservedGradesSubject;
+
+  mainEl.querySelectorAll("[data-grades-subject]").forEach((tab) => {
+    tab.addEventListener("click", () => {
+      gradesSubjectId = tab.dataset.gradesSubject;
+      state.activeSubjectId = gradesSubjectId;
+      scheduleSave();
+      renderSidebar();
+      renderGrades();
+    });
+  });
 
   document.getElementById("togglePublish")?.addEventListener("click", async () => {
     state.resultsPublished = !state.resultsPublished;
@@ -1644,6 +1717,7 @@ function renderGrades() {
     renderGrades();
   });
   document.getElementById("excelBtn")?.addEventListener("click", () => {
+    const subLabel = gradesSub?.name || "성적";
     const lines = ["번호,이름," + units.map((u) => u.name).join(",") + ",평균"];
     for (const st of students) {
       const key = `${st.seat}:${st.name}`;
@@ -1651,7 +1725,7 @@ function renderGrades() {
     }
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob(["\uFEFF" + lines.join("\n")], { type: "text/csv;charset=utf-8" }));
-    a.download = "성적.csv";
+    a.download = `${subLabel}_성적.csv`;
     a.click();
   });
   document.getElementById("bulkPrintBtn")?.addEventListener("click", () => {
