@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/grading.css?v=4" />
+  <link rel="stylesheet" href="/css/grading.css?v=5" />
 </head>
 <body class="grading-app">
   <div class="grading-shell">
@@ -92,6 +92,21 @@
     </div>
   </div>
 
+  <div id="studentResultModal" class="g-dialog hidden" role="dialog" aria-modal="true">
+    <div class="g-dialog-backdrop" data-close="studentResultModal"></div>
+    <div class="g-dialog-panel g-dialog-panel-wide">
+      <div class="g-dialog-head">
+        <h3 id="studentResultTitle">학생 결과</h3>
+        <button type="button" class="g-dialog-close" data-close="studentResultModal" aria-label="닫기">✕</button>
+      </div>
+      <div id="studentResultBody" class="g-dialog-body student-result-body"></div>
+      <div class="g-dialog-foot">
+        <button type="button" class="btn btn-print" id="studentResultPrint">인쇄</button>
+        <button type="button" class="btn btn-blue" data-close="studentResultModal">닫기</button>
+      </div>
+    </div>
+  </div>
+
   <div id="gradingDialog" class="g-dialog hidden" role="dialog" aria-modal="true">
     <div class="g-dialog-backdrop" data-close-dialog></div>
     <div class="g-dialog-panel">
@@ -115,6 +130,6 @@
         "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
     }
   </script>
-  <script src="/js/grading.js?v=5"></script>
+  <script src="/js/grading.js?v=6"></script>
 </body>
 </html>

@@ -991,45 +991,67 @@ body {
   color: #7c3aed;
 }
 
-/* ── 성적표 뷰 ── */
+/* ── 성적표 뷰 (레퍼런스 UI) ── */
 .view-grades .grades-head {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 16px;
+  gap: 16px;
+  margin-bottom: 12px;
 }
 
 .view-grades h1 {
-  margin: 0 0 6px;
+  margin: 0 0 10px;
   font-size: 22px;
   font-weight: 800;
+  color: #0f172a;
 }
 
-.legend {
+.legend-block {
   font-size: 12px;
   color: #64748b;
+  line-height: 1.6;
+}
+
+.legend-block p {
+  margin: 0 0 4px;
+}
+
+.legend-block strong {
+  color: #334155;
 }
 
 .grades-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  align-items: center;
 }
 
-.btn-publish.on {
-  background: #16a34a;
+.grades-actions .btn {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.btn-publish.on,
+.btn-publish.off {
+  background: #22c55e;
   color: #fff;
 }
 
 .btn-publish.off {
   background: #94a3b8;
-  color: #fff;
 }
 
 .btn-excel {
-  background: #2563eb;
+  background: #16a34a;
   color: #fff;
 }
 
@@ -1040,13 +1062,13 @@ body {
 
 .class-badge {
   display: inline-block;
-  padding: 4px 12px;
-  border-radius: 999px;
-  background: #ede9fe;
-  color: #6d28d9;
-  font-size: 12px;
+  padding: 6px 14px;
+  border-radius: 8px;
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-size: 13px;
   font-weight: 700;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 
 .grades-table-wrap {
@@ -1060,33 +1082,54 @@ body {
 .grades-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13px;
-  min-width: 800px;
+  font-size: 14px;
+  min-width: 720px;
 }
 
 .grades-table th,
 .grades-table td {
-  padding: 10px 12px;
-  border-bottom: 1px solid #f1f5f9;
+  padding: 12px 10px;
+  border-bottom: 1px solid #e2e8f0;
   text-align: center;
-  white-space: nowrap;
+  vertical-align: middle;
 }
 
 .grades-table th {
   background: #f8fafc;
   font-weight: 700;
-  color: #475569;
-  font-size: 12px;
+  color: #334155;
+  font-size: 13px;
 }
 
 .grades-table td.name {
   text-align: left;
   font-weight: 600;
+  padding-left: 16px;
+}
+
+.grades-table .col-no {
+  text-align: left;
+  padding-left: 16px;
+  white-space: nowrap;
+}
+
+.grades-table .col-score {
+  color: #334155;
 }
 
 .grades-table .avg {
   color: #2563eb;
-  font-weight: 700;
+  font-weight: 800;
+  font-size: 15px;
+}
+
+.grades-table .col-submit {
+  color: #64748b;
+  font-size: 13px;
+}
+
+.grades-table .col-actions {
+  min-width: 280px;
 }
 
 .grades-table .dot {
@@ -1109,15 +1152,15 @@ body {
 .row-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: 6px;
   justify-content: center;
 }
 
 .row-actions button {
-  padding: 4px 8px;
+  padding: 6px 10px;
   border: none;
   border-radius: 6px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   color: #fff;
@@ -1133,11 +1176,89 @@ body {
 }
 
 .row-actions .reset {
-  background: #ea580c;
+  background: #f97316;
 }
 
 .row-actions .del {
-  background: #dc2626;
+  background: #ef4444;
+}
+
+/* 학생 결과 모달 */
+.g-dialog-panel-wide {
+  max-width: 560px;
+  width: 100%;
+}
+
+.student-result-body {
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.result-summary {
+  background: #f8fafc;
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.result-summary .result-avg {
+  color: #2563eb;
+  font-size: 18px;
+}
+
+.result-unit-block {
+  margin-bottom: 18px;
+}
+
+.result-unit-block h4 {
+  margin: 0 0 8px;
+  font-size: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.result-score {
+  color: #2563eb;
+  font-weight: 800;
+}
+
+.result-answers-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.result-answers-table th,
+.result-answers-table td {
+  border: 1px solid #e2e8f0;
+  padding: 6px 8px;
+  text-align: center;
+}
+
+.result-answers-table th {
+  background: #f1f5f9;
+}
+
+@media print {
+  body.grades-print-mode .grading-sidebar,
+  body.grades-print-mode .hub-rail-toggle {
+    display: none !important;
+  }
+
+  body.grades-print-mode .grading-main {
+    width: 100% !important;
+  }
+
+  body.grades-print-mode .row-actions {
+    display: none !important;
+  }
+
+  body.grades-print-mode .grades-actions {
+    display: none !important;
+  }
 }
 
 /* ── 모달 ── */

@@ -876,53 +876,167 @@ function formatSubmitted(ts) {
   });
 }
 
+function displayScore(val) {
+  if (val === "—" || val === undefined || val === null) return "0";
+  if (val === "대기") return "대기";
+  return val;
+}
+
+function calcStudentAverage(studentKey, units) {
+  const scores = units.map((u) => scoreFor(studentKey, u.id));
+  const nums = scores.filter((s) => s !== "—" && s !== "대기" && !isNaN(Number(s)));
+  if (!nums.length) return "0";
+  return (nums.reduce((a, b) => a + Number(b), 0) / nums.length).toFixed(1);
+}
+
+function buildStudentResultHtml(studentKey, seat, name) {
+  const units = getAllUnits();
+  const record = state.studentScores?.[studentKey] || {};
+  const detail = record._detail || {};
+  const online = onlineSeats[seat];
+
+  let rows = "";
+  for (const u of units) {
+    const sc = scoreFor(studentKey, u.id);
+    const d = detail[u.id];
+    const answerLines = d?.detail
+      ? Object.entries(d.detail)
+          .map(([num, info]) => {
+            const mark = info.correct ? "✓" : info.pending ? "⋯" : "✗";
+            return `<tr><td>${num}번</td><td>${mark}</td><td>${escapeHtml(info.given || "—")}</td><td>${info.points}점</td></tr>`;
+          })
+          .join("")
+      : `<tr><td colspan="4">제출 내역 없음</td></tr>`;
+
+    rows += `
+      <section class="result-unit-block">
+        <h4>${escapeHtml(u.colLabel || u.name)} <span class="result-score">${displayScore(sc)}점</span></h4>
+        <table class="result-answers-table">
+          <thead><tr><th>문항</th><th>채점</th><th>학생 답</th><th>배점</th></tr></thead>
+          <tbody>${answerLines}</tbody>
+        </table>
+      </section>`;
+  }
+
+  if (!units.length) {
+    rows = `<p class="muted">등록된 시험(단원)이 없습니다.</p>`;
+  }
+
+  return `
+    <div class="result-summary">
+      <p><span class="dot ${online ? "on" : "off"}"></span> <strong>${escapeHtml(name)}</strong> · ${seat}번</p>
+      <p>평균 <strong class="result-avg">${calcStudentAverage(studentKey, units)}</strong> · 최종 제출 ${formatSubmitted(record._submittedAt)}</p>
+    </div>
+    ${rows}`;
+}
+
+function openStudentResult(studentKey, seat, name) {
+  const modal = document.getElementById("studentResultModal");
+  const body = document.getElementById("studentResultBody");
+  document.getElementById("studentResultTitle").textContent = `${name} (${seat}번) 결과`;
+  body.innerHTML = buildStudentResultHtml(studentKey, seat, name);
+  modal.dataset.studentKey = studentKey;
+  modal.dataset.seat = seat;
+  modal.dataset.studentName = name;
+  modal.classList.remove("hidden");
+}
+
+function closeStudentResultModal() {
+  document.getElementById("studentResultModal")?.classList.add("hidden");
+}
+
+function printStudentReport(studentKey, seat, name) {
+  const html = `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"/><title>${escapeHtml(name)} 성적표</title>
+  <style>body{font-family:sans-serif;padding:24px} h1{font-size:18px} .result-avg{color:#2563eb;font-size:20px}
+  table{width:100%;border-collapse:collapse;margin:12px 0} th,td{border:1px solid #ddd;padding:8px;font-size:13px}
+  th{background:#f5f5f5}</style></head><body>
+  <h1>${escapeHtml(name)} (${seat}번) 시험 결과</h1>
+  ${buildStudentResultHtml(studentKey, seat, name)}
+  </body></html>`;
+  const w = window.open("", "_blank", "width=800,height=700");
+  if (!w) {
+    showToast("팝업이 차단되었습니다.", true);
+    return;
+  }
+  w.document.write(html);
+  w.document.close();
+  w.focus();
+  setTimeout(() => w.print(), 400);
+}
+
+document.querySelectorAll('[data-close="studentResultModal"]').forEach((el) => {
+  el.addEventListener("click", closeStudentResultModal);
+});
+document.getElementById("studentResultPrint")?.addEventListener("click", () => {
+  const modal = document.getElementById("studentResultModal");
+  if (modal.classList.contains("hidden")) return;
+  printStudentReport(modal.dataset.studentKey, modal.dataset.seat, modal.dataset.studentName);
+});
+
 function renderGrades() {
   const cls = activeClass();
   const students = getRosterStudents();
   const units = getAllUnits();
-  const cols = units.map((u) => `<th>${escapeHtml(u.colLabel || u.name)}</th>`).join("");
+  const unitHeaders = units.map((u) => `<th class="col-unit">${escapeHtml(u.colLabel || u.name)}</th>`).join("");
 
   const rows = students.length
     ? students
         .map((st) => {
           const key = `${st.seat}:${st.name}`;
           const scores = units.map((u) => scoreFor(key, u.id));
-          const nums = scores.filter((s) => s !== "—" && s !== "대기" && !isNaN(Number(s)));
-          const avg = nums.length ? (nums.reduce((a, b) => a + Number(b), 0) / nums.length).toFixed(1) : "—";
+          const avg = calcStudentAverage(key, units);
+          const online = !!onlineSeats[st.seat];
           return `
-            <tr>
-              <td><span class="dot ${onlineSeats[st.seat] ? "on" : "off"}"></span>${st.seat}</td>
+            <tr data-student-key="${escapeHtml(key)}">
+              <td class="col-no"><span class="dot ${online ? "on" : "off"}"></span>${st.seat}</td>
               <td class="name">${escapeHtml(st.name)}</td>
-              ${scores.map((s) => `<td>${s}</td>`).join("")}
+              ${units.length ? scores.map((s) => `<td class="col-score">${displayScore(s)}</td>`).join("") : ""}
               <td class="avg">${avg}</td>
-              <td>${formatSubmitted(state.studentScores?.[key]?._submittedAt)}</td>
-              <td><div class="row-actions">
-                <button type="button" class="reset" data-reset="${escapeHtml(key)}">초기화</button>
-              </div></td>
+              <td class="col-submit">${formatSubmitted(state.studentScores?.[key]?._submittedAt)}</td>
+              <td class="col-actions">
+                <div class="row-actions">
+                  <button type="button" class="view" data-view="${escapeHtml(key)}" data-seat="${st.seat}" data-name="${escapeHtml(st.name)}">학생결과보기</button>
+                  <button type="button" class="print" data-print="${escapeHtml(key)}" data-seat="${st.seat}" data-name="${escapeHtml(st.name)}">인쇄</button>
+                  <button type="button" class="reset" data-reset="${escapeHtml(key)}">초기화</button>
+                  <button type="button" class="del" data-del="${escapeHtml(key)}">삭제</button>
+                </div>
+              </td>
             </tr>`;
         })
         .join("")
-    : `<tr><td colspan="${6 + units.length}">칠판 「우리반 학생」에서 명단을 저장하거나, 왼쪽에서 학반을 추가하세요.</td></tr>`;
+    : `<tr><td colspan="${5 + units.length}">칠판 「우리반 학생」에서 명단을 저장하거나, 왼쪽에서 학반을 추가하세요.</td></tr>`;
 
   mainEl.innerHTML = `
     <div class="view-grades">
       <div class="grades-head">
-        <div>
+        <div class="grades-head-left">
           <h1>📊 실시간 성적 현황표</h1>
-          <p class="legend"><span class="dot on"></span> 접속 · <span class="dot off"></span> 미접속</p>
+          <div class="legend legend-block">
+            <p><span class="dot on"></span> <strong>온라인</strong> : 정상적으로 시험에 응시 중</p>
+            <p><span class="dot off"></span> <strong>오프라인</strong> : 브라우저를 끄거나, 다른 창을 여는 등 시험에 응시중이지 않음</p>
+          </div>
         </div>
         <div class="grades-actions">
           <button type="button" class="btn btn-publish ${state.resultsPublished ? "on" : "off"}" id="togglePublish">
-            ${state.resultsPublished ? "결과 공개 ON" : "결과 공개 OFF"}
+            📊 ${state.resultsPublished ? "결과 공개 중 (ON)" : "결과 비공개 (OFF)"}
           </button>
-          <button type="button" class="btn btn-excel" id="excelBtn">엑셀</button>
-          <button type="button" class="btn btn-print" id="bulkPrintBtn">인쇄</button>
+          <button type="button" class="btn btn-excel" id="excelBtn">📥 엑셀 다운로드</button>
+          <button type="button" class="btn btn-print" id="bulkPrintBtn">🖨️ 일괄 인쇄</button>
         </div>
       </div>
-      ${cls ? `<span class="class-badge">${escapeHtml(cls.name)}</span>` : ""}
+      ${cls ? `<span class="class-badge">${escapeHtml(cls.name)}</span>` : '<span class="class-badge">우리반</span>'}
       <div class="grades-table-wrap">
         <table class="grades-table">
-          <thead><tr><th>번호</th><th>이름</th>${cols}<th>평균</th><th>제출</th><th>관리</th></tr></thead>
+          <thead>
+            <tr>
+              <th>번호</th>
+              <th>이름</th>
+              ${unitHeaders}
+              <th>평균</th>
+              <th>최종 제출</th>
+              <th>관리</th>
+            </tr>
+          </thead>
           <tbody>${rows}</tbody>
         </table>
       </div>
@@ -944,23 +1058,57 @@ function renderGrades() {
     a.download = "성적.csv";
     a.click();
   });
-  document.getElementById("bulkPrintBtn")?.addEventListener("click", () => window.print());
+  document.getElementById("bulkPrintBtn")?.addEventListener("click", () => {
+    document.body.classList.add("grades-print-mode");
+    window.print();
+    setTimeout(() => document.body.classList.remove("grades-print-mode"), 500);
+  });
 
   if (window._gradesPoll) clearInterval(window._gradesPoll);
   window._gradesPoll = setInterval(async () => {
     if (currentView !== "grades") return;
     try {
-      onlineSeats = (await (await fetch("/api/grading/online", { credentials: "include" })).json()).online || {};
+      const [onlineRes, gradingRes] = await Promise.all([
+        fetch("/api/grading/online", { credentials: "include" }),
+        fetch("/api/grading", { credentials: "include" }),
+      ]);
+      onlineSeats = (await onlineRes.json()).online || {};
+      const fresh = normalizeState(await gradingRes.json());
+      state.studentScores = fresh.studentScores;
       renderGrades();
     } catch (_) {}
-  }, 8000);
+  }, 5000);
+
+  mainEl.querySelectorAll("[data-view]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      openStudentResult(btn.dataset.view, btn.dataset.seat, btn.dataset.name);
+    });
+  });
+
+  mainEl.querySelectorAll("[data-print]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      printStudentReport(btn.dataset.print, btn.dataset.seat, btn.dataset.name);
+    });
+  });
 
   mainEl.querySelectorAll("[data-reset]").forEach((btn) => {
     btn.addEventListener("click", () => {
-      confirmDialog("초기화", "이 학생의 점수를 초기화할까요?", async () => {
+      confirmDialog("초기화", "이 학생의 제출·점수를 모두 초기화할까요?", async () => {
         delete state.studentScores[btn.dataset.reset];
         await saveNow();
         renderGrades();
+        showToast("초기화했습니다.");
+      });
+    });
+  });
+
+  mainEl.querySelectorAll("[data-del]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      confirmDialog("삭제", "이 학생의 성적 기록을 삭제할까요?", async () => {
+        delete state.studentScores[btn.dataset.del];
+        await saveNow();
+        renderGrades();
+        showToast("삭제했습니다.");
       });
     });
   });
