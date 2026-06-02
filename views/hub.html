@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>교실 도구함</title>
   <link rel="stylesheet" href="/css/cozy-meadow.css?v=2" />
-  <link rel="stylesheet" href="/css/hub.css?v=7" />
+  <link rel="stylesheet" href="/css/hub.css?v=8" />
   <script>
     (function () {
       var t = localStorage.getItem("theme");
@@ -14,38 +14,6 @@
   </script>
 </head>
 <body class="hub-layout">
-  <button type="button" id="hubRailToggle" class="hub-rail-toggle" title="메뉴 펼치기" aria-label="메뉴 펼치기">
-    <span aria-hidden="true">☰</span>
-  </button>
-
-  <aside id="sidebar" class="sidebar" aria-label="기능 메뉴">
-    <div class="sidebar-top">
-      <button type="button" id="sidebarToggle" class="sidebar-toggle" title="메뉴 접기/펼치기" aria-expanded="true">
-        <span class="toggle-icon" aria-hidden="true">☰</span>
-      </button>
-      <div class="sidebar-brand">
-        <span class="brand-icon" aria-hidden="true">🏫</span>
-        <span class="brand-text">교실 도구함</span>
-      </div>
-    </div>
-
-    <nav class="sidebar-nav" id="sidebarNav">
-      <!-- hub.js에서 앱 목록 렌더 -->
-    </nav>
-
-    <div class="sidebar-footer">
-      <section class="hub-profile" aria-label="계정 정보">
-        <div id="hubProfileEmail" class="hub-profile-email">—</div>
-        <div id="hubProfileName" class="hub-profile-name">선생님</div>
-        <div id="hubProfileSchool" class="hub-profile-school">—</div>
-      </section>
-      <button type="button" id="hubLogout" class="sidebar-logout" title="로그아웃">
-        <span class="nav-icon" aria-hidden="true">🚪</span>
-        <span class="nav-label">로그아웃</span>
-      </button>
-    </div>
-  </aside>
-
   <main class="hub-main">
     <iframe
       id="appFrame"
@@ -56,6 +24,43 @@
     ></iframe>
   </main>
 
-  <script src="/js/hub.js?v=6"></script>
+  <button
+    type="button"
+    id="hubMenuFab"
+    class="hub-menu-fab"
+    aria-label="교실 도구함 메뉴 열기"
+    aria-expanded="false"
+    aria-controls="hubMenuSheet"
+  >
+    <span class="hub-menu-fab-icon" aria-hidden="true">☰</span>
+    <span class="hub-menu-fab-label">메뉴</span>
+  </button>
+
+  <div id="hubMenuOverlay" class="hub-menu-overlay" hidden>
+    <button type="button" class="hub-menu-backdrop" id="hubMenuBackdrop" aria-label="메뉴 닫기"></button>
+    <div id="hubMenuSheet" class="hub-menu-sheet" role="dialog" aria-modal="true" aria-label="교실 도구함 메뉴">
+      <div class="hub-menu-handle" aria-hidden="true"></div>
+      <header class="hub-menu-header">
+        <span class="hub-menu-brand-icon" aria-hidden="true">🏫</span>
+        <span class="hub-menu-brand-text">교실 도구함</span>
+      </header>
+
+      <nav class="hub-menu-nav" id="sidebarNav" aria-label="앱 선택"></nav>
+
+      <footer class="hub-menu-footer">
+        <section class="hub-profile" aria-label="계정 정보">
+          <div id="hubProfileEmail" class="hub-profile-email">—</div>
+          <div id="hubProfileName" class="hub-profile-name">선생님</div>
+          <div id="hubProfileSchool" class="hub-profile-school">—</div>
+        </section>
+        <button type="button" id="hubLogout" class="hub-menu-logout" title="로그아웃">
+          <span class="nav-icon" aria-hidden="true">🚪</span>
+          <span class="nav-label">로그아웃</span>
+        </button>
+      </footer>
+    </div>
+  </div>
+
+  <script src="/js/hub.js?v=7"></script>
 </body>
 </html>

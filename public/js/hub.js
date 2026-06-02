@@ -1,4 +1,4 @@
-/** 교실 도구함 — 사이드바 + 앱 전환 */
+/** 교실 도구함 — 하단 메뉴 시트 + 앱 전환 */
 
 const APPS = [
   {
@@ -15,29 +15,55 @@ const APPS = [
   },
 ];
 
-const sidebar = document.getElementById("sidebar");
-const sidebarToggle = document.getElementById("sidebarToggle");
-const hubRailToggle = document.getElementById("hubRailToggle");
 const sidebarNav = document.getElementById("sidebarNav");
 const appFrame = document.getElementById("appFrame");
 const hubLogout = document.getElementById("hubLogout");
+const hubMenuFab = document.getElementById("hubMenuFab");
+const hubMenuOverlay = document.getElementById("hubMenuOverlay");
+const hubMenuBackdrop = document.getElementById("hubMenuBackdrop");
+const hubMenuSheet = document.getElementById("hubMenuSheet");
 
-const COLLAPSE_KEY = "hubSidebarCollapsed";
 const APP_KEY = "hubActiveApp";
 
-function isCollapsed() {
-  return localStorage.getItem(COLLAPSE_KEY) === "1";
+function isMenuOpen() {
+  return hubMenuOverlay?.classList.contains("is-open");
 }
 
-function setCollapsed(collapsed) {
-  document.body.classList.toggle("hub-sidebar-collapsed", collapsed);
-  sidebarToggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
-  sidebarToggle.title = collapsed ? "메뉴 펼치기" : "메뉴 접기";
-  hubRailToggle.title = collapsed ? "메뉴 펼치기" : "메뉴 접기";
-  localStorage.setItem(COLLAPSE_KEY, collapsed ? "1" : "0");
+function openMenu() {
+  if (!hubMenuOverlay) return;
+  hubMenuOverlay.hidden = false;
+  requestAnimationFrame(() => {
+    hubMenuOverlay.classList.add("is-open");
+    document.body.classList.add("hub-menu-open");
+    hubMenuFab?.setAttribute("aria-expanded", "true");
+    hubMenuFab?.setAttribute("aria-label", "교실 도구함 메뉴 닫기");
+  });
+}
+
+function closeMenu() {
+  if (!hubMenuOverlay) return;
+  hubMenuOverlay.classList.remove("is-open");
+  document.body.classList.remove("hub-menu-open");
+  hubMenuFab?.setAttribute("aria-expanded", "false");
+  hubMenuFab?.setAttribute("aria-label", "교실 도구함 메뉴 열기");
+  const onEnd = (e) => {
+    if (e.target !== hubMenuSheet || e.propertyName !== "transform") return;
+    hubMenuSheet.removeEventListener("transitionend", onEnd);
+    if (!isMenuOpen()) hubMenuOverlay.hidden = true;
+  };
+  hubMenuSheet?.addEventListener("transitionend", onEnd);
+  setTimeout(() => {
+    if (!isMenuOpen()) hubMenuOverlay.hidden = true;
+  }, 320);
+}
+
+function toggleMenu() {
+  if (isMenuOpen()) closeMenu();
+  else openMenu();
 }
 
 function renderNav(activeId) {
+  if (!sidebarNav) return;
   sidebarNav.innerHTML = "";
   for (const app of APPS) {
     const btn = document.createElement("button");
@@ -54,15 +80,26 @@ function renderNav(activeId) {
   }
 }
 
+function updateFabLabel(activeId) {
+  const app = APPS.find((a) => a.id === activeId) || APPS[0];
+  const iconEl = hubMenuFab?.querySelector(".hub-menu-fab-icon");
+  const labelEl = hubMenuFab?.querySelector(".hub-menu-fab-label");
+  if (iconEl) iconEl.textContent = app.icon;
+  if (labelEl) labelEl.textContent = app.label;
+}
+
 function selectApp(appId) {
   const app = APPS.find((a) => a.id === appId) || APPS[0];
   localStorage.setItem(APP_KEY, app.id);
   renderNav(app.id);
+  updateFabLabel(app.id);
   const currentPath = new URL(appFrame.getAttribute("src") || app.path, window.location.origin)
     .pathname;
-  if (currentPath === app.path) return;
-  appFrame.src = app.path;
-  appFrame.title = app.label;
+  if (currentPath !== app.path) {
+    appFrame.src = app.path;
+    appFrame.title = app.label;
+  }
+  closeMenu();
 }
 
 function initAppFromUrl() {
@@ -70,20 +107,25 @@ function initAppFromUrl() {
   const match = APPS.find((a) => path === a.path || path.startsWith(a.path + "/"));
   const saved = localStorage.getItem(APP_KEY);
   const id = match?.id || (APPS.some((a) => a.id === saved) ? saved : APPS[0].id);
-  selectApp(id);
+  const app = APPS.find((a) => a.id === id) || APPS[0];
+  localStorage.setItem(APP_KEY, app.id);
+  renderNav(app.id);
+  updateFabLabel(app.id);
+  appFrame.src = app.path;
+  appFrame.title = app.label;
   if (path !== "/" && path !== "/index.html") {
     history.replaceState(null, "", "/");
   }
 }
 
-function toggleSidebar() {
-  setCollapsed(!document.body.classList.contains("hub-sidebar-collapsed"));
-}
+hubMenuFab?.addEventListener("click", toggleMenu);
+hubMenuBackdrop?.addEventListener("click", closeMenu);
 
-sidebarToggle.addEventListener("click", toggleSidebar);
-hubRailToggle.addEventListener("click", toggleSidebar);
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && isMenuOpen()) closeMenu();
+});
 
-hubLogout.addEventListener("click", async () => {
+hubLogout?.addEventListener("click", async () => {
   try {
     await fetch("/api/logout", { method: "POST", credentials: "include" });
   } catch (_) {}
@@ -112,6 +154,5 @@ async function loadHubProfile() {
   }
 }
 
-setCollapsed(isCollapsed());
 loadHubProfile();
 initAppFromUrl();
