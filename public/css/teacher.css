@@ -1603,8 +1603,8 @@ body.board-group-mode .group-board {
 }
 
 [data-theme="light"] .group-cluster {
-  background: rgba(255, 255, 255, 0.55);
-  border-color: rgba(45, 74, 62, 0.15);
+  background: rgba(255, 255, 255, 0.62);
+  border-color: rgba(45, 74, 62, 0.18);
 }
 
 .group-cluster-head {
@@ -1634,7 +1634,8 @@ body.board-group-mode .group-board {
 }
 
 [data-theme="light"] .group-table {
-  background: rgba(168, 216, 234, 0.25);
+  background: rgba(168, 216, 234, 0.28);
+  outline: 1px solid rgba(45, 74, 62, 0.08);
 }
 
 /* 모둠 칠판: 말풍선을 아바타 위가 아닌 카드 하단 전용 영역으로 */

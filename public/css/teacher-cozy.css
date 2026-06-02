@@ -44,23 +44,25 @@
   --text: #2d4a3e;
   --hint: #6b8f80;
   --topbar-bg: #fffdf9;
-  --tile: #fffcf7;
+  --tile: #faf8f3;
   --tile-empty: rgba(255, 252, 247, 0.55);
   --avatar-bg: rgba(168, 216, 234, 0.35);
   --teacher-tile: rgba(255, 234, 167, 0.65);
-  --chalk-line: rgba(45, 74, 62, 0.1);
+  --chalk-line: rgba(45, 74, 62, 0.14);
+  --cozy-border: rgba(45, 74, 62, 0.14);
+  --cozy-border-soft: rgba(45, 74, 62, 0.09);
   --bubble-bg: #fffcf7;
   --bubble-text: #2d4a3e;
   --panel-bg: #fffcf7;
   --input-bg: #ffffff;
-  --input-border: rgba(45, 74, 62, 0.12);
+  --input-border: rgba(45, 74, 62, 0.16);
   --accent: var(--cozy-coral);
   --cozy-surface: #fffcf7;
-  --cozy-surface-2: #ffffff;
+  --cozy-surface-2: #f6f3ec;
   --cozy-surface-hover: #ffffff;
   --cozy-text: #2d4a3e;
   --cozy-text-muted: #6b8f80;
-  --cozy-shadow: 0 4px 0 rgba(45, 74, 62, 0.06), 0 8px 24px rgba(45, 74, 62, 0.08);
+  --cozy-shadow: 0 3px 0 rgba(45, 74, 62, 0.07), 0 6px 20px rgba(45, 74, 62, 0.1);
 }
 
 /* ── 배경: 다크 = 밤하늘 ── */
@@ -182,7 +184,7 @@ html[data-theme="dark"] body:not(.pip-mode) .topbar {
 
 html[data-theme="light"] body:not(.pip-mode) .topbar {
   background: rgba(255, 252, 247, 0.94) !important;
-  border-bottom: 2px solid rgba(45, 74, 62, 0.06) !important;
+  border-bottom: 2px solid var(--cozy-border) !important;
   box-shadow: var(--cozy-shadow) !important;
 }
 
@@ -209,7 +211,7 @@ html[data-theme="dark"] body:not(.pip-mode) .topbar .hint {
 html[data-theme="light"] body:not(.pip-mode) .topbar .hint {
   color: var(--cozy-text-muted) !important;
   background: rgba(214, 235, 227, 0.85) !important;
-  border: 2px solid rgba(45, 74, 62, 0.06) !important;
+  border: 2px solid var(--cozy-border-soft) !important;
 }
 
 body:not(.pip-mode) .topbar .hint b {
@@ -226,9 +228,9 @@ html[data-theme="dark"] body:not(.pip-mode) .icon-btn {
 
 html[data-theme="light"] body:not(.pip-mode) .icon-btn {
   background: #fffcf7 !important;
-  border: 2px solid rgba(45, 74, 62, 0.08) !important;
+  border: 2px solid var(--cozy-border-soft) !important;
   color: var(--cozy-text) !important;
-  box-shadow: 0 3px 0 rgba(45, 74, 62, 0.05) !important;
+  box-shadow: 0 3px 0 rgba(45, 74, 62, 0.07) !important;
 }
 
 body:not(.pip-mode) .icon-btn {
@@ -300,8 +302,10 @@ html[data-theme="dark"] body:not(.pip-mode) .toolbar {
 }
 
 html[data-theme="light"] body:not(.pip-mode) .toolbar {
-  background: rgba(255, 252, 247, 0.9) !important;
-  border-bottom: 2px solid rgba(45, 74, 62, 0.05) !important;
+  background: rgba(255, 252, 247, 0.92) !important;
+  border-bottom: 2px solid var(--cozy-border-soft) !important;
+  border-left: 2px solid var(--cozy-border-soft) !important;
+  border-right: 2px solid var(--cozy-border-soft) !important;
 }
 
 html[data-theme="dark"] body:not(.pip-mode) .tool-btn {
@@ -314,8 +318,8 @@ html[data-theme="dark"] body:not(.pip-mode) .tool-btn {
 html[data-theme="light"] body:not(.pip-mode) .tool-btn {
   background: #fffcf7 !important;
   color: var(--cozy-text) !important;
-  border: 2px solid rgba(45, 74, 62, 0.08) !important;
-  box-shadow: 0 3px 0 rgba(45, 74, 62, 0.05) !important;
+  border: 2px solid var(--cozy-border-soft) !important;
+  box-shadow: 0 3px 0 rgba(45, 74, 62, 0.07) !important;
 }
 
 body:not(.pip-mode) .tool-btn {
@@ -344,7 +348,7 @@ html[data-theme="light"] body:not(.pip-mode) .question-box input,
 html[data-theme="light"] body:not(.pip-mode) .timer-box input {
   background: #fff !important;
   color: var(--cozy-text) !important;
-  border: 2px solid rgba(45, 74, 62, 0.1) !important;
+  border: 2px solid var(--input-border) !important;
 }
 
 body:not(.pip-mode) .question-box input,
@@ -383,9 +387,16 @@ html[data-theme="dark"] body:not(.pip-mode) .grid {
 }
 
 html[data-theme="light"] body:not(.pip-mode) .grid {
-  background: rgba(255, 252, 247, 0.6) !important;
-  border: 2px solid rgba(255, 255, 255, 0.65);
+  background: rgba(255, 252, 247, 0.78) !important;
+  border: 2px solid var(--cozy-border) !important;
   box-shadow: var(--cozy-shadow) !important;
+}
+
+html[data-theme="light"] body:not(.pip-mode) .group-board {
+  background: rgba(255, 252, 247, 0.78) !important;
+  border: 2px solid var(--cozy-border) !important;
+  box-shadow: var(--cozy-shadow) !important;
+  border-radius: 0 0 var(--cozy-radius) var(--cozy-radius);
 }
 
 html[data-theme="dark"] body:not(.pip-mode) .tile {
@@ -395,9 +406,9 @@ html[data-theme="dark"] body:not(.pip-mode) .tile {
 }
 
 html[data-theme="light"] body:not(.pip-mode) .tile {
-  background: #fffcf7 !important;
-  border: 3px solid rgba(45, 74, 62, 0.06) !important;
-  box-shadow: 0 4px 0 rgba(45, 74, 62, 0.04) !important;
+  background: var(--tile) !important;
+  border: 2px solid var(--cozy-border-soft) !important;
+  box-shadow: 0 3px 0 rgba(45, 74, 62, 0.06) !important;
 }
 
 body:not(.pip-mode) .tile {
@@ -417,7 +428,7 @@ html[data-theme="dark"] body:not(.pip-mode) .tile.occupied {
 
 html[data-theme="light"] body:not(.pip-mode) .tile.occupied {
   background: #fff !important;
-  border-color: rgba(90, 143, 122, 0.25) !important;
+  border-color: rgba(75, 120, 95, 0.22) !important;
 }
 
 html[data-theme="dark"] body:not(.pip-mode) .tile.teacher {
@@ -472,8 +483,8 @@ html[data-theme="dark"] body:not(.pip-mode) .bubble {
 html[data-theme="light"] body:not(.pip-mode) .bubble {
   background: #fffcf7 !important;
   color: var(--cozy-text) !important;
-  border: 2px solid rgba(45, 74, 62, 0.08);
-  box-shadow: 0 3px 0 rgba(45, 74, 62, 0.05) !important;
+  border: 2px solid var(--cozy-border-soft);
+  box-shadow: 0 2px 0 rgba(45, 74, 62, 0.06) !important;
 }
 
 body:not(.pip-mode) .bubble {
@@ -512,7 +523,7 @@ html[data-theme="dark"] body:not(.pip-mode) .controls button {
 
 html[data-theme="light"] body:not(.pip-mode) .controls button {
   background: #fffcf7 !important;
-  border: 2px solid rgba(45, 74, 62, 0.08) !important;
+  border: 2px solid var(--cozy-border-soft) !important;
 }
 
 body:not(.pip-mode) .controls button {
@@ -534,7 +545,8 @@ html[data-theme="dark"] body:not(.pip-mode) .teacher-chat {
 
 html[data-theme="light"] body:not(.pip-mode) .teacher-chat {
   background: rgba(255, 252, 247, 0.96) !important;
-  box-shadow: 0 -4px 24px rgba(45, 74, 62, 0.06) !important;
+  border: 2px solid var(--cozy-border) !important;
+  box-shadow: 0 4px 20px rgba(45, 74, 62, 0.09) !important;
 }
 
 body:not(.pip-mode) .teacher-chat::before,
@@ -568,7 +580,7 @@ html[data-theme="dark"] body:not(.pip-mode) .teacher-chat input {
 html[data-theme="light"] body:not(.pip-mode) .teacher-chat input {
   background: #fff !important;
   color: var(--cozy-text) !important;
-  border: 2px solid rgba(45, 74, 62, 0.1) !important;
+  border: 2px solid var(--input-border) !important;
 }
 
 body:not(.pip-mode) .teacher-chat input {
@@ -767,4 +779,21 @@ html[data-theme="light"] .group-foot-btn.secondary {
   color: var(--cozy-text) !important;
   border: 2px solid rgba(45, 74, 62, 0.12) !important;
   box-shadow: 0 3px 0 rgba(45, 74, 62, 0.08) !important;
+}
+
+/* 라이트 — 모둠·모달 경계만 살짝 */
+html[data-theme="light"] body.board-group-mode .group-cluster {
+  border: 2px dashed var(--cozy-border) !important;
+}
+
+html[data-theme="light"] body.board-group-mode .group-table {
+  outline: 1px solid var(--cozy-border-soft);
+}
+
+html[data-theme="light"] .help-box,
+html[data-theme="light"] .roster-box,
+html[data-theme="light"] .group-box,
+html[data-theme="light"] .panel-box,
+html[data-theme="light"] .modal-box {
+  border-color: rgba(45, 74, 62, 0.14) !important;
 }
