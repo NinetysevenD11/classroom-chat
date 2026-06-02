@@ -760,7 +760,13 @@ function renderTrendLogList(logs, containerId = "trendLogList") {
   const el = document.getElementById(containerId);
   if (!el) return;
   if (!logs.length) {
-    el.innerHTML = `<p class="trend-log-empty">아직 저장된 AI 학습 분석 기록이 없습니다. 「AI 학습 분석」을 실행하면 여기에 쌓입니다.</p>`;
+    el.innerHTML = `
+      <div class="dash-log-placeholder">
+        <p><strong>아직 분석 기록이 없습니다</strong></p>
+        <p>성적 변화 추이 → 학생 선택 → 「AI 학습 분석」을 실행하면 기록이 쌓입니다.</p>
+        <button type="button" class="btn btn-ai btn-sm dash-go-trend">분석 하러 가기</button>
+      </div>`;
+    el.querySelector(".dash-go-trend")?.addEventListener("click", () => setView("trend"));
     return;
   }
   el.innerHTML = logs.map((log) => trendLogItemHtml(log, { compact: true })).join("");
@@ -804,100 +810,88 @@ async function renderHome() {
       </li>`;
   }).join("");
 
+  const nextTask = CHECKLIST.find((c) => c.badge !== "done");
+
   mainEl.innerHTML = `
     <div class="view-home dash-home">
-      <header class="dash-hero">
-        <p class="dash-greeting">안녕하세요, <strong>${escapeHtml(teacherName)}</strong>님</p>
-        <h1>교실 도구함 · 채점도구</h1>
-        <p class="dash-mission">
-          시험지를 올리면 AI가 문항·정답을 잡아 주고, 학생은 QR로 태블릿 시험에 응시합니다.
-          제출 즉시 자동 채점되며, 서술형은 선생님이 확정합니다. 성적은 실시간으로 모이고,
-          추이 그래프와 AI 학습 분석으로 학생별 강·약점을 파악할 수 있습니다.
-        </p>
-        <div class="dash-hero-tags">
-          <span class="badge-space">${escapeHtml(cls?.name || "우리반")}</span>
-          <span class="dash-tag ${stats.published ? "is-on" : ""}">${stats.published ? "성적 공개 중" : "성적 비공개"}</span>
-          ${stats.pending > 0 ? `<span class="dash-tag warn">서술형 채점 대기 ${stats.pending}건</span>` : ""}
-        </div>
-      </header>
-
-      <section class="dash-stats" aria-label="현황 요약">
-        <article class="dash-stat-card">
-          <span class="dash-stat-icon">📚</span>
-          <div><strong>${stats.subjects}</strong><span>과목</span></div>
-        </article>
-        <article class="dash-stat-card">
-          <span class="dash-stat-icon">📑</span>
-          <div><strong>${stats.units}</strong><span>단원</span></div>
-        </article>
-        <article class="dash-stat-card">
-          <span class="dash-stat-icon">✏️</span>
-          <div><strong>${stats.questions}</strong><span>문항</span></div>
-        </article>
-        <article class="dash-stat-card">
-          <span class="dash-stat-icon">👥</span>
-          <div><strong>${stats.students}</strong><span>학생</span></div>
-        </article>
-        <article class="dash-stat-card">
-          <span class="dash-stat-icon">📤</span>
-          <div><strong>${stats.submissions}</strong><span>제출</span></div>
-        </article>
-        <article class="dash-stat-card highlight">
-          <span class="dash-stat-icon">⏳</span>
-          <div><strong>${stats.pending}</strong><span>채점 대기</span></div>
-        </article>
-      </section>
-
-      <section class="dash-actions" aria-label="빠른 이동">
-        <h2 class="dash-section-title">빠른 이동</h2>
-        <div class="dash-action-grid">
-          <button type="button" class="dash-action-card" data-view="exam">
-            <span class="dash-action-icon">📝</span>
-            <strong>시험·정답</strong>
-            <p>과목·단원·문항·AI 시험지 스캔</p>
-          </button>
-          <button type="button" class="dash-action-card" data-view="grades">
-            <span class="dash-action-icon">📊</span>
-            <strong>실시간 성적</strong>
-            <p>제출·점수·결과 공개·인쇄</p>
-          </button>
-          <button type="button" class="dash-action-card" data-view="trend">
-            <span class="dash-action-icon">📈</span>
-            <strong>성적 변화 추이</strong>
-            <p>그래프·AI 학습 분석 기록</p>
-          </button>
-          <button type="button" class="dash-action-card" data-action="qr">
-            <span class="dash-action-icon">📱</span>
-            <strong>학생 QR</strong>
-            <p>왼쪽 사이드바 QR·주소 복사</p>
-          </button>
-        </div>
-      </section>
-
-      <div class="dash-columns">
-        <section class="dash-panel" aria-label="시작 체크리스트">
-          <div class="dash-panel-head">
-            <h2 class="dash-section-title">시작 가이드</h2>
-            <span class="dash-progress-label">${setupPct}%</span>
+      <div class="dash-board">
+        <header class="dash-hero" aria-label="홈 소개">
+          <div class="dash-hero-main">
+            <p class="dash-greeting">안녕하세요, <strong>${escapeHtml(teacherName)}</strong>님</p>
+            <h1>교실 도구함 · 채점도구</h1>
+            <ul class="dash-pills">
+              <li>AI 시험지 스캔</li>
+              <li>QR 태블릿 응시</li>
+              <li>자동·서술형 채점</li>
+              <li>실시간 성적·추이</li>
+            </ul>
           </div>
-          <div class="dash-progress-bar"><span style="width:${setupPct}%"></span></div>
+          <div class="dash-hero-side">
+            <div class="dash-hero-tags">
+              <span class="badge-space">${escapeHtml(cls?.name || "우리반")}</span>
+              <span class="dash-tag ${stats.published ? "is-on" : ""}">${stats.published ? "성적 공개" : "성적 비공개"}</span>
+              ${stats.pending > 0 ? `<span class="dash-tag warn">채점 대기 ${stats.pending}</span>` : ""}
+            </div>
+            ${
+              nextTask
+                ? `<button type="button" class="dash-cta" data-goto="${nextTask.view}" data-id="${nextTask.id}">
+                다음 할 일 · ${escapeHtml(nextTask.title)} →
+              </button>`
+                : `<span class="dash-cta done">✓ 기본 설정 완료</span>`
+            }
+          </div>
+        </header>
+
+        <section class="dash-stats" aria-label="현황 요약">
+          <article class="dash-stat-card"><strong>${stats.subjects}</strong><span>📚 과목</span></article>
+          <article class="dash-stat-card"><strong>${stats.units}</strong><span>📑 단원</span></article>
+          <article class="dash-stat-card"><strong>${stats.questions}</strong><span>✏️ 문항</span></article>
+          <article class="dash-stat-card"><strong>${stats.students}</strong><span>👥 학생</span></article>
+          <article class="dash-stat-card"><strong>${stats.submissions}</strong><span>📤 제출</span></article>
+          <article class="dash-stat-card ${stats.pending > 0 ? "highlight" : ""}"><strong>${stats.pending}</strong><span>⏳ 대기</span></article>
+        </section>
+
+        <nav class="dash-quick" aria-label="빠른 이동">
+          <button type="button" class="dash-quick-btn" data-view="exam"><span>📝</span><em>시험·정답</em></button>
+          <button type="button" class="dash-quick-btn" data-view="grades"><span>📊</span><em>실시간 성적</em></button>
+          <button type="button" class="dash-quick-btn" data-view="trend"><span>📈</span><em>성적 추이</em></button>
+          <button type="button" class="dash-quick-btn" data-action="qr"><span>📱</span><em>학생 QR</em></button>
+        </nav>
+
+        <section class="dash-panel dash-panel-guide" aria-label="시작 가이드">
+          <div class="dash-panel-head">
+            <h2 class="dash-section-title">시작 가이드 <small>${setupPct}%</small></h2>
+            <div class="dash-progress-bar"><span style="width:${setupPct}%"></span></div>
+          </div>
           <ol class="dash-setup-list">${setupSteps}</ol>
         </section>
-        <section class="dash-panel" aria-label="최근 AI 분석 기록">
-          <h2 class="dash-section-title">최근 AI 학습 분석</h2>
-          <div id="dashRecentLogs" class="trend-log-list compact"><p class="muted">불러오는 중…</p></div>
+
+        <section class="dash-panel dash-panel-logs" aria-label="최근 AI 분석">
+          <div class="dash-panel-head">
+            <h2 class="dash-section-title">최근 AI 학습 분석</h2>
+            <button type="button" class="btn-dash-link" data-view="trend">전체 보기</button>
+          </div>
+          <div id="dashRecentLogs" class="trend-log-list dash-logs"><p class="muted">불러오는 중…</p></div>
         </section>
       </div>
     </div>
   `;
 
-  mainEl.querySelectorAll(".dash-action-card[data-view]").forEach((btn) => {
+  mainEl.querySelectorAll(".dash-quick-btn[data-view], .btn-dash-link[data-view]").forEach((btn) => {
     btn.addEventListener("click", () => setView(btn.dataset.view));
   });
-  mainEl.querySelector("[data-action='qr']")?.addEventListener("click", () => {
+  mainEl.querySelector(".dash-quick-btn[data-action='qr']")?.addEventListener("click", () => {
     document.querySelector(".sb-qr-block")?.scrollIntoView({ behavior: "smooth" });
   });
-  mainEl.querySelectorAll(".btn-dash-link").forEach((btn) => {
+  mainEl.querySelector(".dash-cta[data-goto]")?.addEventListener("click", (e) => {
+    const btn = e.currentTarget;
+    if (btn.dataset.id === "qr") {
+      document.querySelector(".sb-qr-block")?.scrollIntoView({ behavior: "smooth" });
+      return;
+    }
+    setView(btn.dataset.goto);
+  });
+  mainEl.querySelectorAll(".btn-dash-link[data-goto]").forEach((btn) => {
     btn.addEventListener("click", () => {
       if (btn.dataset.id === "qr") {
         document.querySelector(".sb-qr-block")?.scrollIntoView({ behavior: "smooth" });

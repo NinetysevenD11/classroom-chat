@@ -165,14 +165,18 @@ body.grading-app {
 
 .dash-stat-card,
 .dash-panel,
-.dash-action-card,
+.dash-quick-btn,
 .trend-log-item {
   border: 2px solid var(--meadow-border) !important;
   border-radius: var(--meadow-radius) !important;
 }
 
-.dash-action-card:hover {
+.dash-quick-btn:hover {
   border-color: var(--meadow-green) !important;
+}
+
+.dash-cta {
+  background: linear-gradient(135deg, var(--meadow-green), var(--meadow-green-deep)) !important;
 }
 
 .dash-stat-card.highlight {
