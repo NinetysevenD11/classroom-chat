@@ -344,11 +344,15 @@ body {
 .g-dialog {
   position: fixed;
   inset: 0;
-  z-index: 600;
+  z-index: 8000;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 16px;
+}
+
+#manualGradeModal.g-dialog {
+  z-index: 8500;
 }
 
 .g-dialog.hidden {

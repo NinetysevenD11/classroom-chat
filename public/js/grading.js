@@ -1543,11 +1543,12 @@ function renderExam() {
   });
 
   document.getElementById("aiScanBtn")?.addEventListener("click", () => runAiScan(unit));
-  bindQuestionEditors(unit);
+  bindQuestionEditors(unit, sub);
   bindPaperUpload(unit);
 }
 
-function bindQuestionEditors(unit) {
+function bindQuestionEditors(unit, subject) {
+  const sub = subject || activeSubject();
   const grid = document.getElementById("questionsGrid");
   if (!grid) return;
   grid.querySelectorAll(".q-card").forEach((card) => {
@@ -1590,7 +1591,16 @@ function bindQuestionEditors(unit) {
         showToast("서술형 문항만 수동 채점할 수 있습니다.", true);
         return;
       }
-      openManualGradeModal(q, unit, sub);
+      if (!sub) {
+        showToast("과목 정보를 찾을 수 없습니다.", true);
+        return;
+      }
+      try {
+        openManualGradeModal(q, unit, sub);
+      } catch (err) {
+        console.error("[수동채점]", err);
+        showToast(err.message || "수동 채점 창을 열지 못했습니다.", true);
+      }
     });
   });
   document.getElementById("addQuestionBtn")?.addEventListener("click", () => {
@@ -1761,20 +1771,20 @@ function collectQuestionSubmissions(unitId, questionNum) {
   const rows = [];
   for (const [studentKey, rec] of Object.entries(state.studentScores || {})) {
     if (studentKey.startsWith("_")) continue;
-    const sub = rec._detail?.[unitId];
-    if (!sub?.detail) continue;
-    const d = sub.detail[qKey];
-    if (!d) continue;
+    const submission = rec._detail?.[unitId];
+    if (!submission) continue;
     const colon = studentKey.indexOf(":");
     const seat = Number(studentKey.slice(0, colon));
     const name = studentKey.slice(colon + 1);
+    const d = submission.detail?.[qKey];
+    const given = d?.given ?? "";
     rows.push({
       studentKey,
       seat: Number.isFinite(seat) ? seat : 0,
       name,
-      given: d.given || "",
-      skipped: !!d.skipped,
-      mark: sub.essayMarks?.[qKey] || null,
+      given,
+      skipped: !d || !!d.skipped || !String(given).trim(),
+      mark: submission.essayMarks?.[qKey] || null,
     });
   }
   rows.sort((a, b) => a.seat - b.seat);
@@ -1829,6 +1839,9 @@ function renderManualGradeBody() {
 }
 
 function openManualGradeModal(question, unit, subject) {
+  const sub = subject || activeSubject();
+  if (!sub) throw new Error("과목 정보가 없습니다.");
+
   const rows = collectQuestionSubmissions(unit.id, question.num);
   const cls = activeClass();
   const rubricLabel = (question.rubric || "").trim() || "1";
@@ -1837,7 +1850,7 @@ function openManualGradeModal(question, unit, subject) {
     unitId: unit.id,
     questionNum: question.num,
     question,
-    subject,
+    subject: sub,
     unit,
     marks: {},
     rows,
@@ -1849,16 +1862,26 @@ function openManualGradeModal(question, unit, subject) {
   }
 
   const classLabel = cls?.name || "우리반";
-  const unitLabel = `${subject.name}_${unit.name}`;
-  document.getElementById("manualGradeMeta").textContent =
-    `${subject.name} · ${classLabel} · ${unitLabel} · ${question.num}번 / 1개 문항 · ${rows.length}개 답안`;
+  const unitLabel = `${sub.name}_${unit.name}`;
+  const modal = document.getElementById("manualGradeModal");
+  const meta = document.getElementById("manualGradeMeta");
+  if (!modal || !meta) throw new Error("수동 채점 화면을 찾을 수 없습니다.");
+
+  meta.textContent =
+    `${sub.name} · ${classLabel} · ${unitLabel} · ${question.num}번 / 1개 문항 · ${rows.length}개 답안`;
 
   renderManualGradeBody();
-  document.getElementById("manualGradeModal").classList.remove("hidden");
+  modal.classList.remove("hidden");
+  modal.setAttribute("aria-hidden", "false");
+  document.body.classList.add("manual-grade-open");
+  document.getElementById("manualGradeSave")?.focus();
 }
 
 function closeManualGradeModal() {
-  document.getElementById("manualGradeModal")?.classList.add("hidden");
+  const modal = document.getElementById("manualGradeModal");
+  modal?.classList.add("hidden");
+  modal?.setAttribute("aria-hidden", "true");
+  document.body.classList.remove("manual-grade-open");
   manualGradeSession = null;
 }
 
@@ -2061,6 +2084,12 @@ document.getElementById("manualGradeSave")?.addEventListener("click", async () =
   } catch (err) {
     showToast(err.message || "저장하지 못했습니다.", true);
   }
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "Escape") return;
+  const modal = document.getElementById("manualGradeModal");
+  if (modal && !modal.classList.contains("hidden")) closeManualGradeModal();
 });
 document.getElementById("studentResultPrint")?.addEventListener("click", () => {
   const modal = document.getElementById("studentResultModal");

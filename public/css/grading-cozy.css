@@ -282,3 +282,26 @@ body.grading-app {
   border-radius: var(--acnh-radius-lg) !important;
   box-shadow: var(--acnh-shadow) !important;
 }
+
+/* 서술형 수동채점 모달 */
+#manualGradeModal .g-dialog-panel-manual {
+  background: var(--acnh-card) !important;
+  border-radius: var(--acnh-radius-xl) !important;
+  box-shadow: var(--acnh-shadow) !important;
+}
+
+#manualGradeModal .manual-grade-block {
+  background: #e8f4fc !important;
+  border-radius: var(--acnh-radius-lg) !important;
+}
+
+#manualGradeModal .manual-grade-row {
+  background: #fff !important;
+  border: 1px solid var(--acnh-border) !important;
+  border-radius: var(--acnh-radius-md) !important;
+  box-shadow: var(--acnh-shadow-sm) !important;
+}
+
+body.manual-grade-open {
+  overflow: hidden;
+}
