@@ -179,6 +179,23 @@ body.grading-app {
   background: linear-gradient(135deg, var(--meadow-green), var(--meadow-green-deep)) !important;
 }
 
+.dash-workflow,
+.dash-flow-card,
+.dash-panel-subjects,
+.dash-panel-recent {
+  background: var(--meadow-surface) !important;
+  border: 2px solid var(--meadow-border) !important;
+  border-radius: var(--meadow-radius) !important;
+}
+
+.dash-flow-card {
+  background: linear-gradient(160deg, var(--meadow-surface-solid), var(--meadow-sun)) !important;
+}
+
+.dash-flow-card:hover {
+  border-color: var(--meadow-green) !important;
+}
+
 .tutorial-popover {
   border-color: var(--meadow-green) !important;
   border-radius: var(--meadow-radius) !important;

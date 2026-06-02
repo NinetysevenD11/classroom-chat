@@ -1210,6 +1210,89 @@ function renderTrendLogList(logs, containerId = "trendLogList") {
   });
 }
 
+function countOnlineStudents() {
+  return Object.keys(onlineSeats || {}).filter((seat) => onlineSeats[seat]).length;
+}
+
+function buildDashSubjectsHtml() {
+  const subjects = getExamSubjects();
+  if (!subjects.length) {
+    return `<p class="dash-empty-hint">왼쪽 「+ 새 시험(과목) 추가」로 과목을 등록하세요.</p>`;
+  }
+  return `<ul class="dash-subject-list">
+    ${subjects
+      .map((s) => {
+        const units = s.units || [];
+        const openCount = units.filter((u) => u.locked === false).length;
+        const qCount = units.reduce((n, u) => n + (u.questions?.length || 0), 0);
+        return `<li>
+          <span class="dash-subject-name">${escapeHtml(s.name)}</span>
+          <span class="dash-subject-meta">${units.length}단원 · 문항 ${qCount} · 열림 ${openCount}</span>
+        </li>`;
+      })
+      .join("")}
+  </ul>`;
+}
+
+function buildDashRecentSubmitHtml() {
+  const rows = [];
+  for (const key of Object.keys(state.studentScores || {})) {
+    if (key.startsWith("_") || !key.includes(":")) continue;
+    const rec = state.studentScores[key];
+    if (!rec._submittedAt) continue;
+    const colon = key.indexOf(":");
+    rows.push({
+      key,
+      seat: key.slice(0, colon),
+      name: key.slice(colon + 1),
+      at: rec._submittedAt,
+    });
+  }
+  rows.sort((a, b) => b.at - a.at);
+  if (!rows.length) {
+    return `<p class="dash-empty-hint">제출 기록이 없습니다. 상단 「학생 QR」로 접속을 안내해 주세요.</p>`;
+  }
+  return `<ul class="dash-submit-list">
+    ${rows
+      .slice(0, 10)
+      .map(
+        (r) => `<li>
+          <span class="dash-submit-name"><strong>${escapeHtml(r.seat)}</strong> ${escapeHtml(r.name)}</span>
+          <time>${formatSubmitted(r.at)}</time>
+        </li>`
+      )
+      .join("")}
+  </ul>`;
+}
+
+function buildDashWorkflowHtml() {
+  const steps = [
+    { icon: "📝", title: "시험·정답", desc: "과목·단원·AI 시험지", view: "exam" },
+    { icon: "📱", title: "학생 QR", desc: "접속·주소 공유", action: "qr" },
+    { icon: "📊", title: "실시간 성적", desc: "제출·채점·공개", view: "grades" },
+    { icon: "📈", title: "추이·AI 분석", desc: "그래프·학습 코칭", view: "trend" },
+  ];
+  return steps
+    .map((s) => {
+      const attrs = s.view ? `data-view="${s.view}"` : `data-action="${s.action}"`;
+      return `<button type="button" class="dash-flow-card" ${attrs}>
+        <span class="dash-flow-icon">${s.icon}</span>
+        <strong>${s.title}</strong>
+        <p>${s.desc}</p>
+      </button>`;
+    })
+    .join("");
+}
+
+function bindDashWorkflowNav(root) {
+  const scope = root || mainEl;
+  if (!scope) return;
+  scope.querySelectorAll(".dash-flow-card[data-view]").forEach((btn) => {
+    btn.addEventListener("click", () => setView(btn.dataset.view));
+  });
+  scope.querySelector(".dash-flow-card[data-action='qr']")?.addEventListener("click", () => navigateToStudentQr());
+}
+
 async function renderHome() {
   updateChecklistBadges();
   const stats = buildDashboardStats();
@@ -1217,6 +1300,7 @@ async function renderHome() {
   const cls = activeClass();
   const setupPct = stats.setupPct ?? 0;
   const showGuide = shouldShowSetupGuide();
+  const onlineCount = countOnlineStudents();
 
   const setupSteps = showGuide
     ? CHECKLIST.map((c) => {
@@ -1288,6 +1372,11 @@ async function renderHome() {
           <button type="button" class="dash-quick-btn" data-action="qr"><span>📱</span><em>학생 QR</em></button>
         </nav>
 
+        <section class="dash-workflow" aria-label="이용 흐름">
+          <h2 class="dash-section-title">이용 흐름</h2>
+          <div class="dash-flow-grid">${buildDashWorkflowHtml()}</div>
+        </section>
+
         ${
           showGuide
             ? `<section class="dash-panel dash-panel-guide" aria-label="시작 가이드">
@@ -1298,23 +1387,49 @@ async function renderHome() {
           </div>
           <ol class="dash-setup-list">${setupSteps}</ol>
         </section>`
-            : `<section class="dash-panel dash-panel-guide is-complete" aria-label="시작 가이드 완료">
-          <p class="dash-guide-done-msg">✓ 시작 가이드를 완료했습니다. 시험·성적 메뉴에서 바로 이용하세요.</p>
-        </section>`
+            : ""
         }
+
+        <section class="dash-panel dash-panel-subjects" aria-label="과목 현황">
+          <div class="dash-panel-head">
+            <h2 class="dash-section-title">📚 과목·단원 현황</h2>
+            <button type="button" class="btn-dash-link" data-view="exam">시험 관리</button>
+          </div>
+          ${buildDashSubjectsHtml()}
+        </section>
 
         <section class="dash-panel dash-panel-logs" aria-label="최근 AI 분석">
           <div class="dash-panel-head">
-            <h2 class="dash-section-title">최근 AI 학습 분석</h2>
+            <h2 class="dash-section-title">🤖 최근 AI 학습 분석</h2>
             <button type="button" class="btn-dash-link" data-view="trend">전체 보기</button>
           </div>
           <div id="dashRecentLogs" class="trend-log-list dash-logs"><p class="muted">불러오는 중…</p></div>
+        </section>
+
+        <section class="dash-panel dash-panel-recent" aria-label="최근 제출">
+          <div class="dash-panel-head">
+            <h2 class="dash-section-title">📤 최근 제출 · 접속</h2>
+            <span class="dash-online-badge"><span class="dot on"></span> 온라인 ${onlineCount}명</span>
+          </div>
+          ${buildDashRecentSubmitHtml()}
+          <div class="dash-recent-actions">
+            <button type="button" class="btn-dash-link" data-view="grades">실시간 성적 보기</button>
+            <button type="button" class="btn-dash-link" data-action="qr">학생 QR</button>
+          </div>
         </section>
       </div>
     </div>
   `;
 
+  const board = mainEl.querySelector(".dash-board");
+  if (board) {
+    board.classList.toggle("dash-board--with-guide", showGuide);
+    board.classList.toggle("dash-board--done", !showGuide);
+  }
+
   bindDashQuickNav(mainEl);
+  bindDashWorkflowNav(mainEl);
+  mainEl.querySelector(".dash-panel-recent [data-action='qr']")?.addEventListener("click", () => navigateToStudentQr());
   mainEl.querySelectorAll(".btn-dash-link[data-view]").forEach((btn) => {
     btn.addEventListener("click", () => setView(btn.dataset.view));
   });
