@@ -497,20 +497,23 @@ app.get("/api/exam/public", (req, res) => {
     return res.json({ ok: false, units: [], message: "선생님이 접속 중이 아닙니다." });
   }
   const state = getGradingState(found.userId);
-  const sub = state.exams
-    ?.flatMap((e) => e.subjects || [])
-    ?.find((s) => s.id === state.activeSubjectId);
-  const units = (sub?.units || [])
-    .filter((u) => !u.locked)
-    .map((u) => ({
-      id: u.id,
-      name: u.name,
-      images: u.images || [],
-      questionCount: (u.questions || []).length,
-    }));
+  const exam = state.exams?.find((e) => e.id === state.activeExamId) || state.exams?.[0];
+  const activeSubjects = (exam?.subjects || []).filter((s) => s.active !== false);
+  const units = [];
+  for (const sub of activeSubjects) {
+    for (const u of sub.units || []) {
+      if (u.locked) continue;
+      units.push({
+        id: u.id,
+        name: `${sub.name} · ${u.name}`,
+        images: u.images || [],
+        questionCount: (u.questions || []).length,
+      });
+    }
+  }
   res.json({
     ok: true,
-    subject: sub?.name || "",
+    subject: activeSubjects.map((s) => s.name).join(", ") || "",
     resultsPublished: !!state.resultsPublished,
     units,
   });
@@ -774,10 +777,12 @@ io.on("connection", (socket) => {
       return;
     }
     const grading = getGradingState(userId);
-    const sub = grading.exams
-      ?.flatMap((e) => e.subjects || [])
-      ?.find((x) => x.id === grading.activeSubjectId);
-    const unit = sub?.units?.find((u) => u.id === unitId);
+    const exam = grading.exams?.find((e) => e.id === grading.activeExamId) || grading.exams?.[0];
+    let unit = null;
+    for (const sub of exam?.subjects || []) {
+      unit = sub.units?.find((u) => u.id === unitId);
+      if (unit) break;
+    }
     if (!unit) {
       cb && cb({ ok: false, error: "시험을 찾을 수 없습니다." });
       return;

@@ -10,68 +10,21 @@ const GRADING_FILE = path.join(DATA_DIR, "grading_data.json");
 
 export let gradingData = {};
 
-function uid() {
+export function uid() {
   return crypto.randomBytes(8).toString("hex");
 }
 
+/** 빈 상태 — 샘플 데이터 없음 */
 export function defaultGradingState() {
   const examId = uid();
-  const mathId = uid();
-  const u3 = uid();
-  const u4 = uid();
-  const questions = [];
-  for (let i = 1; i <= 20; i++) {
-    let type = "mc";
-    if (i === 5 || i === 15) type = "short";
-    if (i === 14 || i === 19 || i === 20) type = "essay";
-    questions.push({
-      id: uid(),
-      num: i,
-      type,
-      answer: type === "mc" ? String((i % 5) + 1) : type === "short" ? "답" : "",
-      points: "1",
-      rubric: "",
-    });
-  }
   return {
-    exams: [
-      {
-        id: examId,
-        name: "1학기 평가",
-        active: true,
-        subjects: [
-          { id: uid(), name: "국어", active: false, units: [] },
-          { id: uid(), name: "사회", active: false, units: [] },
-          {
-            id: mathId,
-            name: "수학",
-            active: true,
-            units: [
-              {
-                id: u3,
-                name: "수학_3단원_대응관계",
-                locked: true,
-                images: [],
-                questions,
-              },
-              {
-                id: u4,
-                name: "수학_4단원_약분과통분",
-                locked: false,
-                images: [],
-                questions: questions.map((q) => ({ ...q, id: uid() })),
-              },
-            ],
-          },
-        ],
-      },
-    ],
-    classes: [{ id: uid(), name: "5-3반", studentCount: 20, selected: true }],
+    exams: [{ id: examId, name: "기본 평가", active: true, subjects: [] }],
+    classes: [],
     resultsPublished: false,
     studentScores: {},
     activeExamId: examId,
-    activeSubjectId: mathId,
-    activeUnitId: u3,
+    activeSubjectId: null,
+    activeUnitId: null,
     activeClassId: null,
   };
 }
@@ -130,11 +83,14 @@ async function saveAllGradingData() {
 
 export function getGradingState(userId) {
   if (!gradingData[userId]) {
-    const state = defaultGradingState();
-    if (state.classes[0]) state.activeClassId = state.classes[0].id;
-    gradingData[userId] = state;
+    gradingData[userId] = defaultGradingState();
   }
   const s = gradingData[userId];
+  if (!Array.isArray(s.exams) || !s.exams.length) {
+    const fresh = defaultGradingState();
+    Object.assign(s, fresh);
+  }
+  if (!s.activeExamId) s.activeExamId = s.exams[0].id;
   if (!s.activeClassId && s.classes?.length) s.activeClassId = s.classes[0].id;
   return s;
 }
@@ -143,5 +99,3 @@ export async function saveGradingState(userId, state) {
   gradingData[userId] = state;
   await saveAllGradingData();
 }
-
-export { uid };

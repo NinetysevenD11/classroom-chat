@@ -7,17 +7,21 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/grading.css?v=1" />
+  <link rel="stylesheet" href="/css/grading.css?v=2" />
 </head>
 <body class="grading-app">
   <div class="grading-shell">
     <aside class="grading-sidebar" aria-label="채점 도구 메뉴">
-      <section class="sb-block">
+      <section class="sb-block sb-qr-block">
         <h2 class="sb-title">학생 접속 QR코드</h2>
+        <div class="sb-qr-preview">
+          <img id="qrImageInline" class="sb-qr-img" alt="학생 시험 접속 QR" width="160" height="160" hidden />
+          <p id="qrLoadStatus" class="sb-qr-status">QR 불러오는 중…</p>
+        </div>
+        <p id="qrUrlInline" class="sb-qr-url" title=""></p>
         <div class="sb-qr-actions">
-          <button type="button" id="qrOpenBtn" class="btn btn-blue">열기</button>
-          <button type="button" id="qrCopyBtn" class="btn btn-ghost">주소복사</button>
-          <button type="button" id="qrSaveBtn" class="btn btn-ghost">QR코드저장</button>
+          <button type="button" id="qrCopyBtn" class="btn btn-blue">주소복사</button>
+          <button type="button" id="qrSaveBtn" class="btn btn-ghost">QR저장</button>
         </div>
       </section>
 
@@ -33,10 +37,12 @@
       <section class="sb-block">
         <div class="sb-head-row">
           <h2 class="sb-title">📁 시험 관리</h2>
-          <button type="button" class="btn btn-xs btn-board" disabled title="준비 중">공유 게시판</button>
         </div>
+        <label class="sb-field-label">평가 세트</label>
+        <select id="examSelect" class="sb-select"></select>
+        <p class="sb-hint">아래 목록은 과목(시험지)입니다. 활성(초록)인 과목만 학생에게 보입니다.</p>
         <ul id="subjectList" class="sb-list subject-list"></ul>
-        <button type="button" id="addExamBtn" class="btn btn-wide btn-purple">+ 새 시험 추가</button>
+        <button type="button" id="addSubjectBtn" class="btn btn-wide btn-purple">+ 새 시험(과목) 추가</button>
       </section>
 
       <section class="sb-block">
@@ -51,23 +57,26 @@
       </section>
     </aside>
 
-    <main class="grading-main" id="gradingMain">
-      <!-- hub.js가 iframe으로 로드 — 각 뷰는 grading.js가 렌더 -->
-    </main>
+    <main class="grading-main" id="gradingMain"></main>
   </div>
 
-  <div id="qrModal" class="modal hidden" role="dialog" aria-labelledby="qrModalTitle">
-    <div class="modal-card qr-card">
-      <div class="modal-head">
-        <h3 id="qrModalTitle">학생 접속 QR</h3>
-        <button type="button" class="modal-close" data-close="qrModal">✕</button>
+  <div id="toast" class="toast hidden" role="status"></div>
+
+  <div id="gradingDialog" class="g-dialog hidden" role="dialog" aria-modal="true">
+    <div class="g-dialog-backdrop" data-close-dialog></div>
+    <div class="g-dialog-panel">
+      <div class="g-dialog-head">
+        <h3 id="dialogTitle">입력</h3>
+        <button type="button" class="g-dialog-close" data-close-dialog aria-label="닫기">✕</button>
       </div>
-      <p class="qr-url" id="qrUrlText"></p>
-      <img id="qrImage" alt="학생 접속 QR 코드" width="280" height="280" />
-      <p class="qr-hint">학생은 QR 또는 주소로 <strong>/exam</strong> 에 접속해 시험에 응시합니다.</p>
+      <div id="dialogBody" class="g-dialog-body"></div>
+      <div class="g-dialog-foot">
+        <button type="button" class="btn btn-ghost g-dialog-cancel" data-close-dialog>취소</button>
+        <button type="button" class="btn btn-blue" id="dialogConfirm">확인</button>
+      </div>
     </div>
   </div>
 
-  <script src="/js/grading.js?v=1"></script>
+  <script src="/js/grading.js?v=2"></script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-/** 선생님 채점도구 — 교실 도구함 탭 */
+/** 선생님 채점도구 — 동작 중심 (iframe에서 prompt 사용 안 함) */
 
 let state = null;
 let currentView = "home";
@@ -12,54 +12,29 @@ const mainEl = document.getElementById("gradingMain");
 const subjectList = document.getElementById("subjectList");
 const classList = document.getElementById("classList");
 const lockList = document.getElementById("lockList");
+const examSelect = document.getElementById("examSelect");
+const dialogEl = document.getElementById("gradingDialog");
+const dialogTitle = document.getElementById("dialogTitle");
+const dialogBody = document.getElementById("dialogBody");
+const dialogConfirm = document.getElementById("dialogConfirm");
+const toastEl = document.getElementById("toast");
 
 const CHECKLIST = [
-  { id: "exam", title: "시험 추가", desc: "시험을 만들고 활성화하면 학생 화면에 반영됩니다.", view: "exam", badge: "done" },
-  { id: "class", title: "학반 추가", desc: "학반을 만들고 학생 수를 설정하세요.", view: "home", badge: "warn" },
-  { id: "subject", title: "과목 추가", desc: "시험 설정에서 과목·단원을 추가합니다.", view: "exam", badge: "warn" },
+  { id: "exam", title: "시험(과목) 추가", desc: "왼쪽 「+ 새 시험(과목) 추가」로 과목을 만든 뒤 정답을 입력하세요.", view: "exam", badge: "warn" },
+  { id: "class", title: "학반 추가", desc: "학반을 만들거나, 칠판의 「우리반 학생」 명단을 사용합니다.", view: "home", badge: "warn" },
+  { id: "subject", title: "단원·문항 설정", desc: "과목을 선택한 뒤 단원 탭에서 문항과 정답을 설정합니다.", view: "exam", badge: "warn" },
   { id: "answer", title: "정답 설정", desc: "객관식·단답형·서술형 정답과 배점을 입력합니다.", view: "exam", badge: "warn" },
-  { id: "lock", title: "학생화면 과목 잠금", desc: "학생이 답을 보거나 수정할 수 있는 시점을 제어합니다.", view: "home", badge: "pick" },
-  { id: "qr", title: "학생 QR 접속 확인", desc: "QR·주소로 학생이 /exam 에 접속하는지 확인하세요.", view: "home", badge: "pick" },
-  { id: "login", title: "학생 로그인·비밀번호 안내", desc: "이름과 4자리 비밀번호로 시험에 참여합니다.", view: "home", badge: "pick" },
+  { id: "lock", title: "학생화면 과목 잠금", desc: "잠금 해제한 단원만 학생 /exam 에서 응시할 수 있습니다.", view: "home", badge: "pick" },
+  { id: "qr", title: "학생 QR 접속", desc: "왼쪽에 QR이 항상 표시됩니다. 학생은 스캔 후 이름·번호로 입장합니다.", view: "home", badge: "pick" },
   { id: "live", title: "실시간 현황 확인", desc: "제출 상태와 점수를 실시간으로 확인합니다.", view: "grades", badge: "pick" },
   { id: "print", title: "성적표 인쇄", desc: "개별·일괄 성적표를 인쇄합니다.", view: "grades", badge: "pick" },
-  { id: "ai", title: "AI 도우미", desc: "이미지에서 정답 생성·채점 제안(준비 중).", view: "home", badge: "pick" },
 ];
 
-function activeExam() {
-  return state.exams?.find((e) => e.id === state.activeExamId) || state.exams?.[0];
-}
-
-function activeSubject() {
-  const exam = activeExam();
-  if (!exam) return null;
-  return exam.subjects?.find((s) => s.id === state.activeSubjectId) || exam.subjects?.[0];
-}
-
-function activeUnit() {
-  const sub = activeSubject();
-  if (!sub) return null;
-  return sub.units?.find((u) => u.id === state.activeUnitId) || sub.units?.[0];
-}
-
-function activeClass() {
-  return state.classes?.find((c) => c.id === state.activeClassId) || state.classes?.[0];
-}
-
-function scheduleSave() {
-  clearTimeout(saveTimer);
-  saveTimer = setTimeout(async () => {
-    try {
-      await fetch("/api/grading", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(state),
-      });
-    } catch (err) {
-      console.error("[채점] 저장 실패", err);
-    }
-  }, 400);
+function newId() {
+  if (typeof crypto !== "undefined" && crypto.randomUUID) {
+    return crypto.randomUUID().replace(/-/g, "").slice(0, 16);
+  }
+  return String(Date.now()) + Math.random().toString(16).slice(2, 8);
 }
 
 function escapeHtml(s) {
@@ -68,6 +43,167 @@ function escapeHtml(s) {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
+}
+
+function showToast(msg, isError) {
+  toastEl.textContent = msg;
+  toastEl.classList.toggle("is-error", !!isError);
+  toastEl.classList.remove("hidden");
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(() => toastEl.classList.add("hidden"), 2800);
+}
+
+function normalizeState(raw) {
+  const s = raw && typeof raw === "object" ? raw : {};
+  if (!Array.isArray(s.exams) || !s.exams.length) {
+    const examId = newId();
+    s.exams = [{ id: examId, name: "기본 평가", active: true, subjects: [] }];
+    s.activeExamId = examId;
+  }
+  if (!Array.isArray(s.classes)) s.classes = [];
+  if (!s.studentScores || typeof s.studentScores !== "object") s.studentScores = {};
+  for (const exam of s.exams) {
+    if (!Array.isArray(exam.subjects)) exam.subjects = [];
+    for (const sub of exam.subjects) {
+      if (!Array.isArray(sub.units)) sub.units = [];
+      if (typeof sub.active !== "boolean") sub.active = true;
+      for (const unit of sub.units) {
+        if (!Array.isArray(unit.questions)) unit.questions = [];
+        if (typeof unit.locked !== "boolean") unit.locked = true;
+        if (!Array.isArray(unit.images)) unit.images = [];
+      }
+    }
+  }
+  if (!s.activeExamId) s.activeExamId = s.exams[0].id;
+  const exam = s.exams.find((e) => e.id === s.activeExamId) || s.exams[0];
+  s.activeExamId = exam.id;
+  if (s.activeSubjectId && !exam.subjects.some((x) => x.id === s.activeSubjectId)) {
+    s.activeSubjectId = exam.subjects[0]?.id || null;
+    s.activeUnitId = exam.subjects[0]?.units?.[0]?.id || null;
+  }
+  if (!s.activeSubjectId && exam.subjects[0]) {
+    s.activeSubjectId = exam.subjects[0].id;
+    s.activeUnitId = exam.subjects[0].units?.[0]?.id || null;
+  }
+  return s;
+}
+
+function activeExam() {
+  return state.exams?.find((e) => e.id === state.activeExamId) || state.exams?.[0];
+}
+
+function activeSubject() {
+  const exam = activeExam();
+  if (!exam) return null;
+  return exam.subjects?.find((s) => s.id === state.activeSubjectId) || exam.subjects?.[0] || null;
+}
+
+function activeUnit() {
+  const sub = activeSubject();
+  if (!sub) return null;
+  return sub.units?.find((u) => u.id === state.activeUnitId) || sub.units?.[0] || null;
+}
+
+function createQuestion(num) {
+  return { id: newId(), num, type: "mc", answer: "", points: "1", rubric: "" };
+}
+
+function createUnit(name) {
+  const questions = [];
+  for (let i = 1; i <= 5; i++) questions.push(createQuestion(i));
+  return { id: newId(), name, locked: true, images: [], questions };
+}
+
+function createSubject(name) {
+  const unitName = `${name}_1단원`;
+  return {
+    id: newId(),
+    name: name.trim(),
+    active: true,
+    units: [createUnit(unitName)],
+  };
+}
+
+async function saveNow() {
+  try {
+    const res = await fetch("/api/grading", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify(state),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || "저장 실패");
+    return true;
+  } catch (err) {
+    console.error("[채점] 저장 실패", err);
+    showToast(err.message || "저장하지 못했습니다.", true);
+    return false;
+  }
+}
+
+function scheduleSave() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => saveNow(), 400);
+}
+
+let dialogOnConfirm = null;
+
+function closeDialog() {
+  dialogEl.classList.add("hidden");
+  dialogOnConfirm = null;
+  dialogBody.innerHTML = "";
+}
+
+function openDialog({ title, fields, message, confirmText, onConfirm }) {
+  dialogTitle.textContent = title;
+  dialogConfirm.textContent = confirmText || "확인";
+  let html = "";
+  if (message) html += `<p class="g-dialog-msg">${escapeHtml(message)}</p>`;
+  for (const f of fields || []) {
+    html += `<label class="g-field"><span>${escapeHtml(f.label)}</span>`;
+    if (f.type === "number") {
+      html += `<input type="number" data-field="${escapeHtml(f.name)}" value="${escapeHtml(f.value ?? "")}" min="${f.min ?? 1}" max="${f.max ?? 99}" />`;
+    } else {
+      html += `<input type="text" data-field="${escapeHtml(f.name)}" value="${escapeHtml(f.value ?? "")}" placeholder="${escapeHtml(f.placeholder || "")}" maxlength="${f.maxlength || 40}" />`;
+    }
+    html += `</label>`;
+  }
+  dialogBody.innerHTML = html;
+  dialogOnConfirm = onConfirm;
+  dialogEl.classList.remove("hidden");
+  const first = dialogBody.querySelector("input");
+  if (first) {
+    first.focus();
+    first.select();
+  }
+}
+
+dialogEl.querySelectorAll("[data-close-dialog]").forEach((el) => {
+  el.addEventListener("click", closeDialog);
+});
+
+dialogConfirm.addEventListener("click", async () => {
+  if (!dialogOnConfirm) return closeDialog();
+  const inputs = {};
+  dialogBody.querySelectorAll("[data-field]").forEach((inp) => {
+    inputs[inp.dataset.field] = inp.value;
+  });
+  const ok = await dialogOnConfirm(inputs);
+  if (ok !== false) closeDialog();
+});
+
+function confirmDialog(title, message, onConfirm) {
+  openDialog({
+    title,
+    message,
+    confirmText: "확인",
+    fields: [],
+    onConfirm: async () => {
+      await onConfirm();
+      return true;
+    },
+  });
 }
 
 async function loadData() {
@@ -81,96 +217,148 @@ async function loadData() {
     window.top.location.href = "/login";
     return;
   }
-  state = await gradingRes.json();
-  const rosterData = await rosterRes.json();
-  roster = rosterData.roster || {};
+  state = normalizeState(await gradingRes.json());
+  roster = (await rosterRes.json()).roster || {};
   const me = await meRes.json();
   onlineSeats = (await onlineRes.json()).online || {};
-  document.getElementById("profileEmail").textContent = me.userId ? `${me.userId}@교실도구함` : "—";
+  document.getElementById("profileEmail").textContent = me.userId ? `${me.userId}` : "—";
   document.getElementById("profileName").textContent = me.displayName || me.userId || "선생님";
   document.getElementById("profileSchool").textContent = me.school || "우리반";
+  renderExamSelect();
   renderSidebar();
   renderView(currentView);
-  updateChecklistBadges();
+  loadQrInline();
 }
+
+function renderExamSelect() {
+  examSelect.innerHTML = "";
+  for (const exam of state.exams) {
+    const opt = document.createElement("option");
+    opt.value = exam.id;
+    opt.textContent = exam.name;
+    if (exam.id === state.activeExamId) opt.selected = true;
+    examSelect.appendChild(opt);
+  }
+}
+
+examSelect.addEventListener("change", () => {
+  state.activeExamId = examSelect.value;
+  const exam = activeExam();
+  state.activeSubjectId = exam.subjects[0]?.id || null;
+  state.activeUnitId = exam.subjects[0]?.units?.[0]?.id || null;
+  scheduleSave();
+  renderSidebar();
+  renderView(currentView);
+});
 
 function renderSidebar() {
   const exam = activeExam();
   subjectList.innerHTML = "";
-  if (!exam) return;
-  for (const sub of exam.subjects || []) {
-    const li = document.createElement("li");
-    li.className = "sb-item" + (sub.id === state.activeSubjectId ? " is-active" : "");
-    li.innerHTML = `
-      <span class="dot ${sub.active ? "on" : "off"}"></span>
-      <span class="label">${escapeHtml(sub.name)}</span>
-      <button type="button" class="icon-btn" data-action="edit-sub" title="이름 수정">✎</button>
-      <button type="button" class="icon-btn" data-action="del-sub" title="삭제">✕</button>
-    `;
-    li.querySelector(".label").addEventListener("click", () => {
-      state.activeSubjectId = sub.id;
-      if (sub.units?.[0]) state.activeUnitId = sub.units[0].id;
-      scheduleSave();
-      renderSidebar();
-      if (currentView === "exam") renderView("exam");
-      renderLockList();
-    });
-    li.querySelector('[data-action="edit-sub"]').addEventListener("click", (e) => {
-      e.stopPropagation();
-      const name = prompt("과목 이름", sub.name);
-      if (name?.trim()) {
-        sub.name = name.trim();
+
+  if (!exam.subjects?.length) {
+    subjectList.innerHTML = `<li class="sb-empty">등록된 과목이 없습니다.<br>아래 버튼으로 추가하세요.</li>`;
+  } else {
+    for (const sub of exam.subjects) {
+      const li = document.createElement("li");
+      li.className = "sb-item" + (sub.id === state.activeSubjectId ? " is-active" : "");
+      li.innerHTML = `
+        <button type="button" class="dot-btn dot ${sub.active ? "on" : "off"}" title="활성/비활성 전환"></button>
+        <span class="label">${escapeHtml(sub.name)}</span>
+        <button type="button" class="icon-btn" data-action="edit-sub" title="이름 수정">✎</button>
+        <button type="button" class="icon-btn" data-action="del-sub" title="삭제">✕</button>
+      `;
+      li.querySelector(".dot-btn").addEventListener("click", (e) => {
+        e.stopPropagation();
+        sub.active = !sub.active;
         scheduleSave();
         renderSidebar();
-        if (currentView === "exam") renderView("exam");
-      }
-    });
-    li.querySelector('[data-action="del-sub"]').addEventListener("click", (e) => {
-      e.stopPropagation();
-      if (!confirm(`"${sub.name}" 과목을 삭제할까요?`)) return;
-      exam.subjects = exam.subjects.filter((s) => s.id !== sub.id);
-      if (state.activeSubjectId === sub.id) state.activeSubjectId = exam.subjects[0]?.id;
-      scheduleSave();
-      renderSidebar();
-      renderView(currentView);
-      renderLockList();
-    });
-    subjectList.appendChild(li);
+        showToast(sub.active ? `${sub.name} 활성화` : `${sub.name} 비활성화`);
+      });
+      li.querySelector(".label").addEventListener("click", () => selectSubject(sub));
+      li.querySelector('[data-action="edit-sub"]').addEventListener("click", (e) => {
+        e.stopPropagation();
+        openDialog({
+          title: "과목 이름 수정",
+          fields: [{ name: "name", label: "이름", value: sub.name }],
+          onConfirm: async (v) => {
+            if (!v.name?.trim()) {
+              showToast("이름을 입력하세요.", true);
+              return false;
+            }
+            sub.name = v.name.trim();
+            await saveNow();
+            renderSidebar();
+            if (currentView === "exam") renderView("exam");
+            return true;
+          },
+        });
+      });
+      li.querySelector('[data-action="del-sub"]').addEventListener("click", (e) => {
+        e.stopPropagation();
+        confirmDialog("과목 삭제", `"${sub.name}" 과목과 단원·정답을 모두 삭제할까요?`, async () => {
+          exam.subjects = exam.subjects.filter((s) => s.id !== sub.id);
+          if (state.activeSubjectId === sub.id) {
+            state.activeSubjectId = exam.subjects[0]?.id || null;
+            state.activeUnitId = exam.subjects[0]?.units?.[0]?.id || null;
+          }
+          await saveNow();
+          renderSidebar();
+          renderView(currentView);
+        });
+      });
+      subjectList.appendChild(li);
+    }
   }
 
   classList.innerHTML = "";
-  for (const cls of state.classes || []) {
-    const li = document.createElement("li");
-    li.className = "sb-item" + (cls.id === state.activeClassId ? " is-active" : "");
-    li.innerHTML = `
-      <span class="label">${escapeHtml(cls.name)} (${cls.studentCount}명)</span>
-      <button type="button" class="icon-btn" data-action="del-class">✕</button>
-    `;
-    li.addEventListener("click", () => {
-      state.activeClassId = cls.id;
-      scheduleSave();
-      renderSidebar();
-      if (currentView === "grades") renderView("grades");
-    });
-    li.querySelector('[data-action="del-class"]').addEventListener("click", (e) => {
-      e.stopPropagation();
-      if (!confirm(`"${cls.name}" 을 삭제할까요?`)) return;
-      state.classes = state.classes.filter((c) => c.id !== cls.id);
-      if (state.activeClassId === cls.id) state.activeClassId = state.classes[0]?.id;
-      scheduleSave();
-      renderSidebar();
-    });
-    classList.appendChild(li);
+  if (!state.classes?.length) {
+    classList.innerHTML = `<li class="sb-empty">학반이 없습니다.</li>`;
+  } else {
+    for (const cls of state.classes) {
+      const li = document.createElement("li");
+      li.className = "sb-item" + (cls.id === state.activeClassId ? " is-active" : "");
+      li.innerHTML = `
+        <span class="label">${escapeHtml(cls.name)} (${cls.studentCount}명)</span>
+        <button type="button" class="icon-btn" data-action="del-class">✕</button>
+      `;
+      li.addEventListener("click", () => {
+        state.activeClassId = cls.id;
+        scheduleSave();
+        renderSidebar();
+        if (currentView === "grades") renderView("grades");
+      });
+      li.querySelector('[data-action="del-class"]').addEventListener("click", (e) => {
+        e.stopPropagation();
+        confirmDialog("학반 삭제", `"${cls.name}" 을 삭제할까요?`, async () => {
+          state.classes = state.classes.filter((c) => c.id !== cls.id);
+          if (state.activeClassId === cls.id) state.activeClassId = state.classes[0]?.id || null;
+          await saveNow();
+          renderSidebar();
+        });
+      });
+      classList.appendChild(li);
+    }
   }
 
   renderLockList();
 }
 
+function selectSubject(sub) {
+  state.activeSubjectId = sub.id;
+  state.activeUnitId = sub.units?.[0]?.id || null;
+  scheduleSave();
+  renderSidebar();
+  setView("exam");
+}
+
 function renderLockList() {
   lockList.innerHTML = "";
   const sub = activeSubject();
-  if (!sub) return;
-  for (const unit of sub.units || []) {
+  if (!sub?.units?.length) {
+    lockList.innerHTML = `<li class="sb-empty">과목·단원을 먼저 추가하세요.</li>`;
+    return;
+  }
+  for (const unit of sub.units) {
     const li = document.createElement("li");
     li.className = "sb-item lock-item";
     li.innerHTML = `
@@ -180,15 +368,17 @@ function renderLockList() {
         <button type="button" class="btn-lock ${!unit.locked ? "open" : ""}" data-lock="0">📶 열림</button>
       </div>
     `;
-    li.querySelector('[data-lock="1"]').addEventListener("click", () => {
+    li.querySelector('[data-lock="1"]').addEventListener("click", async () => {
       unit.locked = true;
-      scheduleSave();
+      await saveNow();
       renderLockList();
+      showToast("학생 화면에서 숨깁니다.");
     });
-    li.querySelector('[data-lock="0"]').addEventListener("click", () => {
+    li.querySelector('[data-lock="0"]').addEventListener("click", async () => {
       unit.locked = false;
-      scheduleSave();
+      await saveNow();
       renderLockList();
+      showToast("학생이 응시할 수 있습니다.");
     });
     lockList.appendChild(li);
   }
@@ -196,17 +386,11 @@ function renderLockList() {
 
 function updateChecklistBadges() {
   const exam = activeExam();
-  const sub = activeSubject();
   const unit = activeUnit();
-  const hasExam = (state.exams?.length || 0) > 0;
-  const hasClass = (state.classes?.length || 0) > 0;
-  const hasSubject = (exam?.subjects?.length || 0) > 0;
-  const hasAnswers = unit?.questions?.some((q) => q.answer) || false;
-  CHECKLIST[0].badge = hasExam ? "done" : "warn";
-  CHECKLIST[1].badge = hasClass ? "done" : "warn";
-  CHECKLIST[2].badge = hasSubject ? "done" : "warn";
-  CHECKLIST[3].badge = hasAnswers ? "done" : "warn";
-  CHECKLIST[4].badge = sub?.units?.length ? "done" : "pick";
+  CHECKLIST[0].badge = (exam?.subjects?.length || 0) > 0 ? "done" : "warn";
+  CHECKLIST[1].badge = (state.classes?.length || 0) > 0 || Object.keys(roster).length > 0 ? "done" : "warn";
+  CHECKLIST[2].badge = (activeSubject()?.units?.length || 0) > 0 ? "done" : "warn";
+  CHECKLIST[3].badge = unit?.questions?.some((q) => q.answer) ? "done" : "warn";
 }
 
 function setView(view) {
@@ -239,12 +423,8 @@ function renderHome() {
     <div class="view-home">
       <div class="hero">
         <h1>선생님을 위한 채점도구</h1>
-        <p class="hero-sub">학생은 QR로 접속하고, 선생님은 시험 설정부터 채점·성적표 인쇄까지 한곳에서 관리합니다.</p>
-        <div class="hero-actions">
-          <button type="button" class="btn btn-ghost" id="patchNotesBtn" style="background:#fff;border:1px solid #e2e8f0;color:#334155">최근 패치노트</button>
-          <button type="button" class="btn btn-ghost" id="devContactBtn" style="background:#fff;border:1px solid #e2e8f0;color:#334155">개발자 문의</button>
-          <span class="badge-space">교사 전용 데이터 공간 사용 중</span>
-        </div>
+        <p class="hero-sub">학생은 왼쪽 QR로 /exam 에 접속합니다. 과목을 추가하고 정답·잠금을 설정한 뒤 성적표에서 확인하세요.</p>
+        <span class="badge-space">교사 전용 데이터 공간</span>
       </div>
       <div class="checklist-grid">${cards}</div>
     </div>
@@ -252,26 +432,30 @@ function renderHome() {
 
   mainEl.querySelectorAll(".btn-goto").forEach((btn) => {
     btn.addEventListener("click", () => {
-      const v = btn.dataset.goto;
-      const id = btn.dataset.id;
-      if (id === "qr") document.getElementById("qrOpenBtn").click();
-      else if (id === "lock") renderSidebar();
-      else setView(v);
+      if (btn.dataset.id === "qr") {
+        document.querySelector(".sb-qr-block")?.scrollIntoView({ behavior: "smooth" });
+        return;
+      }
+      setView(btn.dataset.goto);
     });
-  });
-  document.getElementById("patchNotesBtn")?.addEventListener("click", () => {
-    alert("v1.0 — 교실 도구함에 채점도구가 추가되었습니다.");
-  });
-  document.getElementById("devContactBtn")?.addEventListener("click", () => {
-    alert("문의: 교실 도구함 관리자에게 연락해 주세요.");
   });
 }
 
 function renderExam() {
   const sub = activeSubject();
   const unit = activeUnit();
-  if (!sub || !unit) {
-    mainEl.innerHTML = `<p>왼쪽에서 과목을 선택하거나 과목을 추가해 주세요.</p>`;
+  if (!sub) {
+    mainEl.innerHTML = `
+      <div class="view-exam empty-main">
+        <h1>과목을 추가해 주세요</h1>
+        <p>왼쪽 「+ 새 시험(과목) 추가」를 눌러 수학, 국어 등 과목을 만드세요.</p>
+        <button type="button" class="btn btn-purple" id="emptyAddSubject">+ 새 시험(과목) 추가</button>
+      </div>`;
+    document.getElementById("emptyAddSubject")?.addEventListener("click", () => addSubjectFlow());
+    return;
+  }
+  if (!unit) {
+    mainEl.innerHTML = `<div class="view-exam empty-main"><p>단원이 없습니다. 아래에서 단원을 추가하세요.</p></div>`;
     return;
   }
 
@@ -287,7 +471,7 @@ function renderExam() {
       const typeClass = q.type === "short" ? "type-short" : q.type === "essay" ? "type-essay" : "";
       const essayExtra =
         q.type === "essay"
-          ? `<div class="q-essay-extra"><a href="#" data-rubric="${idx}">+ 채점기준 추가</a></div>
+          ? `<div class="q-essay-extra"><button type="button" class="link-btn" data-rubric="${idx}">+ 채점기준 추가</button></div>
              <button type="button" class="btn-manual-grade" data-manual="${idx}">이 문항 수동채점</button>`
           : "";
       return `
@@ -308,8 +492,7 @@ function renderExam() {
             </select>
           </div>
           ${essayExtra}
-        </div>
-      `;
+        </div>`;
     })
     .join("");
 
@@ -324,55 +507,56 @@ function renderExam() {
     <div class="view-exam">
       <div class="page-head">
         <h1>🎯 정답 및 문항 설정: ${escapeHtml(sub.name)}</h1>
-        <div class="head-actions">
-          <select id="importSubjectSelect" disabled><option>가져올 과목 선택</option></select>
-          <button type="button" class="btn btn-import" disabled>가져오기</button>
-          <button type="button" class="btn btn-share" disabled>공유 게시판에 올리기</button>
-          <button type="button" class="btn btn-green" id="addSubjectBtn">+ 과목 추가</button>
-          <button type="button" class="btn btn-ai" disabled>AI 도우미 열기</button>
-        </div>
+        <button type="button" class="btn btn-green" id="addSubjectMainBtn">+ 과목 추가</button>
       </div>
-
-      <div class="guide-box" id="guideBox">
-        <button type="button" class="guide-toggle" id="guideToggle">정답·문항 설정 안내 보이기/숨기기</button>
-        <div class="guide-steps">
-          <div class="guide-step"><b>1</b>과목 추가</div>
+      <div class="guide-box is-open">
+        <div class="guide-steps" style="display:grid">
+          <div class="guide-step"><b>1</b>과목·단원 추가</div>
           <div class="guide-step"><b>2</b>정답 입력</div>
-          <div class="guide-step"><b>3</b>문항 유형 구분</div>
-          <div class="guide-step"><b>4</b>시험 운영</div>
-          <div class="guide-step"><b>5</b>서술형 채점</div>
+          <div class="guide-step"><b>3</b>잠금 해제 후 학생 응시</div>
         </div>
       </div>
-
       <div class="unit-tabs">${tabs}
         <button type="button" class="unit-tab" id="addUnitBtn" style="border-style:dashed">+ 단원</button>
       </div>
-
       <section class="paper-section">
         <div class="section-head">
-          <h2>시험지 이미지 등록 (학생 화면 표시용)</h2>
+          <h2>시험지 이미지 (학생 화면)</h2>
           <div>
             <input type="file" id="paperInput" accept="image/*" multiple hidden />
             <button type="button" class="btn btn-blue" id="paperSelectBtn">파일 선택</button>
-            <span class="paper-status">✓ ${(unit.images || []).length}장 등록됨</span>
+            <span class="paper-status">${(unit.images || []).length}장</span>
           </div>
         </div>
-        <div class="paper-thumbs" id="paperThumbs">${thumbs || '<span style="color:#94a3b8;font-size:13px">등록된 이미지가 없습니다.</span>'}</div>
+        <div class="paper-thumbs" id="paperThumbs">${thumbs || '<span class="muted">이미지 없음</span>'}</div>
       </section>
-
       <section class="answers-section">
-        <div class="section-head">
-          <h2>${escapeHtml(unit.name)} 정답 ${(unit.questions || []).length}문항</h2>
-        </div>
-        <p style="font-size:12px;color:#64748b;margin:0 0 12px">문항 유형을 선택하고 정답·배점을 입력하세요.</p>
+        <h2>${escapeHtml(unit.name)} · ${(unit.questions || []).length}문항</h2>
         <div class="questions-grid" id="questionsGrid">${qCards}</div>
-        <button type="button" class="btn-add-q" id="addQuestionBtn">+ 문항 1개 수동 추가</button>
+        <button type="button" class="btn-add-q" id="addQuestionBtn">+ 문항 1개 추가</button>
       </section>
-    </div>
-  `;
+    </div>`;
 
-  document.getElementById("guideToggle").addEventListener("click", () => {
-    document.getElementById("guideBox").classList.toggle("is-open");
+  document.getElementById("addSubjectMainBtn")?.addEventListener("click", addSubjectFlow);
+  document.getElementById("addUnitBtn")?.addEventListener("click", () => {
+    openDialog({
+      title: "단원 추가",
+      fields: [{ name: "name", label: "단원 이름", placeholder: "예: 3단원_대응관계" }],
+      onConfirm: async (v) => {
+        if (!v.name?.trim()) {
+          showToast("단원 이름을 입력하세요.", true);
+          return false;
+        }
+        const id = newId();
+        sub.units.push(createUnit(v.name.trim()));
+        state.activeUnitId = sub.units[sub.units.length - 1].id;
+        await saveNow();
+        renderSidebar();
+        renderExam();
+        showToast("단원이 추가되었습니다.");
+        return true;
+      },
+    });
   });
 
   mainEl.querySelectorAll(".unit-tab[data-unit]").forEach((tab) => {
@@ -384,41 +568,6 @@ function renderExam() {
     });
   });
 
-  document.getElementById("addUnitBtn").addEventListener("click", () => {
-    const name = prompt("단원 이름");
-    if (!name?.trim()) return;
-    const id = crypto.randomUUID().replace(/-/g, "").slice(0, 16);
-    sub.units = sub.units || [];
-    sub.units.push({
-      id,
-      name: name.trim(),
-      locked: true,
-      images: [],
-      questions: [{ id, num: 1, type: "mc", answer: "", points: "1", rubric: "" }],
-    });
-    state.activeUnitId = id;
-    scheduleSave();
-    renderExam();
-    renderLockList();
-  });
-
-  document.getElementById("addSubjectBtn").addEventListener("click", () => {
-    const exam = activeExam();
-    const name = prompt("과목 이름");
-    if (!name?.trim() || !exam) return;
-    const id = crypto.randomUUID().replace(/-/g, "").slice(0, 16);
-    exam.subjects.push({
-      id,
-      name: name.trim(),
-      active: false,
-      units: [],
-    });
-    state.activeSubjectId = id;
-    scheduleSave();
-    renderSidebar();
-    renderExam();
-  });
-
   bindQuestionEditors(unit);
   bindPaperUpload(unit);
 }
@@ -426,7 +575,6 @@ function renderExam() {
 function bindQuestionEditors(unit) {
   const grid = document.getElementById("questionsGrid");
   if (!grid) return;
-
   grid.querySelectorAll(".q-card").forEach((card) => {
     const idx = Number(card.dataset.qidx);
     const q = unit.questions[idx];
@@ -451,30 +599,22 @@ function bindQuestionEditors(unit) {
       scheduleSave();
       renderExam();
     });
-    card.querySelector("[data-rubric]")?.addEventListener("click", (e) => {
-      e.preventDefault();
-      const text = prompt("채점 기준", q.rubric || "");
-      if (text !== null) {
-        q.rubric = text;
-        scheduleSave();
-      }
+    card.querySelector("[data-rubric]")?.addEventListener("click", () => {
+      openDialog({
+        title: `${q.num}번 채점 기준`,
+        fields: [{ name: "rubric", label: "기준", value: q.rubric || "" }],
+        onConfirm: async (v) => {
+          q.rubric = v.rubric || "";
+          await saveNow();
+          return true;
+        },
+      });
     });
-    card.querySelector("[data-manual]")?.addEventListener("click", () => {
-      alert(`${q.num}번 서술형 — 성적표에서 학생별 수동 채점을 진행하세요.`);
-      setView("grades");
-    });
+    card.querySelector("[data-manual]")?.addEventListener("click", () => setView("grades"));
   });
-
   document.getElementById("addQuestionBtn")?.addEventListener("click", () => {
-    const n = (unit.questions?.length || 0) + 1;
-    unit.questions.push({
-      id: crypto.randomUUID().replace(/-/g, "").slice(0, 16),
-      num: n,
-      type: "mc",
-      answer: "",
-      points: "1",
-      rubric: "",
-    });
+    const n = unit.questions.length + 1;
+    unit.questions.push(createQuestion(n));
     scheduleSave();
     renderExam();
   });
@@ -482,21 +622,22 @@ function bindQuestionEditors(unit) {
 
 function bindPaperUpload(unit) {
   const input = document.getElementById("paperInput");
-  document.getElementById("paperSelectBtn")?.addEventListener("click", () => input.click());
+  document.getElementById("paperSelectBtn")?.addEventListener("click", () => input?.click());
   input?.addEventListener("change", () => {
     const files = [...(input.files || [])];
     if (!files.length) return;
-    let pending = files.length;
     unit.images = unit.images || [];
+    let pending = files.length;
     for (const file of files) {
       const reader = new FileReader();
-      reader.onload = () => {
+      reader.onload = async () => {
         if (typeof reader.result === "string" && reader.result.length < 800000) {
           unit.images.push(reader.result);
+        } else {
+          showToast("이미지가 너무 큽니다.", true);
         }
-        pending -= 1;
-        if (pending === 0) {
-          scheduleSave();
+        if (--pending === 0) {
+          await saveNow();
           renderExam();
         }
       };
@@ -504,13 +645,38 @@ function bindPaperUpload(unit) {
     }
     input.value = "";
   });
-
   document.getElementById("paperThumbs")?.querySelectorAll("[data-rm-img]").forEach((btn) => {
-    btn.addEventListener("click", () => {
+    btn.addEventListener("click", async () => {
       unit.images.splice(Number(btn.dataset.rmImg), 1);
-      scheduleSave();
+      await saveNow();
       renderExam();
     });
+  });
+}
+
+function addSubjectFlow() {
+  openDialog({
+    title: "새 시험(과목) 추가",
+    fields: [{ name: "name", label: "과목 이름", placeholder: "예: 수학, 국어", value: "" }],
+    onConfirm: async (v) => {
+      const name = v.name?.trim();
+      if (!name) {
+        showToast("과목 이름을 입력하세요.", true);
+        return false;
+      }
+      const exam = activeExam();
+      const sub = createSubject(name);
+      exam.subjects.push(sub);
+      state.activeSubjectId = sub.id;
+      state.activeUnitId = sub.units[0].id;
+      const ok = await saveNow();
+      if (!ok) return false;
+      renderExamSelect();
+      renderSidebar();
+      setView("exam");
+      showToast(`「${name}」 과목이 추가되었습니다.`);
+      return true;
+    },
   });
 }
 
@@ -531,8 +697,13 @@ function scoreFor(studentKey, unitId) {
 
 function formatSubmitted(ts) {
   if (!ts) return "—";
-  const d = new Date(ts);
-  return d.toLocaleString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+  return new Date(ts).toLocaleString("ko-KR", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 function renderGrades() {
@@ -540,160 +711,129 @@ function renderGrades() {
   const cls = activeClass();
   const students = getRosterStudents();
   const units = sub?.units || [];
-
-  const cols = units
-    .map((u) => `<th>${escapeHtml(u.name)}</th>`)
-    .join("");
+  const cols = units.map((u) => `<th>${escapeHtml(u.name)}</th>`).join("");
 
   const rows = students.length
     ? students
         .map((st) => {
           const key = `${st.seat}:${st.name}`;
           const scores = units.map((u) => scoreFor(key, u.id));
-          const nums = scores.filter((s) => typeof s === "number" || (typeof s === "string" && s !== "—" && !isNaN(Number(s))));
-          const avg =
-            nums.length > 0
-              ? (nums.reduce((a, b) => a + Number(b), 0) / nums.length).toFixed(1)
-              : "—";
-          const online = !!onlineSeats[st.seat];
+          const nums = scores.filter((s) => s !== "—" && !isNaN(Number(s)));
+          const avg = nums.length ? (nums.reduce((a, b) => a + Number(b), 0) / nums.length).toFixed(1) : "—";
           return `
             <tr>
-              <td><span class="dot ${online ? "on" : "off"}"></span>${st.seat}</td>
+              <td><span class="dot ${onlineSeats[st.seat] ? "on" : "off"}"></span>${st.seat}</td>
               <td class="name">${escapeHtml(st.name)}</td>
               ${scores.map((s) => `<td>${s}</td>`).join("")}
               <td class="avg">${avg}</td>
               <td>${formatSubmitted(state.studentScores?.[key]?._submittedAt)}</td>
-              <td>
-                <div class="row-actions">
-                  <button type="button" class="view" data-student="${escapeHtml(key)}">학생결과보기</button>
-                  <button type="button" class="print">인쇄</button>
-                  <button type="button" class="reset" data-reset="${escapeHtml(key)}">초기화</button>
-                  <button type="button" class="del" data-del="${escapeHtml(key)}">삭제</button>
-                </div>
-              </td>
-            </tr>
-          `;
+              <td><div class="row-actions">
+                <button type="button" class="reset" data-reset="${escapeHtml(key)}">초기화</button>
+              </div></td>
+            </tr>`;
         })
         .join("")
-    : `<tr><td colspan="${6 + units.length}">우리반 학생 명단을 칠판에서 먼저 등록해 주세요.</td></tr>`;
+    : `<tr><td colspan="${6 + units.length}">칠판 「우리반 학생」에서 명단을 저장하거나, 왼쪽에서 학반을 추가하세요.</td></tr>`;
 
   mainEl.innerHTML = `
     <div class="view-grades">
       <div class="grades-head">
         <div>
           <h1>📊 실시간 성적 현황표</h1>
-          <p class="legend"><span class="dot on"></span> 온라인 · <span class="dot off"></span> 오프라인</p>
+          <p class="legend"><span class="dot on"></span> 접속 · <span class="dot off"></span> 미접속</p>
         </div>
         <div class="grades-actions">
           <button type="button" class="btn btn-publish ${state.resultsPublished ? "on" : "off"}" id="togglePublish">
-            ${state.resultsPublished ? "결과 공개 중 (ON)" : "결과 비공개 (OFF)"}
+            ${state.resultsPublished ? "결과 공개 ON" : "결과 공개 OFF"}
           </button>
-          <button type="button" class="btn btn-excel" id="excelBtn">📥 엑셀 다운로드</button>
-          <button type="button" class="btn btn-print" id="bulkPrintBtn">🖨️ 일괄 인쇄</button>
+          <button type="button" class="btn btn-excel" id="excelBtn">엑셀</button>
+          <button type="button" class="btn btn-print" id="bulkPrintBtn">인쇄</button>
         </div>
       </div>
       ${cls ? `<span class="class-badge">${escapeHtml(cls.name)}</span>` : ""}
       <div class="grades-table-wrap">
         <table class="grades-table">
-          <thead>
-            <tr>
-              <th>번호</th>
-              <th>이름</th>
-              ${cols}
-              <th>평균</th>
-              <th>최종 제출</th>
-              <th>관리</th>
-            </tr>
-          </thead>
+          <thead><tr><th>번호</th><th>이름</th>${cols}<th>평균</th><th>제출</th><th>관리</th></tr></thead>
           <tbody>${rows}</tbody>
         </table>
       </div>
-    </div>
-  `;
+    </div>`;
 
-  document.getElementById("togglePublish")?.addEventListener("click", () => {
+  document.getElementById("togglePublish")?.addEventListener("click", async () => {
     state.resultsPublished = !state.resultsPublished;
-    scheduleSave();
+    await saveNow();
     renderGrades();
   });
-
   document.getElementById("excelBtn")?.addEventListener("click", () => {
     const lines = ["번호,이름," + units.map((u) => u.name).join(",") + ",평균"];
     for (const st of students) {
       const key = `${st.seat}:${st.name}`;
-      const sc = units.map((u) => scoreFor(key, u.id));
-      lines.push([st.seat, st.name, ...sc].join(","));
+      lines.push([st.seat, st.name, ...units.map((u) => scoreFor(key, u.id))].join(","));
     }
-    const blob = new Blob(["\uFEFF" + lines.join("\n")], { type: "text/csv;charset=utf-8" });
     const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "성적현황.csv";
+    a.href = URL.createObjectURL(new Blob(["\uFEFF" + lines.join("\n")], { type: "text/csv;charset=utf-8" }));
+    a.download = "성적.csv";
     a.click();
   });
-
   document.getElementById("bulkPrintBtn")?.addEventListener("click", () => window.print());
 
   if (window._gradesPoll) clearInterval(window._gradesPoll);
   window._gradesPoll = setInterval(async () => {
     if (currentView !== "grades") return;
     try {
-      const res = await fetch("/api/grading/online", { credentials: "include" });
-      onlineSeats = (await res.json()).online || {};
+      onlineSeats = (await (await fetch("/api/grading/online", { credentials: "include" })).json()).online || {};
       renderGrades();
     } catch (_) {}
   }, 8000);
 
   mainEl.querySelectorAll("[data-reset]").forEach((btn) => {
     btn.addEventListener("click", () => {
-      if (!confirm("이 학생의 제출·점수를 초기화할까요?")) return;
-      delete state.studentScores[btn.dataset.reset];
-      scheduleSave();
-      renderGrades();
-    });
-  });
-
-  mainEl.querySelectorAll("[data-del]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      if (!confirm("점수 기록을 삭제할까요?")) return;
-      delete state.studentScores[btn.dataset.del];
-      scheduleSave();
-      renderGrades();
+      confirmDialog("초기화", "이 학생의 점수를 초기화할까요?", async () => {
+        delete state.studentScores[btn.dataset.reset];
+        await saveNow();
+        renderGrades();
+      });
     });
   });
 }
 
-/* QR */
-async function loadQr() {
-  const res = await fetch("/api/grading/student-url", { credentials: "include" });
-  const data = await res.json();
-  studentUrl = data.examUrl || data.url || "";
-  qrDataUrl = data.dataUrl || "";
-  document.getElementById("qrUrlText").textContent = studentUrl;
-  const img = document.getElementById("qrImage");
-  if (qrDataUrl) img.src = qrDataUrl;
+async function loadQrInline() {
+  const status = document.getElementById("qrLoadStatus");
+  const img = document.getElementById("qrImageInline");
+  const urlEl = document.getElementById("qrUrlInline");
+  try {
+    const res = await fetch("/api/grading/student-url", { credentials: "include" });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "QR 로드 실패");
+    studentUrl = data.examUrl || "";
+    qrDataUrl = data.dataUrl || "";
+    urlEl.textContent = studentUrl;
+    urlEl.title = studentUrl;
+    if (qrDataUrl) {
+      img.src = qrDataUrl;
+      img.hidden = false;
+      status.classList.add("hidden");
+    } else {
+      status.textContent = "QR을 만들지 못했습니다.";
+    }
+  } catch (err) {
+    status.textContent = err.message || "QR 불러오기 실패";
+    showToast(status.textContent, true);
+  }
 }
-
-document.getElementById("qrOpenBtn").addEventListener("click", async () => {
-  await loadQr();
-  document.getElementById("qrModal").classList.remove("hidden");
-});
-
-document.querySelector('[data-close="qrModal"]').addEventListener("click", () => {
-  document.getElementById("qrModal").classList.add("hidden");
-});
 
 document.getElementById("qrCopyBtn").addEventListener("click", async () => {
-  await loadQr();
+  if (!studentUrl) await loadQrInline();
   try {
     await navigator.clipboard.writeText(studentUrl);
-    alert("주소를 복사했습니다.");
+    showToast("주소를 복사했습니다.");
   } catch (_) {
-    prompt("아래 주소를 복사하세요", studentUrl);
+    showToast(studentUrl, false);
   }
 });
 
 document.getElementById("qrSaveBtn").addEventListener("click", async () => {
-  await loadQr();
+  if (!qrDataUrl) await loadQrInline();
   if (!qrDataUrl) return;
   const a = document.createElement("a");
   a.href = qrDataUrl;
@@ -701,41 +841,38 @@ document.getElementById("qrSaveBtn").addEventListener("click", async () => {
   a.click();
 });
 
-document.getElementById("addExamBtn").addEventListener("click", () => {
-  const name = prompt("시험 이름");
-  if (!name?.trim()) return;
-  const id = crypto.randomUUID().replace(/-/g, "").slice(0, 16);
-  state.exams.push({
-    id,
-    name: name.trim(),
-    active: true,
-    subjects: [],
-  });
-  state.activeExamId = id;
-  scheduleSave();
-  renderSidebar();
-});
+document.getElementById("addSubjectBtn").addEventListener("click", addSubjectFlow);
 
 document.getElementById("addClassBtn").addEventListener("click", () => {
-  const name = prompt("학반 이름 (예: 5-3반)");
-  if (!name?.trim()) return;
-  const count = Number(prompt("학생 수", "20")) || 20;
-  const id = crypto.randomUUID().replace(/-/g, "").slice(0, 16);
-  state.classes.push({ id, name: name.trim(), studentCount: count, selected: false });
-  if (!state.activeClassId) state.activeClassId = id;
-  scheduleSave();
-  renderSidebar();
+  openDialog({
+    title: "학반 추가",
+    fields: [
+      { name: "name", label: "학반 이름", placeholder: "5-3반" },
+      { name: "count", label: "학생 수", type: "number", value: "20", min: 1, max: 40 },
+    ],
+    onConfirm: async (v) => {
+      if (!v.name?.trim()) {
+        showToast("학반 이름을 입력하세요.", true);
+        return false;
+      }
+      const id = newId();
+      state.classes.push({
+        id,
+        name: v.name.trim(),
+        studentCount: Number(v.count) || 20,
+      });
+      if (!state.activeClassId) state.activeClassId = id;
+      await saveNow();
+      renderSidebar();
+      showToast("학반이 추가되었습니다.");
+      return true;
+    },
+  });
 });
 
 document.getElementById("gradingLogout").addEventListener("click", async () => {
   await fetch("/api/logout", { method: "POST", credentials: "include" });
   window.top.location.href = "/login";
-});
-
-/* 과목 클릭 시 시험 설정으로 */
-subjectList.addEventListener("click", (e) => {
-  if (e.target.closest("[data-action]")) return;
-  setView("exam");
 });
 
 loadData();
