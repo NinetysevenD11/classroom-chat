@@ -11,6 +11,7 @@ const APPS = [
 
 const sidebar = document.getElementById("sidebar");
 const sidebarToggle = document.getElementById("sidebarToggle");
+const hubRailToggle = document.getElementById("hubRailToggle");
 const sidebarNav = document.getElementById("sidebarNav");
 const appFrame = document.getElementById("appFrame");
 const hubLogout = document.getElementById("hubLogout");
@@ -22,10 +23,12 @@ function isCollapsed() {
   return localStorage.getItem(COLLAPSE_KEY) === "1";
 }
 
-function applyCollapse(collapsed) {
-  sidebar.classList.toggle("is-collapsed", collapsed);
+function setCollapsed(collapsed) {
+  document.body.classList.toggle("hub-sidebar-collapsed", collapsed);
   sidebarToggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
   sidebarToggle.title = collapsed ? "메뉴 펼치기" : "메뉴 접기";
+  hubRailToggle.title = collapsed ? "메뉴 펼치기" : "메뉴 접기";
+  localStorage.setItem(COLLAPSE_KEY, collapsed ? "1" : "0");
 }
 
 function renderNav(activeId) {
@@ -67,12 +70,12 @@ function initAppFromUrl() {
   }
 }
 
-sidebarToggle.addEventListener("click", () => {
-  const next = !sidebar.classList.contains("is-collapsed");
-  sidebar.classList.toggle("is-collapsed", next);
-  localStorage.setItem(COLLAPSE_KEY, next ? "1" : "0");
-  applyCollapse(next);
-});
+function toggleSidebar() {
+  setCollapsed(!document.body.classList.contains("hub-sidebar-collapsed"));
+}
+
+sidebarToggle.addEventListener("click", toggleSidebar);
+hubRailToggle.addEventListener("click", toggleSidebar);
 
 hubLogout.addEventListener("click", async () => {
   try {
@@ -81,5 +84,5 @@ hubLogout.addEventListener("click", async () => {
   window.location.href = "/login";
 });
 
-applyCollapse(isCollapsed());
+setCollapsed(isCollapsed());
 initAppFromUrl();

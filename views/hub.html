@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>교실 도구함</title>
-  <link rel="stylesheet" href="/css/hub.css?v=1" />
+  <link rel="stylesheet" href="/css/hub.css?v=2" />
   <script>
     (function () {
       var t = localStorage.getItem("theme");
@@ -13,6 +13,10 @@
   </script>
 </head>
 <body class="hub-layout">
+  <button type="button" id="hubRailToggle" class="hub-rail-toggle" title="메뉴 펼치기" aria-label="메뉴 펼치기">
+    <span aria-hidden="true">☰</span>
+  </button>
+
   <aside id="sidebar" class="sidebar" aria-label="기능 메뉴">
     <div class="sidebar-top">
       <button type="button" id="sidebarToggle" class="sidebar-toggle" title="메뉴 접기/펼치기" aria-expanded="true">
@@ -46,6 +50,6 @@
     ></iframe>
   </main>
 
-  <script src="/js/hub.js?v=1"></script>
+  <script src="/js/hub.js?v=2"></script>
 </body>
 </html>

@@ -132,10 +132,12 @@ html[data-theme="light"] body:not(.pip-mode)::after {
 html[data-theme="dark"] body:not(.pip-mode) > .topbar,
 html[data-theme="dark"] body:not(.pip-mode) > .toolbar,
 html[data-theme="dark"] body:not(.pip-mode) > .grid,
+html[data-theme="dark"] body:not(.pip-mode) > .group-board,
 html[data-theme="dark"] body:not(.pip-mode) > .teacher-chat,
 html[data-theme="light"] body:not(.pip-mode) > .topbar,
 html[data-theme="light"] body:not(.pip-mode) > .toolbar,
 html[data-theme="light"] body:not(.pip-mode) > .grid,
+html[data-theme="light"] body:not(.pip-mode) > .group-board,
 html[data-theme="light"] body:not(.pip-mode) > .teacher-chat {
   position: relative;
   z-index: 1;
@@ -247,6 +249,7 @@ html[data-theme="light"] body:not(.pip-mode) .icon-btn:hover {
 
 /* 상단 액션 버튼 — 우리반 학생과 동일 (하늘색 + 검정 글씨) */
 body:not(.pip-mode) .danger-btn,
+body:not(.pip-mode) .group-btn,
 body:not(.pip-mode) .qr-btn,
 body:not(.pip-mode) .float-btn,
 body:not(.pip-mode) .class-btn {
@@ -264,6 +267,7 @@ body:not(.pip-mode) .class-btn {
 }
 
 body:not(.pip-mode) .danger-btn:hover,
+body:not(.pip-mode) .group-btn:hover,
 body:not(.pip-mode) .qr-btn:hover,
 body:not(.pip-mode) .float-btn:hover,
 body:not(.pip-mode) .class-btn:hover {
@@ -272,6 +276,7 @@ body:not(.pip-mode) .class-btn:hover {
 }
 
 body:not(.pip-mode) .danger-btn:active,
+body:not(.pip-mode) .group-btn:active,
 body:not(.pip-mode) .qr-btn:active,
 body:not(.pip-mode) .float-btn:active,
 body:not(.pip-mode) .class-btn:active {
@@ -567,6 +572,7 @@ html[data-theme="light"] .modal {
 
 html[data-theme="dark"] .help-box,
 html[data-theme="dark"] .roster-box,
+html[data-theme="dark"] .group-box,
 html[data-theme="dark"] .confirm-box,
 html[data-theme="dark"] .modal-box,
 html[data-theme="dark"] .panel-box,
@@ -578,6 +584,7 @@ html[data-theme="dark"] .alarm-box {
 
 html[data-theme="light"] .help-box,
 html[data-theme="light"] .roster-box,
+html[data-theme="light"] .group-box,
 html[data-theme="light"] .confirm-box,
 html[data-theme="light"] .modal-box,
 html[data-theme="light"] .panel-box,
@@ -589,6 +596,7 @@ html[data-theme="light"] .alarm-box {
 
 .help-box,
 .roster-box,
+.group-box,
 .confirm-box,
 .modal-box,
 .panel-box,

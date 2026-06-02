@@ -4,14 +4,15 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>우리반 채팅 · 교사 화면</title>
-  <link rel="stylesheet" href="/css/teacher.css?v=7" />
-  <link rel="stylesheet" href="/css/teacher-cozy.css?v=4" />
+  <link rel="stylesheet" href="/css/teacher.css?v=8" />
+  <link rel="stylesheet" href="/css/teacher-cozy.css?v=5" />
 </head>
 <body>
   <header class="topbar">
     <h1>우리반 칠판</h1>
     <div class="hint">아바타를 <b>클릭</b>하면 마지막 채팅을 분필로 읽어줍니다 🔊</div>
     <button id="kickAllBtn" class="danger-btn" title="모든 학생을 한 번에 내보내기">전체 강퇴</button>
+    <button id="groupBtn" class="group-btn" title="학생을 모둠별로 배치">🪑 모둠 배치</button>
     <button id="pipBtn" class="float-btn" title="PPT 위에 떠 있는 작은 창으로 보기">🪟 플로팅 창</button>
     <button id="rosterBtn" class="class-btn" title="우리반 학생 명단">👥 우리반 학생</button>
     <button id="qrBtn" class="qr-btn">📱 참여 QR 코드</button>
@@ -43,6 +44,12 @@
   </div>
 
   <main id="grid" class="grid"></main>
+
+  <!-- 모둠 배치 칠판 보기 -->
+  <section id="groupBoard" class="group-board hidden" aria-hidden="true">
+    <div id="groupClusters" class="group-clusters"></div>
+    <div id="groupTeacherRow" class="group-teacher-row"></div>
+  </section>
 
   <!-- 화면 중앙 전체 질문 -->
   <div id="questionOverlay" class="question-overlay hidden">
@@ -195,6 +202,37 @@
     </div>
   </div>
 
+  <!-- 모둠 배치 편집 -->
+  <div id="groupModal" class="modal hidden">
+    <div class="group-box">
+      <div class="group-head">
+        <h2>🪑 모둠 배치</h2>
+        <button type="button" id="groupModalClose" class="help-close" title="닫기">✕</button>
+      </div>
+      <p class="group-desc">학생 카드를 모둠 책상으로 끌어다 놓으세요. 저장 후 <b>칠판에 표시</b>를 누르면 칠판이 모둠 형태로 바뀝니다.</p>
+      <div class="group-toolbar">
+        <label class="group-count-label">모둠 수
+          <input type="number" id="groupCountInput" min="2" max="6" value="4" />
+        </label>
+        <button type="button" id="groupAutoBtn" class="tool-btn">⚖️ 균등 배치</button>
+        <button type="button" id="groupResetBtn" class="tool-btn">↺ 초기화</button>
+      </div>
+      <div class="group-editor">
+        <div class="group-pool-wrap">
+          <h3 class="group-subtitle">미배치 학생</h3>
+          <div id="groupPool" class="group-chips"></div>
+        </div>
+        <div id="groupZones" class="group-zones"></div>
+      </div>
+      <div class="group-actions">
+        <button type="button" id="groupShowBtn" class="close-btn">칠판에 표시</button>
+        <button type="button" id="groupHideBtn" class="confirm-btn cancel">칠판 배치 끄기</button>
+        <button type="button" id="groupSaveBtn" class="tool-btn green">저장</button>
+        <button type="button" id="groupModalCloseBtn" class="confirm-btn cancel">닫기</button>
+      </div>
+    </div>
+  </div>
+
   <!-- QR 모달 -->
   <div id="qrModal" class="modal hidden">
     <div class="modal-box">
@@ -207,6 +245,6 @@
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
-  <script src="/js/teacher.js"></script>
+  <script src="/js/teacher.js?v=2"></script>
 </body>
 </html>

@@ -16,6 +16,9 @@ window.addEventListener("online", ensureConnected);
 window.addEventListener("focus", ensureConnected);
 
 const grid = document.getElementById("grid");
+const groupBoard = document.getElementById("groupBoard");
+const groupClusters = document.getElementById("groupClusters");
+const groupTeacherRow = document.getElementById("groupTeacherRow");
 const TOTAL = 20; // 1~19 학생, 20 교사
 const TEACHER_SEAT = 20;
 
@@ -55,6 +58,8 @@ const logs = {};
 const mutedSeats = {};
 // 플로팅(PiP) 창 핸들
 let pipWindow = null;
+let boardGroupModeActive = false;
+let teacherUserId = null;
 
 // ----- TTS (Google 한국의만 사용) -----
 function googleKoreanVoice() {
@@ -419,64 +424,147 @@ themeBtn.addEventListener("click", () => {
   applyTheme(cur === "light" ? "dark" : "light");
 });
 
-// ----- 플로팅 창 (Document Picture-in-Picture) -----
-// PPT(슬라이드쇼) 위에도 떠 있는 작은 창으로 그리드를 보여준다.
+// ----- 플로팅 창 (PiP 또는 팝업 — iframe·구형 브라우저 대응) -----
 const pipBtn = document.getElementById("pipBtn");
 
-async function openFloating() {
-  if (!window.isSecureContext) {
-    alert(
-      "플로팅 창은 보안 주소에서만 동작합니다.\n교사 화면을 'http://localhost:3000' 으로 열어 주세요.\n(IP 주소(http://10....)로 열면 동작하지 않습니다.)"
-    );
-    return;
+function isInIframe() {
+  try {
+    return window.parent !== window;
+  } catch {
+    return true;
   }
-  if (!("documentPictureInPicture" in window)) {
-    alert(
-      "이 브라우저는 플로팅 창을 지원하지 않습니다.\n크롬 또는 엣지 최신 버전에서 이 페이지를 열어 주세요."
-    );
-    return;
+}
+
+function copyStylesToWindow(targetWin) {
+  document.querySelectorAll('link[rel="stylesheet"]').forEach((node) => {
+    const href = node.getAttribute("href");
+    if (!href) return;
+    const link = targetWin.document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = new URL(href, document.baseURI).href;
+    targetWin.document.head.appendChild(link);
+  });
+  document.querySelectorAll("style").forEach((node) => {
+    targetWin.document.head.appendChild(node.cloneNode(true));
+  });
+}
+
+function getPipContentRoot() {
+  if (boardGroupModeActive && groupBoard) return groupBoard;
+  return grid;
+}
+
+function restorePipContent() {
+  const qrModal = document.getElementById("qrModal");
+  const chat = document.getElementById("teacherChatForm");
+  const root = getPipContentRoot();
+  if (boardGroupModeActive && groupBoard) {
+    document.body.insertBefore(groupBoard, qrModal);
+    if (groupTeacherRow && tiles[TEACHER_SEAT]) {
+      groupTeacherRow.appendChild(tiles[TEACHER_SEAT]);
+    }
+  } else {
+    for (let i = 1; i <= TOTAL; i++) {
+      if (tiles[i]) grid.appendChild(tiles[i]);
+    }
   }
+  document.body.insertBefore(chat, qrModal);
+  if (boardGroupModeActive) applyGroupBoardLayout();
+}
+
+function mountPipContent(targetWin) {
+  copyStylesToWindow(targetWin);
+  targetWin.document.title = "우리반 칠판 (플로팅)";
+  targetWin.document.documentElement.setAttribute(
+    "data-theme",
+    document.documentElement.getAttribute("data-theme") || "dark"
+  );
+  targetWin.document.body.classList.add("pip-mode");
+
+  const listHeader = targetWin.document.createElement("div");
+  listHeader.className = "pip-list-header";
+  listHeader.innerHTML =
+    '<span class="pip-col-no">번호</span><span class="pip-col-name">이름</span><span class="pip-col-hand"></span><span class="pip-col-msg">메시지</span>';
+
+  const chat = document.getElementById("teacherChatForm");
+  const root = getPipContentRoot();
+  targetWin.document.body.append(listHeader, root, chat);
+}
+
+function openFloatingPopup() {
+  const w = Math.min(480, window.screen.availWidth - 40);
+  const h = Math.min(520, window.screen.availHeight - 80);
+  const popup = window.open(
+    "about:blank",
+    "classroom_pip",
+    `popup=yes,width=${w},height=${h},menubar=no,toolbar=no,location=no,status=no,resizable=yes`
+  );
+  if (!popup) return null;
+  return popup;
+}
+
+function openFloating() {
   if (pipWindow && !pipWindow.closed) {
     pipWindow.focus();
     return;
   }
 
-  try {
-    pipWindow = await window.documentPictureInPicture.requestWindow({
-      width: Math.min(480, window.screen.availWidth - 40),
-      height: Math.min(520, window.screen.availHeight - 80),
-    });
-  } catch (err) {
-    alert("플로팅 창을 여는 중 오류가 발생했습니다: " + err.message);
+  const canDocPip =
+    !isInIframe() &&
+    window.isSecureContext &&
+    "documentPictureInPicture" in window;
+
+  if (!canDocPip && !window.isSecureContext) {
+    alert(
+      "플로팅 창은 HTTPS 또는 localhost에서만 동작합니다.\n배포 주소(https://...)로 접속해 주세요."
+    );
     return;
   }
 
-  // 스타일 복사
-  document
-    .querySelectorAll('link[rel="stylesheet"], style')
-    .forEach((node) => pipWindow.document.head.appendChild(node.cloneNode(true)));
-  pipWindow.document.title = "우리반 채팅 (플로팅)";
-  pipWindow.document.documentElement.setAttribute(
-    "data-theme",
-    document.documentElement.getAttribute("data-theme") || "dark"
-  );
-  pipWindow.document.body.classList.add("pip-mode");
+  let opened = null;
+  if (canDocPip) {
+    window.documentPictureInPicture
+      .requestWindow({
+        width: Math.min(480, window.screen.availWidth - 40),
+        height: Math.min(520, window.screen.availHeight - 80),
+      })
+      .then((win) => {
+        pipWindow = win;
+        mountPipContent(pipWindow);
+        pipWindow.addEventListener("pagehide", () => {
+          restorePipContent();
+          pipWindow = null;
+        });
+      })
+      .catch(() => {
+        opened = openFloatingPopup();
+        if (!opened) {
+          alert(
+            "플로팅 창을 열 수 없습니다.\n브라우저에서 팝업을 허용하거나, 크롬·엣지 최신 버전을 사용해 주세요."
+          );
+          return;
+        }
+        pipWindow = opened;
+        mountPipContent(pipWindow);
+        pipWindow.addEventListener("beforeunload", () => {
+          restorePipContent();
+          pipWindow = null;
+        });
+      });
+    return;
+  }
 
-  const listHeader = document.createElement("div");
-  listHeader.className = "pip-list-header";
-  listHeader.innerHTML =
-    '<span class="pip-col-no">번호</span><span class="pip-col-name">이름</span><span class="pip-col-hand"></span><span class="pip-col-msg">메시지</span>';
-
-  // 그리드와 선생님 입력창을 플로팅 창으로 이동
-  const grid = document.getElementById("grid");
-  const chat = document.getElementById("teacherChatForm");
-  pipWindow.document.body.append(listHeader, grid, chat);
-
-  // 창이 닫히면 원래 위치로 되돌린다.
-  pipWindow.addEventListener("pagehide", () => {
-    const qrModal = document.getElementById("qrModal");
-    document.body.insertBefore(grid, qrModal);
-    document.body.insertBefore(chat, qrModal);
+  opened = openFloatingPopup();
+  if (!opened) {
+    alert(
+      "플로팅 창이 차단되었습니다.\n브라우저 주소창 옆에서 팝업을 허용한 뒤 다시 시도해 주세요."
+    );
+    return;
+  }
+  pipWindow = opened;
+  mountPipContent(pipWindow);
+  pipWindow.addEventListener("beforeunload", () => {
+    restorePipContent();
     pipWindow = null;
   });
 }
@@ -957,3 +1045,271 @@ function stopAlarm() {
 }
 
 document.getElementById("alarmStop").addEventListener("click", stopAlarm);
+
+// ===== 모둠 배치 =====
+const groupModal = document.getElementById("groupModal");
+const groupPool = document.getElementById("groupPool");
+const groupZones = document.getElementById("groupZones");
+const groupCountInput = document.getElementById("groupCountInput");
+
+let groupLayoutState = {
+  groupCount: 4,
+  groups: [],
+  activeOnBoard: false,
+};
+
+function groupStorageKey() {
+  return teacherUserId ? `groupLayout_v1_${teacherUserId}` : "groupLayout_v1_guest";
+}
+
+function seatDisplayName(seat) {
+  const tile = tiles[seat];
+  const fromTile = tile?.querySelector(".name")?.textContent?.trim();
+  if (fromTile && fromTile !== "빈 자리") return fromTile;
+  return savedRoster[seat] || savedRoster[String(seat)] || `${seat}번`;
+}
+
+function defaultGroups(count) {
+  const groups = [];
+  for (let g = 1; g <= count; g++) {
+    groups.push({ id: g, name: `${g}모둠`, seats: [] });
+  }
+  return groups;
+}
+
+function allStudentSeatsInLayout(layout) {
+  const set = new Set();
+  for (const g of layout.groups) {
+    for (const s of g.seats) set.add(Number(s));
+  }
+  return set;
+}
+
+function normalizeGroupLayout(raw) {
+  const count = Math.min(6, Math.max(2, parseInt(raw?.groupCount, 10) || 4));
+  let groups = Array.isArray(raw?.groups) ? raw.groups : defaultGroups(count);
+  while (groups.length < count) {
+    groups.push({ id: groups.length + 1, name: `${groups.length + 1}모둠`, seats: [] });
+  }
+  groups = groups.slice(0, count).map((g, i) => ({
+    id: i + 1,
+    name: (g.name || `${i + 1}모둠`).trim(),
+    seats: [...new Set((g.seats || []).map(Number).filter((s) => s >= 1 && s <= 19))],
+  }));
+  return { groupCount: count, groups, activeOnBoard: !!raw?.activeOnBoard };
+}
+
+function saveGroupLayoutToStorage() {
+  try {
+    localStorage.setItem(groupStorageKey(), JSON.stringify(groupLayoutState));
+  } catch (_) {}
+}
+
+function loadGroupLayoutFromStorage() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(groupStorageKey()) || "null");
+    if (raw) groupLayoutState = normalizeGroupLayout(raw);
+  } catch (_) {}
+}
+
+function createGroupChip(seat) {
+  const chip = document.createElement("div");
+  chip.className = "group-chip";
+  chip.draggable = true;
+  chip.dataset.seat = String(seat);
+  const emoji = document.createElement("span");
+  emoji.className = "group-chip-emoji";
+  emoji.textContent = SEAT_AVATAR[seat] || "🙂";
+  const name = document.createElement("span");
+  name.className = "group-chip-name";
+  name.textContent = `${seat}번 ${seatDisplayName(seat)}`;
+  chip.append(emoji, name);
+  chip.addEventListener("dragstart", (e) => {
+    e.dataTransfer.setData("text/seat", String(seat));
+    e.dataTransfer.effectAllowed = "move";
+    chip.classList.add("dragging");
+  });
+  chip.addEventListener("dragend", () => chip.classList.remove("dragging"));
+  return chip;
+}
+
+function setupDropZone(zoneEl, onDropSeat) {
+  zoneEl.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    zoneEl.classList.add("drag-over");
+  });
+  zoneEl.addEventListener("dragleave", () => zoneEl.classList.remove("drag-over"));
+  zoneEl.addEventListener("drop", (e) => {
+    e.preventDefault();
+    zoneEl.classList.remove("drag-over");
+    const seat = Number(e.dataTransfer.getData("text/seat"));
+    if (!seat || seat < 1 || seat > 19) return;
+    onDropSeat(seat);
+    renderGroupEditor();
+  });
+}
+
+function renderGroupEditor() {
+  const count = Math.min(6, Math.max(2, parseInt(groupCountInput.value, 10) || 4));
+  groupCountInput.value = count;
+  groupLayoutState.groupCount = count;
+  while (groupLayoutState.groups.length < count) {
+    groupLayoutState.groups.push({
+      id: groupLayoutState.groups.length + 1,
+      name: `${groupLayoutState.groups.length + 1}모둠`,
+      seats: [],
+    });
+  }
+  groupLayoutState.groups = groupLayoutState.groups.slice(0, count);
+
+  groupZones.innerHTML = "";
+  const assigned = allStudentSeatsInLayout(groupLayoutState);
+
+  for (const group of groupLayoutState.groups) {
+    const zone = document.createElement("div");
+    zone.className = "group-zone";
+    zone.innerHTML = `<div class="group-zone-head"><span class="group-zone-title">${escapeAttr(group.name)}</span><span class="group-zone-count">${group.seats.length}명</span></div>`;
+    const desk = document.createElement("div");
+    desk.className = "group-desk";
+    for (const seat of group.seats) {
+      desk.appendChild(createGroupChip(seat));
+      assigned.add(seat);
+    }
+    setupDropZone(desk, (seat) => {
+      for (const g of groupLayoutState.groups) {
+        g.seats = g.seats.filter((s) => s !== seat);
+      }
+      if (!group.seats.includes(seat)) group.seats.push(seat);
+    });
+    zone.appendChild(desk);
+    groupZones.appendChild(zone);
+  }
+
+  groupPool.innerHTML = "";
+  const poolDesk = document.createElement("div");
+  poolDesk.className = "group-desk group-desk-pool";
+  for (let seat = 1; seat <= 19; seat++) {
+    if (assigned.has(seat)) continue;
+    poolDesk.appendChild(createGroupChip(seat));
+  }
+  setupDropZone(poolDesk, (seat) => {
+    for (const g of groupLayoutState.groups) {
+      g.seats = g.seats.filter((s) => s !== seat);
+    }
+  });
+  groupPool.appendChild(poolDesk);
+}
+
+function openGroupModal() {
+  groupCountInput.value = groupLayoutState.groupCount;
+  renderGroupEditor();
+  groupModal.classList.remove("hidden");
+}
+
+function closeGroupModal() {
+  groupModal.classList.add("hidden");
+}
+
+function autoDistributeGroups() {
+  const count = Math.min(6, Math.max(2, parseInt(groupCountInput.value, 10) || 4));
+  groupLayoutState.groupCount = count;
+  groupLayoutState.groups = defaultGroups(count);
+  const seats = [];
+  for (let i = 1; i <= 19; i++) seats.push(i);
+  seats.forEach((seat, idx) => {
+    groupLayoutState.groups[idx % count].seats.push(seat);
+  });
+  renderGroupEditor();
+}
+
+function resetGroupEditor() {
+  groupLayoutState.groups = defaultGroups(groupLayoutState.groupCount);
+  renderGroupEditor();
+}
+
+function restoreGridTiles() {
+  for (let i = 1; i <= TOTAL; i++) {
+    if (tiles[i]) grid.appendChild(tiles[i]);
+  }
+}
+
+function applyGroupBoardLayout() {
+  if (!groupClusters || !groupBoard) return;
+  groupClusters.innerHTML = "";
+  for (const group of groupLayoutState.groups) {
+    const cluster = document.createElement("div");
+    cluster.className = "group-cluster";
+    cluster.innerHTML = `<div class="group-cluster-head"><span class="group-cluster-name">${escapeAttr(group.name)}</span><span class="group-cluster-meta">${group.seats.length}명</span></div>`;
+    const table = document.createElement("div");
+    table.className = "group-table";
+    for (const seat of group.seats) {
+      if (tiles[seat]) table.appendChild(tiles[seat]);
+    }
+    cluster.appendChild(table);
+    groupClusters.appendChild(cluster);
+  }
+  if (groupTeacherRow && tiles[TEACHER_SEAT]) {
+    groupTeacherRow.innerHTML = "";
+    const label = document.createElement("div");
+    label.className = "group-teacher-label";
+    label.textContent = "👩‍🏫 선생님";
+    groupTeacherRow.append(label, tiles[TEACHER_SEAT]);
+  }
+}
+
+function enableGroupBoardMode() {
+  boardGroupModeActive = true;
+  groupLayoutState.activeOnBoard = true;
+  document.body.classList.add("board-group-mode");
+  groupBoard.classList.remove("hidden");
+  groupBoard.setAttribute("aria-hidden", "false");
+  applyGroupBoardLayout();
+  saveGroupLayoutToStorage();
+}
+
+function disableGroupBoardMode() {
+  boardGroupModeActive = false;
+  groupLayoutState.activeOnBoard = false;
+  document.body.classList.remove("board-group-mode");
+  groupBoard.classList.add("hidden");
+  groupBoard.setAttribute("aria-hidden", "true");
+  restoreGridTiles();
+  saveGroupLayoutToStorage();
+}
+
+fetch("/api/auth/me", { credentials: "include" })
+  .then((r) => r.json())
+  .then((data) => {
+    if (data.ok) teacherUserId = data.userId;
+    loadGroupLayoutFromStorage();
+    if (groupLayoutState.activeOnBoard) enableGroupBoardMode();
+  })
+  .catch(() => {
+    loadGroupLayoutFromStorage();
+    if (groupLayoutState.activeOnBoard) enableGroupBoardMode();
+  });
+
+document.getElementById("groupBtn").addEventListener("click", openGroupModal);
+document.getElementById("groupModalClose").addEventListener("click", closeGroupModal);
+document.getElementById("groupModalCloseBtn").addEventListener("click", closeGroupModal);
+groupModal.addEventListener("click", (e) => {
+  if (e.target === groupModal) closeGroupModal();
+});
+document.getElementById("groupAutoBtn").addEventListener("click", autoDistributeGroups);
+document.getElementById("groupResetBtn").addEventListener("click", resetGroupEditor);
+groupCountInput.addEventListener("change", renderGroupEditor);
+document.getElementById("groupSaveBtn").addEventListener("click", () => {
+  saveGroupLayoutToStorage();
+  closeGroupModal();
+});
+document.getElementById("groupShowBtn").addEventListener("click", () => {
+  const count = Math.min(6, Math.max(2, parseInt(groupCountInput.value, 10) || 4));
+  groupLayoutState.groupCount = count;
+  saveGroupLayoutToStorage();
+  enableGroupBoardMode();
+  closeGroupModal();
+});
+document.getElementById("groupHideBtn").addEventListener("click", () => {
+  disableGroupBoardMode();
+  closeGroupModal();
+});
