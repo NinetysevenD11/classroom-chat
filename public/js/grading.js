@@ -1320,7 +1320,7 @@ document.getElementById("studentResultPrint")?.addEventListener("click", () => {
   printStudentReport(modal.dataset.studentKey, modal.dataset.seat, modal.dataset.studentName);
 });
 
-const TREND_CHART_COLORS = ["#2563eb", "#16a34a", "#dc2626", "#7c3aed", "#ea580c", "#0891b2"];
+const TREND_CHART_COLORS = ["#e8955c", "#7cb87a", "#f0a8bc", "#8fad7a", "#c9a87c", "#5a9a58"];
 let trendSelectedStudentKey = null;
 let trendCharts = [];
 const trendAnalysisCache = {};

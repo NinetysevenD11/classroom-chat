@@ -16,15 +16,15 @@
 }
 
 [data-theme="light"] {
-  --hub-bg: #e8f4ef;
+  --hub-bg: #e8f5e4;
   --hub-sidebar: #fffdf9;
-  --hub-sidebar-border: rgba(45, 74, 62, 0.1);
-  --hub-text: #2d4a3e;
-  --hub-muted: #6b8f80;
-  --hub-hover: rgba(45, 74, 62, 0.06);
-  --hub-active: rgba(168, 216, 234, 0.45);
-  --hub-active-border: #7eb8c9;
-  --hub-shadow: 0 4px 20px rgba(45, 74, 62, 0.12);
+  --hub-sidebar-border: rgba(122, 159, 114, 0.22);
+  --hub-text: #3d4f38;
+  --hub-muted: #7a8f72;
+  --hub-hover: rgba(255, 244, 214, 0.55);
+  --hub-active: rgba(255, 232, 168, 0.75);
+  --hub-active-border: #e8955c;
+  --hub-shadow: 0 8px 28px rgba(90, 120, 70, 0.1);
   --hub-rail-bg: #fffdf9;
 }
 
@@ -39,9 +39,19 @@ body {
   margin: 0;
   height: 100%;
   overflow: hidden;
-  font-family: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  font-family: "Nunito", "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
   background: var(--hub-bg);
   color: var(--hub-text);
+}
+
+html[data-theme="light"] body.hub-layout {
+  background-color: #e8f5e4;
+  background-image:
+    radial-gradient(ellipse 65% 50% at 92% 6%, rgba(255, 234, 168, 0.5) 0%, transparent 52%),
+    radial-gradient(ellipse 48% 42% at 8% 14%, rgba(200, 230, 180, 0.42) 0%, transparent 48%),
+    radial-gradient(ellipse 35% 30% at 50% 80%, rgba(255, 244, 214, 0.35) 0%, transparent 42%),
+    linear-gradient(165deg, #f0f9ec 0%, #faf6e8 45%, #e5f0df 100%);
+  background-attachment: fixed;
 }
 
 .hub-layout {
@@ -189,7 +199,7 @@ body.hub-sidebar-collapsed .sidebar {
   width: 100%;
   padding: 12px 14px;
   border: 2px solid transparent;
-  border-radius: 14px;
+  border-radius: 18px;
   background: transparent;
   color: var(--hub-text);
   font-size: 14px;

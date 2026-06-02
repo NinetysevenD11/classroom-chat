@@ -1,0 +1,391 @@
+/**
+ * 채점도구 — Meadow 테마 오버라이드 (cozy-meadow.css를 HTML에서 먼저 로드)
+ */
+
+body.grading-app {
+  background-color: #e8f5e4 !important;
+  background-image:
+    radial-gradient(ellipse 65% 50% at 92% 6%, rgba(255, 234, 168, 0.48) 0%, transparent 52%),
+    radial-gradient(ellipse 48% 42% at 8% 14%, rgba(200, 230, 180, 0.4) 0%, transparent 48%),
+    radial-gradient(ellipse 35% 30% at 50% 80%, rgba(255, 244, 214, 0.32) 0%, transparent 42%),
+    linear-gradient(165deg, #f0f9ec 0%, #faf6e8 45%, #e5f0df 100%) !important;
+  background-attachment: fixed;
+}
+
+.grading-app {
+  font-family: var(--meadow-font);
+  color: var(--meadow-text);
+}
+
+.grading-app,
+.grading-main {
+  background: transparent;
+}
+
+.grading-shell {
+  background: transparent;
+}
+
+/* 사이드바: 어두운 대시보드 → 따뜻한 크림·민트 */
+.grading-sidebar {
+  background: linear-gradient(180deg, #fffdf9 0%, #f3f9ef 55%, #e8f4e6 100%) !important;
+  color: var(--meadow-text) !important;
+  border-right: 2px solid var(--meadow-border) !important;
+  box-shadow: 4px 0 24px rgba(90, 120, 70, 0.06) !important;
+}
+
+.sb-title {
+  color: var(--meadow-green-deep) !important;
+}
+
+.sb-hint,
+.sb-email,
+.sb-school,
+.sb-qr-url,
+.sb-key-hint,
+.sb-api-label > span {
+  color: var(--meadow-text-muted) !important;
+}
+
+.sb-name {
+  color: var(--meadow-text) !important;
+}
+
+.sb-main-nav {
+  border-bottom-color: var(--meadow-border) !important;
+}
+
+.sb-nav-btn {
+  background: var(--meadow-surface-solid) !important;
+  border: 2px solid var(--meadow-border) !important;
+  color: var(--meadow-text) !important;
+  border-radius: var(--meadow-radius-md) !important;
+}
+
+.sb-nav-btn:hover {
+  background: var(--meadow-sun) !important;
+  border-color: rgba(232, 149, 92, 0.35) !important;
+}
+
+.sb-nav-btn.is-active {
+  background: linear-gradient(135deg, var(--meadow-orange-soft), var(--meadow-sun)) !important;
+  border-color: var(--meadow-orange) !important;
+  color: var(--meadow-brown) !important;
+}
+
+.sb-nav-btn .nav-pending-badge {
+  background: var(--meadow-pink) !important;
+  color: #fff !important;
+}
+
+.sb-qr-preview {
+  background: rgba(255, 255, 255, 0.65) !important;
+  border: 2px solid var(--meadow-border) !important;
+}
+
+.sb-api-footer {
+  background: rgba(232, 245, 228, 0.6) !important;
+  border-top-color: var(--meadow-border) !important;
+}
+
+.sb-api-input,
+.sb-select {
+  background: #fff !important;
+  border-color: var(--meadow-border) !important;
+  color: var(--meadow-text) !important;
+  border-radius: var(--meadow-radius-md) !important;
+}
+
+.sb-item {
+  border-radius: var(--meadow-radius-md) !important;
+}
+
+.sb-item.is-active {
+  background: var(--meadow-sun) !important;
+}
+
+.sb-link {
+  color: var(--meadow-green-deep) !important;
+}
+
+/* 메인 영역 */
+.grading-main {
+  background: transparent !important;
+  padding: 24px 28px 48px !important;
+}
+
+.hub-layout .hub-frame {
+  background: transparent;
+}
+
+.view-home,
+.view-exam,
+.view-grades {
+  animation: meadowFadeIn 0.35s ease;
+}
+
+@keyframes meadowFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.view-home h1,
+.view-exam h1,
+.view-grades h1 {
+  color: var(--meadow-brown) !important;
+  font-weight: 800 !important;
+}
+
+.view-home .hero-sub,
+.muted,
+.trend-section-desc,
+.paper-hint {
+  color: var(--meadow-text-muted) !important;
+}
+
+.badge-space,
+.class-badge {
+  background: var(--meadow-pink-soft) !important;
+  color: #9d5a6e !important;
+  border: 2px solid rgba(240, 168, 188, 0.4) !important;
+  border-radius: var(--meadow-radius-pill) !important;
+}
+
+.check-card,
+.guide-box,
+.paper-section,
+.answers-section,
+.grades-table-wrap,
+.grades-subject-bar,
+.trend-chart-card,
+.trend-ai-panel,
+.g-dialog-panel,
+.guide-step,
+.q-card {
+  background: var(--meadow-surface) !important;
+  border: 2px solid var(--meadow-border) !important;
+  border-radius: var(--meadow-radius-lg) !important;
+  box-shadow: var(--meadow-shadow) !important;
+}
+
+.q-card.type-mc {
+  background: linear-gradient(135deg, #fffdf9, #f0f7ff) !important;
+  border-color: rgba(168, 200, 230, 0.35) !important;
+}
+
+.q-card.type-short {
+  background: linear-gradient(135deg, #fffdf9, #eef9f0) !important;
+}
+
+.q-card.type-essay {
+  background: linear-gradient(135deg, #fffdf9, var(--meadow-orange-soft)) !important;
+  border-color: rgba(232, 149, 92, 0.3) !important;
+}
+
+.grades-table th,
+.grades-table td {
+  border-bottom-color: rgba(122, 159, 114, 0.15) !important;
+}
+
+.grades-table th {
+  background: var(--meadow-sun) !important;
+  color: var(--meadow-brown) !important;
+}
+
+.grades-table tbody tr:nth-child(even) {
+  background: rgba(255, 252, 245, 0.7);
+}
+
+.grades-table tbody tr:hover {
+  background: var(--meadow-orange-soft) !important;
+}
+
+.grades-table .avg {
+  color: var(--meadow-orange-deep) !important;
+}
+
+.grades-subject-tab {
+  border-radius: var(--meadow-radius-pill) !important;
+  border: 2px solid var(--meadow-border) !important;
+  background: var(--meadow-surface-solid) !important;
+  color: var(--meadow-text) !important;
+}
+
+.grades-subject-tab.is-active {
+  background: linear-gradient(135deg, var(--meadow-green), var(--meadow-moss)) !important;
+  border-color: var(--meadow-green-deep) !important;
+  color: #fff !important;
+}
+
+.unit-tab {
+  border-radius: var(--meadow-radius-pill) !important;
+}
+
+.unit-tab.is-active {
+  background: var(--meadow-green) !important;
+  border-color: var(--meadow-green-deep) !important;
+  color: #fff !important;
+}
+
+/* 버튼 */
+.btn,
+.btn-primary,
+.btn-blue,
+.btn-save-manual,
+.btn-row-view,
+.row-actions .print {
+  border-radius: var(--meadow-radius-pill) !important;
+  font-family: var(--meadow-font) !important;
+  font-weight: 700 !important;
+  border: none !important;
+  box-shadow: var(--meadow-shadow-warm) !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+.btn:active,
+.btn-primary:active {
+  transform: scale(0.97);
+}
+
+.btn-blue,
+.btn-primary,
+.row-actions .print {
+  background: linear-gradient(180deg, var(--meadow-orange), var(--meadow-orange-deep)) !important;
+  color: #fff !important;
+}
+
+.btn-purple,
+.btn-green,
+.btn-ai {
+  border-radius: var(--meadow-radius-pill) !important;
+}
+
+.btn-purple {
+  background: linear-gradient(180deg, #a8c8e8, #7eb0d4) !important;
+  color: #fff !important;
+}
+
+.btn-green {
+  background: linear-gradient(180deg, var(--meadow-green), var(--meadow-green-deep)) !important;
+  color: #fff !important;
+}
+
+.btn-ai {
+  background: linear-gradient(180deg, var(--meadow-brown), #4a4038) !important;
+  color: #fff !important;
+}
+
+.btn-ghost,
+.btn-muted {
+  background: var(--meadow-surface-solid) !important;
+  color: var(--meadow-text) !important;
+  border: 2px solid var(--meadow-border) !important;
+  border-radius: var(--meadow-radius-pill) !important;
+  box-shadow: none !important;
+}
+
+.btn-manual-grade {
+  background: linear-gradient(180deg, var(--meadow-green), var(--meadow-green-deep)) !important;
+  border-radius: var(--meadow-radius-md) !important;
+}
+
+.btn-publish.on {
+  background: var(--meadow-green) !important;
+}
+
+.btn-publish.off {
+  background: var(--meadow-text-muted) !important;
+}
+
+.btn-excel,
+.btn-print {
+  background: var(--meadow-moss) !important;
+  color: #fff !important;
+  border-radius: var(--meadow-radius-pill) !important;
+}
+
+.row-actions .reset {
+  background: var(--meadow-orange) !important;
+}
+
+.row-actions .del {
+  background: var(--meadow-pink) !important;
+}
+
+.sb-qr-actions .btn-blue {
+  background: linear-gradient(180deg, var(--meadow-orange), var(--meadow-orange-deep)) !important;
+}
+
+#qrToggleBtn.is-open {
+  background: var(--meadow-sun) !important;
+  border-color: var(--meadow-orange) !important;
+  color: var(--meadow-brown) !important;
+}
+
+/* 추이·AI */
+.grades-trend-section {
+  border-top-color: var(--meadow-border) !important;
+}
+
+.trend-section-title {
+  color: var(--meadow-brown) !important;
+}
+
+.manual-grade-block,
+.trend-ai-summary {
+  background: linear-gradient(135deg, #f5faf3, var(--meadow-sun)) !important;
+}
+
+.trend-ai-panel h3 {
+  color: var(--meadow-green-deep) !important;
+}
+
+.trend-ai-summary {
+  background: var(--meadow-pink-soft) !important;
+  border: 2px solid rgba(240, 168, 188, 0.25) !important;
+}
+
+.score-pending {
+  color: var(--meadow-orange-deep) !important;
+}
+
+.score-final {
+  color: var(--meadow-green-deep) !important;
+}
+
+.toast {
+  background: var(--meadow-brown) !important;
+  border-radius: var(--meadow-radius-pill) !important;
+  box-shadow: var(--meadow-shadow) !important;
+}
+
+.g-dialog-backdrop {
+  background: rgba(61, 79, 56, 0.35) !important;
+}
+
+.ai-overlay-card {
+  border-radius: var(--meadow-radius-xl) !important;
+  border: 3px solid var(--meadow-border) !important;
+}
+
+input,
+select,
+textarea {
+  border-radius: var(--meadow-radius-md) !important;
+  border: 2px solid var(--meadow-border) !important;
+  font-family: var(--meadow-font) !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--meadow-green) !important;
+  box-shadow: 0 0 0 3px rgba(124, 184, 122, 0.25);
+}

@@ -1,0 +1,107 @@
+/**
+ * 학생 시험 — Meadow 테마
+ */
+
+html,
+body {
+  font-family: var(--meadow-font);
+  color: var(--meadow-text);
+}
+
+body {
+  background-color: var(--meadow-bg) !important;
+  background-image:
+    radial-gradient(ellipse 70% 50% at 90% 5%, rgba(255, 234, 168, 0.5) 0%, transparent 55%),
+    radial-gradient(ellipse 55% 40% at 8% 15%, rgba(200, 230, 180, 0.4) 0%, transparent 50%),
+    linear-gradient(165deg, #f0f9ec 0%, #faf6e8 50%, #e5f0df 100%) !important;
+  background-attachment: fixed;
+}
+
+.join-card,
+.unit-card,
+.pane,
+.exam-topbar,
+.submit-bar,
+.modal-box {
+  background: var(--meadow-surface) !important;
+  border: 2px solid var(--meadow-border) !important;
+  border-radius: var(--meadow-radius-xl) !important;
+  box-shadow: var(--meadow-shadow) !important;
+}
+
+.join-card h1,
+.exam-unitTitle,
+.pane-title,
+.unit-title {
+  color: var(--meadow-brown) !important;
+}
+
+.btn-primary,
+.btn-submit {
+  background: linear-gradient(180deg, var(--meadow-green), var(--meadow-green-deep)) !important;
+  border: none !important;
+  border-radius: var(--meadow-radius-pill) !important;
+  font-family: var(--meadow-font) !important;
+  font-weight: 800 !important;
+  box-shadow: var(--meadow-shadow-warm) !important;
+}
+
+.btn-text {
+  background: var(--meadow-orange-soft) !important;
+  color: var(--meadow-brown) !important;
+  border-radius: var(--meadow-radius-pill) !important;
+  border: 2px solid rgba(232, 149, 92, 0.25) !important;
+}
+
+.answer-block {
+  border-radius: var(--meadow-radius-lg) !important;
+  border-width: 2px !important;
+}
+
+.answer-block.is-mc {
+  background: linear-gradient(135deg, #fffdf9, #eef6ff) !important;
+  border-color: rgba(168, 200, 230, 0.4) !important;
+}
+
+.answer-block.is-short {
+  background: linear-gradient(135deg, #fffdf9, #eef9f0) !important;
+}
+
+.answer-block.is-essay {
+  background: linear-gradient(135deg, #fffdf9, var(--meadow-orange-soft)) !important;
+}
+
+.mc-option {
+  border-radius: var(--meadow-radius-md) !important;
+  border-width: 2px !important;
+}
+
+.mc-option.is-selected {
+  background: var(--meadow-sun) !important;
+  border-color: var(--meadow-orange) !important;
+  color: var(--meadow-brown) !important;
+}
+
+.paper-zoom-btn {
+  border-radius: var(--meadow-radius-pill) !important;
+  font-family: var(--meadow-font) !important;
+}
+
+#paperZoomIn:hover {
+  border-color: var(--meadow-green) !important;
+}
+
+#paperZoomReset {
+  background: var(--meadow-sun) !important;
+}
+
+input,
+textarea {
+  border: 2px solid var(--meadow-border) !important;
+  border-radius: var(--meadow-radius-md) !important;
+}
+
+.pane-head {
+  background: rgba(255, 252, 245, 0.85) !important;
+  border-bottom-color: var(--meadow-border) !important;
+}

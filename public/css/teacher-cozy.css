@@ -99,11 +99,14 @@ html[data-theme="dark"] body:not(.pip-mode)::after {
 
 /* ── 배경: 라이트 = 낮 민트 ── */
 html[data-theme="light"] body:not(.pip-mode) {
-  background-color: #e8f4ef !important;
+  background-color: #e8f5e4 !important;
   background-image:
-    radial-gradient(ellipse 120px 40px at 15% 12%, rgba(255, 255, 255, 0.75) 0%, transparent 70%),
-    radial-gradient(ellipse 100px 36px at 78% 8%, rgba(255, 255, 255, 0.55) 0%, transparent 70%),
-    linear-gradient(180deg, #e8f4ef 0%, #d6ebe3 55%, #c8e4da 100%) !important;
+    radial-gradient(ellipse 55% 45% at 88% 6%, rgba(255, 234, 168, 0.55) 0%, transparent 55%),
+    radial-gradient(ellipse 45% 38% at 10% 16%, rgba(200, 230, 180, 0.45) 0%, transparent 50%),
+    radial-gradient(ellipse 35% 28% at 42% 72%, rgba(255, 244, 214, 0.38) 0%, transparent 45%),
+    radial-gradient(ellipse 120px 40px at 15% 12%, rgba(255, 255, 255, 0.65) 0%, transparent 70%),
+    radial-gradient(ellipse 100px 36px at 78% 8%, rgba(255, 255, 255, 0.45) 0%, transparent 70%),
+    linear-gradient(165deg, #f0f9ec 0%, #faf6e8 48%, #e5f0df 100%) !important;
   background-attachment: fixed;
 }
 

@@ -1,9 +1,10 @@
 @import url("https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Jua&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Nunito:wght@500;600;700;800&family=Noto+Sans+KR:wght@500;600;700;800&display=swap");
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  font-family: "Jua", "Malgun Gothic", sans-serif;
+  font-family: "Nunito", "Noto Sans KR", "Jua", "Malgun Gothic", sans-serif;
   min-height: 100vh;
   min-height: 100dvh;
   display: flex;
@@ -11,9 +12,12 @@ body {
   justify-content: center;
   padding: 24px 20px;
   -webkit-font-smoothing: antialiased;
-  background-color: #f5f5f5;
-  background-image: url("/images/login-bg-doodle-light.png");
-  background-size: cover;
+  background-color: #e8f5e4;
+  background-image:
+    radial-gradient(ellipse 70% 55% at 85% 10%, rgba(255, 234, 168, 0.55) 0%, transparent 55%),
+    radial-gradient(ellipse 50% 45% at 12% 20%, rgba(200, 230, 180, 0.45) 0%, transparent 50%),
+    url("/images/login-bg-doodle-light.png");
+  background-size: cover, cover, cover;
   background-position: center;
   background-repeat: no-repeat;
   background-attachment: fixed;
@@ -25,11 +29,9 @@ body::before {
   inset: 0;
   pointer-events: none;
   z-index: 0;
-  background: radial-gradient(
-    ellipse 60% 75% at 50% 50%,
-    rgba(255, 255, 255, 0.08) 0%,
-    rgba(255, 255, 255, 0.38) 100%
-  );
+  background:
+    radial-gradient(ellipse 40% 35% at 45% 75%, rgba(255, 244, 214, 0.35) 0%, transparent 45%),
+    linear-gradient(165deg, rgba(240, 249, 236, 0.75) 0%, rgba(250, 246, 232, 0.82) 100%);
 }
 
 .login-wrap {
@@ -40,23 +42,23 @@ body::before {
 }
 
 .login-card {
-  background: rgba(255, 252, 245, 0.94);
+  background: rgba(255, 253, 248, 0.94);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   width: 100%;
-  border-radius: 24px;
+  border-radius: 28px;
   padding: 36px 32px 30px;
-  border: 3px solid rgba(255, 255, 255, 0.65);
+  border: 3px solid rgba(122, 159, 114, 0.2);
   box-shadow:
-    0 24px 64px rgba(0, 0, 0, 0.35),
-    0 0 0 1px rgba(255, 255, 255, 0.2) inset;
+    0 16px 48px rgba(90, 120, 70, 0.12),
+    0 6px 20px rgba(232, 149, 92, 0.1);
 }
 
 .login-card h1 {
   text-align: center;
   font-size: 28px;
   margin-bottom: 6px;
-  color: #1a2744;
+  color: #5c5348;
   letter-spacing: -0.02em;
 }
 
