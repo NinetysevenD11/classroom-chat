@@ -76,10 +76,22 @@ body.grading-app {
   gap: 8px !important;
 }
 
+/* 사이드바 버튼 — 실시간 성적·추이 탭과 같은 각진 슬롯 */
+.grading-sidebar .sb-nav-btn,
+.grading-sidebar .btn,
+.grading-sidebar .btn-lock {
+  border-radius: 5px !important;
+}
+
 .sb-nav-btn {
+  display: flex;
+  align-items: center;
+  min-height: 46px;
+  padding: 10px 12px;
+  line-height: 1.35;
   background: linear-gradient(180deg, #fff9ef 0%, #f0e0c0 100%) !important;
   border: 3px solid var(--sprout-wood-border) !important;
-  border-radius: var(--sprout-radius-slot) !important;
+  border-radius: 5px !important;
   box-shadow: 3px 3px 0 var(--sprout-wood-border) !important;
   color: var(--sprout-text) !important;
   font-weight: 700 !important;
@@ -132,13 +144,17 @@ body.grading-app {
 .sb-select {
   background: #fff !important;
   border: 2px solid var(--sprout-wood-border) !important;
-  border-radius: var(--sprout-radius-slot) !important;
+  border-radius: 5px !important;
   box-shadow: inset 0 2px 0 rgba(92, 64, 51, 0.08);
 }
 
 .sb-item {
   background: rgba(255, 255, 255, 0.5) !important;
-  border-radius: var(--sprout-radius-slot) !important;
+  border-radius: 5px !important;
+}
+
+.grading-sidebar .sb-item .icon-btn {
+  border-radius: 4px !important;
 }
 
 .sb-item.is-active {
@@ -420,9 +436,14 @@ body.grading-app {
   font-family: var(--sprout-font) !important;
   font-weight: 700 !important;
   border: 3px solid var(--sprout-wood-border) !important;
-  border-radius: var(--sprout-radius-slot) !important;
+  border-radius: 5px !important;
   box-shadow: 3px 3px 0 var(--sprout-wood-border) !important;
   transition: transform 0.08s ease, box-shadow 0.08s ease !important;
+}
+
+.grading-sidebar .btn-wide {
+  min-height: 42px;
+  padding: 10px 12px !important;
 }
 
 .btn:active {
