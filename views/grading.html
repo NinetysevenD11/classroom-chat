@@ -7,8 +7,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="/css/cozy-meadow.css?v=1" />
-  <link rel="stylesheet" href="/css/grading.css?v=15" />
-  <link rel="stylesheet" href="/css/grading-cozy.css?v=3" />
+  <link rel="stylesheet" href="/css/grading.css?v=16" />
+  <link rel="stylesheet" href="/css/grading-cozy.css?v=4" />
 </head>
 <body class="grading-app">
   <div class="grading-shell">
@@ -132,6 +132,21 @@
     </div>
   </div>
 
+  <div id="tutorialOverlay" class="tutorial-overlay hidden" aria-hidden="true">
+    <div id="tutorialSpotlight" class="tutorial-spotlight"></div>
+    <div id="tutorialPopover" class="tutorial-popover" role="dialog" aria-labelledby="tutorialTitle">
+      <div class="tutorial-arrow" id="tutorialArrow" aria-hidden="true"></div>
+      <span id="tutorialStepNum" class="tutorial-step-num"></span>
+      <h3 id="tutorialTitle"></h3>
+      <p id="tutorialText"></p>
+      <p id="tutorialHint" class="tutorial-hint"></p>
+      <div class="tutorial-actions">
+        <button type="button" id="tutorialSkipBtn" class="btn btn-ghost btn-sm">닫기</button>
+        <button type="button" id="tutorialDoneBtn" class="btn btn-blue btn-sm" disabled>완료했어요</button>
+      </div>
+    </div>
+  </div>
+
   <div id="gradingDialog" class="g-dialog hidden" role="dialog" aria-modal="true">
     <div class="g-dialog-backdrop" data-close-dialog></div>
     <div class="g-dialog-panel">
@@ -156,6 +171,6 @@
         "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
     }
   </script>
-  <script src="/js/grading.js?v=17"></script>
+  <script src="/js/grading.js?v=19"></script>
 </body>
 </html>

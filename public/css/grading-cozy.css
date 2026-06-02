@@ -179,6 +179,15 @@ body.grading-app {
   background: linear-gradient(135deg, var(--meadow-green), var(--meadow-green-deep)) !important;
 }
 
+.tutorial-popover {
+  border-color: var(--meadow-green) !important;
+  border-radius: var(--meadow-radius) !important;
+}
+
+.tutorial-arrow {
+  border-color: var(--meadow-green) !important;
+}
+
 .dash-stat-card.highlight {
   background: var(--meadow-sun) !important;
 }

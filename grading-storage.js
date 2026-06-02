@@ -30,7 +30,18 @@ export function defaultGradingState() {
     activeClassId: null,
     settings: defaultSettings(),
     trendAnalysisLogs: [],
+    onboarding: { tourCompleted: false, completedSteps: {} },
   };
+}
+
+export function ensureOnboarding(state) {
+  if (!state.onboarding || typeof state.onboarding !== "object") {
+    state.onboarding = { tourCompleted: false, completedSteps: {} };
+  }
+  if (!state.onboarding.completedSteps || typeof state.onboarding.completedSteps !== "object") {
+    state.onboarding.completedSteps = {};
+  }
+  return state.onboarding;
 }
 
 const MAX_TREND_LOGS = 300;
@@ -220,6 +231,7 @@ export function getGradingState(userId) {
   if (!s.activeClassId && s.classes?.length) s.activeClassId = s.classes[0].id;
   ensureSettings(s);
   ensureTrendLogs(s);
+  ensureOnboarding(s);
   return s;
 }
 
@@ -248,6 +260,14 @@ export async function saveGradingState(userId, state, opts = {}) {
     state.trendAnalysisLogs = prev.trendAnalysisLogs;
   } else {
     ensureTrendLogs(state);
+  }
+  if (prev?.onboarding) {
+    const inc = ensureOnboarding(state);
+    const prevOb = ensureOnboarding(prev);
+    inc.tourCompleted = inc.tourCompleted || prevOb.tourCompleted;
+    inc.completedSteps = { ...prevOb.completedSteps, ...inc.completedSteps };
+  } else {
+    ensureOnboarding(state);
   }
   gradingData[userId] = state;
   await saveAllGradingData();

@@ -26,10 +26,402 @@ const CHECKLIST = [
   { id: "subject", title: "단원·문항 설정", desc: "과목을 선택한 뒤 단원 탭에서 문항과 정답을 설정합니다.", view: "exam", badge: "warn" },
   { id: "answer", title: "정답 설정", desc: "객관식·단답형·서술형 정답과 배점을 입력합니다.", view: "exam", badge: "warn" },
   { id: "lock", title: "학생화면 과목 잠금", desc: "잠금 해제한 단원만 학생 /exam 에서 응시할 수 있습니다.", view: "home", badge: "pick" },
-  { id: "qr", title: "학생 QR 접속", desc: "왼쪽에 QR이 항상 표시됩니다. 학생은 스캔 후 이름·번호로 입장합니다.", view: "home", badge: "pick" },
+  { id: "qr", title: "학생 QR 접속", desc: "왼쪽 QR을 열어 학생 접속 주소를 확인합니다.", view: "home", badge: "pick" },
   { id: "live", title: "실시간 현황 확인", desc: "제출 상태와 점수를 실시간으로 확인합니다.", view: "grades", badge: "pick" },
   { id: "print", title: "성적표 인쇄", desc: "개별·일괄 성적표를 인쇄합니다.", view: "grades", badge: "pick" },
 ];
+
+const SETUP_GUIDE_IDS = CHECKLIST.map((c) => c.id);
+
+let activeTutorialId = null;
+let tutorialPollTimer = null;
+let tutorialResizeHandler = null;
+
+function ensureOnboardingState() {
+  if (!state) return { tourCompleted: false, completedSteps: {} };
+  if (!state.onboarding || typeof state.onboarding !== "object") {
+    state.onboarding = { tourCompleted: false, completedSteps: {} };
+  }
+  if (!state.onboarding.completedSteps) state.onboarding.completedSteps = {};
+  return state.onboarding;
+}
+
+function shouldShowSetupGuide() {
+  return state && !ensureOnboardingState().tourCompleted;
+}
+
+function examHasUnlockedUnit() {
+  for (const sub of getExamSubjects()) {
+    for (const u of sub.units || []) {
+      if (u.locked === false) return true;
+    }
+  }
+  return false;
+}
+
+function onboardingDoneByData(id) {
+  if (!state) return false;
+  const unit = activeUnit();
+  switch (id) {
+    case "exam":
+      return getExamSubjects().length > 0;
+    case "class":
+      return (state.classes?.length || 0) > 0 || Object.keys(roster).length > 0;
+    case "subject":
+      return (activeSubject()?.units?.length || 0) > 0;
+    case "answer":
+      return !!unit?.questions?.some((q) => q.answer);
+    case "lock":
+      return examHasUnlockedUnit();
+    case "qr":
+      return qrPanelOpen;
+    case "live":
+      return currentView === "grades";
+    case "print":
+      return !!document.getElementById("bulkPrintBtn");
+    default:
+      return false;
+  }
+}
+
+function isOnboardingStepDone(id) {
+  const ob = ensureOnboardingState();
+  if (ob.completedSteps[id]) return true;
+  return onboardingDoneByData(id);
+}
+
+function getOnboardingProgress() {
+  const done = SETUP_GUIDE_IDS.filter((id) => isOnboardingStepDone(id)).length;
+  const total = SETUP_GUIDE_IDS.length;
+  return { done, total, pct: total ? Math.round((done / total) * 100) : 0 };
+}
+
+function markOnboardingStepDone(id) {
+  const ob = ensureOnboardingState();
+  ob.completedSteps[id] = true;
+  const { done, total } = getOnboardingProgress();
+  if (done >= total) {
+    ob.tourCompleted = true;
+    showToast("시작 가이드를 모두 완료했습니다! 🎉");
+  }
+  scheduleSave();
+  updateChecklistBadges();
+}
+
+function waitForElement(selector, timeout = 8000) {
+  return new Promise((resolve, reject) => {
+    const found = document.querySelector(selector);
+    if (found) return resolve(found);
+    const obs = new MutationObserver(() => {
+      const el = document.querySelector(selector);
+      if (el) {
+        obs.disconnect();
+        resolve(el);
+      }
+    });
+    obs.observe(document.body, { childList: true, subtree: true });
+    setTimeout(() => {
+      obs.disconnect();
+      const el = document.querySelector(selector);
+      if (el) resolve(el);
+      else reject(new Error("요소를 찾지 못했습니다."));
+    }, timeout);
+  });
+}
+
+function delay(ms) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+const TUTORIAL_CONFIG = {
+  exam: {
+    title: "시험(과목) 추가",
+    text: "보라색 「+ 새 시험(과목) 추가」 버튼을 눌러 수학·국어 등 과목을 만드세요.",
+    hint: "과목이 하나라도 생기면 완료할 수 있습니다.",
+    targetSelector: "#addSubjectBtn",
+    prepare: async () => {
+      setView("home");
+      await delay(80);
+    },
+    isDone: () => onboardingDoneByData("exam"),
+  },
+  class: {
+    title: "학반 추가",
+    text: "「+ 반 추가」로 학반을 만들거나, 칠판에서 저장한 명단을 불러옵니다.",
+    hint: "학반이 등록되면 완료할 수 있습니다.",
+    targetSelector: "#addClassBtn",
+    prepare: async () => {
+      setView("home");
+      await delay(80);
+    },
+    isDone: () => onboardingDoneByData("class"),
+  },
+  subject: {
+    title: "단원·문항 설정",
+    text: "시험·정답 화면에서 「+ 단원」으로 단원을 추가하세요. 문항은 AI 스캔 또는 직접 추가할 수 있습니다.",
+    hint: "단원이 하나 이상 있으면 완료할 수 있습니다.",
+    targetSelector: "#addUnitBtn",
+    prepare: async () => {
+      if (!getExamSubjects().length) {
+        showToast("먼저 과목을 추가해 주세요.", true);
+        await startTutorialStep("exam");
+        return;
+      }
+      setView("exam");
+      await delay(200);
+      try {
+        await waitForElement("#addUnitBtn", 5000);
+      } catch (_) {}
+    },
+    isDone: () => onboardingDoneByData("subject"),
+  },
+  answer: {
+    title: "정답 설정",
+    text: "문항 카드에서 정답·배점을 입력하거나, 시험지 업로드 후 AI가 채운 정답을 확인하세요.",
+    hint: "정답이 입력된 문항이 있으면 완료할 수 있습니다.",
+    targetSelector: ".answers-section, .q-card, #addQuestionBtn",
+    prepare: async () => {
+      if (!getExamSubjects().length) {
+        showToast("먼저 과목을 추가해 주세요.", true);
+        return;
+      }
+      setView("exam");
+      await delay(250);
+    },
+    isDone: () => onboardingDoneByData("answer"),
+  },
+  lock: {
+    title: "학생화면 과목 잠금",
+    text: "응시를 허용할 단원은 「열림」, 숨길 단원은 「잠금」을 누르세요. 과목을 먼저 선택해야 목록이 보입니다.",
+    hint: "열림으로 둔 단원이 있으면 완료할 수 있습니다.",
+    targetSelector: ".lock-list .btn-lock[data-lock='0'], #lockList",
+    prepare: async () => {
+      setView("home");
+      renderSidebar();
+      await delay(150);
+    },
+    isDone: () => onboardingDoneByData("lock"),
+  },
+  qr: {
+    title: "학생 QR 접속",
+    text: "「QR열기」로 접속 주소·QR을 확인하고, 학생에게 보여 주거나 주소를 복사하세요.",
+    hint: "QR 패널을 연 뒤 완료할 수 있습니다.",
+    targetSelector: "#qrToggleBtn, .sb-qr-block",
+    prepare: async () => {
+      setView("home");
+      await navigateToStudentQr();
+      await delay(200);
+    },
+    isDone: () => onboardingDoneByData("qr"),
+  },
+  live: {
+    title: "실시간 성적",
+    text: "「실시간 성적」 메뉴에서 제출·채점 상태와 점수를 실시간으로 확인합니다.",
+    hint: "화면이 열리면 완료할 수 있습니다.",
+    targetSelector: ".sb-nav-btn[data-view='grades']",
+    prepare: async () => {
+      setView("grades");
+      await delay(300);
+    },
+    isDone: () => onboardingDoneByData("live"),
+  },
+  print: {
+    title: "성적표 인쇄",
+    text: "실시간 성적 화면에서 「일괄 인쇄」 또는 학생별 「인쇄」로 성적표를 출력할 수 있습니다.",
+    hint: "성적 화면이 보이면 완료할 수 있습니다.",
+    targetSelector: "#bulkPrintBtn, .grades-actions",
+    prepare: async () => {
+      setView("grades");
+      await delay(350);
+      try {
+        await waitForElement("#bulkPrintBtn", 4000);
+      } catch (_) {}
+    },
+    isDone: () => onboardingDoneByData("print"),
+  },
+};
+
+function positionTutorialUi(targetEl) {
+  const spot = document.getElementById("tutorialSpotlight");
+  const pop = document.getElementById("tutorialPopover");
+  const arrow = document.getElementById("tutorialArrow");
+  if (!spot || !pop || !targetEl) return;
+
+  const pad = 10;
+  const rect = targetEl.getBoundingClientRect();
+  spot.style.left = `${Math.max(8, rect.left - pad)}px`;
+  spot.style.top = `${Math.max(8, rect.top - pad)}px`;
+  spot.style.width = `${rect.width + pad * 2}px`;
+  spot.style.height = `${rect.height + pad * 2}px`;
+
+  pop.style.visibility = "hidden";
+  pop.classList.remove("is-above", "is-below", "is-left");
+  const popW = 300;
+  let left = rect.left + rect.width / 2 - popW / 2;
+  left = Math.max(12, Math.min(left, window.innerWidth - popW - 12));
+  let top = rect.bottom + 16;
+  let placeAbove = false;
+  if (top + 200 > window.innerHeight - 12) {
+    top = rect.top - 16;
+    placeAbove = true;
+    pop.classList.add("is-above");
+  } else {
+    pop.classList.add("is-below");
+  }
+  pop.style.width = `${popW}px`;
+  pop.style.left = `${left}px`;
+  pop.style.top = placeAbove ? `${top}px` : `${top}px`;
+  pop.style.transform = placeAbove ? "translateY(-100%)" : "none";
+
+  if (arrow) {
+    const arrowLeft = rect.left + rect.width / 2 - left;
+    arrow.style.left = `${Math.max(20, Math.min(arrowLeft, popW - 20))}px`;
+  }
+  pop.style.visibility = "visible";
+}
+
+function stopTutorialPoll() {
+  if (tutorialPollTimer) {
+    clearInterval(tutorialPollTimer);
+    tutorialPollTimer = null;
+  }
+}
+
+function endTutorial() {
+  stopTutorialPoll();
+  activeTutorialId = null;
+  const overlay = document.getElementById("tutorialOverlay");
+  if (overlay) {
+    overlay.classList.add("hidden");
+    overlay.setAttribute("aria-hidden", "true");
+  }
+  if (tutorialResizeHandler) {
+    window.removeEventListener("resize", tutorialResizeHandler);
+    window.removeEventListener("scroll", tutorialResizeHandler, true);
+    tutorialResizeHandler = null;
+  }
+}
+
+function startTutorialPoll(stepId) {
+  stopTutorialPoll();
+  const cfg = TUTORIAL_CONFIG[stepId];
+  const doneBtn = document.getElementById("tutorialDoneBtn");
+  const hintEl = document.getElementById("tutorialHint");
+  tutorialPollTimer = setInterval(() => {
+    if (activeTutorialId !== stepId) return;
+    if (cfg.isDone()) {
+      if (doneBtn) doneBtn.disabled = false;
+      if (hintEl) hintEl.textContent = "✓ 작업이 확인되었습니다. 「완료했어요」를 눌러 주세요.";
+    }
+  }, 400);
+}
+
+async function startTutorialStep(stepId) {
+  const cfg = TUTORIAL_CONFIG[stepId];
+  if (!cfg || !state) return;
+  if (isOnboardingStepDone(stepId)) {
+    showToast("이미 완료한 단계입니다.");
+    return;
+  }
+
+  endTutorial();
+  activeTutorialId = stepId;
+
+  if (cfg.prepare) await cfg.prepare();
+  if (activeTutorialId !== stepId) return;
+
+  let target = null;
+  const selectors = String(cfg.targetSelector || "").split(",").map((s) => s.trim());
+  for (const sel of selectors) {
+    try {
+      target = await waitForElement(sel, 4000);
+      if (target) break;
+    } catch (_) {}
+  }
+
+  if (!target) {
+    showToast("안내할 위치를 찾지 못했습니다. 해당 메뉴를 연 뒤 다시 시도해 주세요.", true);
+    activeTutorialId = null;
+    return;
+  }
+
+  target.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
+  await delay(350);
+
+  const overlay = document.getElementById("tutorialOverlay");
+  const idx = SETUP_GUIDE_IDS.indexOf(stepId) + 1;
+  document.getElementById("tutorialStepNum").textContent = `단계 ${idx} / ${SETUP_GUIDE_IDS.length}`;
+  document.getElementById("tutorialTitle").textContent = cfg.title;
+  document.getElementById("tutorialText").textContent = cfg.text;
+  document.getElementById("tutorialHint").textContent = cfg.hint;
+  const doneBtn = document.getElementById("tutorialDoneBtn");
+  doneBtn.disabled = !cfg.isDone();
+  doneBtn.textContent = cfg.isDone() ? "완료했어요" : "완료했어요";
+
+  overlay.classList.remove("hidden");
+  overlay.setAttribute("aria-hidden", "false");
+
+  positionTutorialUi(target);
+  tutorialResizeHandler = () => {
+    const t = document.querySelector(selectors.find((s) => document.querySelector(s)) || selectors[0]);
+    if (t) positionTutorialUi(t);
+  };
+  window.addEventListener("resize", tutorialResizeHandler);
+  window.addEventListener("scroll", tutorialResizeHandler, true);
+
+  startTutorialPoll(stepId);
+}
+
+function completeTutorialStep() {
+  if (!activeTutorialId) return;
+  const id = activeTutorialId;
+  const cfg = TUTORIAL_CONFIG[id];
+  if (cfg && !cfg.isDone()) {
+    showToast("아직 이 단계가 완료되지 않았습니다. 안내에 따라 진행해 주세요.", true);
+    return;
+  }
+  markOnboardingStepDone(id);
+  endTutorial();
+  if (currentView === "home") renderHome();
+}
+
+function refreshTutorialIfActive() {
+  if (!activeTutorialId) return;
+  const cfg = TUTORIAL_CONFIG[activeTutorialId];
+  if (!cfg) return;
+  if (cfg.isDone()) {
+    const doneBtn = document.getElementById("tutorialDoneBtn");
+    const hintEl = document.getElementById("tutorialHint");
+    if (doneBtn) doneBtn.disabled = false;
+    if (hintEl) hintEl.textContent = "✓ 작업이 확인되었습니다. 「완료했어요」를 눌러 주세요.";
+  }
+  const sels = String(cfg.targetSelector).split(",");
+  for (const sel of sels) {
+    const t = document.querySelector(sel.trim());
+    if (t) {
+      positionTutorialUi(t);
+      break;
+    }
+  }
+}
+
+function maybeFinishOnboardingTour() {
+  const ob = ensureOnboardingState();
+  if (ob.tourCompleted) return;
+  const { done, total } = getOnboardingProgress();
+  if (done >= total) {
+    ob.tourCompleted = true;
+    scheduleSave();
+  }
+}
+
+function initTutorialUi() {
+  document.getElementById("tutorialSkipBtn")?.addEventListener("click", () => endTutorial());
+  document.getElementById("tutorialDoneBtn")?.addEventListener("click", () => completeTutorialStep());
+  document.getElementById("tutorialOverlay")?.addEventListener("click", (e) => {
+    if (e.target.id === "tutorialOverlay") endTutorial();
+  });
+}
 
 function newId() {
   if (typeof crypto !== "undefined" && crypto.randomUUID) {
@@ -65,6 +457,11 @@ function normalizeState(raw) {
   if (!s.studentScores || typeof s.studentScores !== "object") s.studentScores = {};
   if (!s.settings || typeof s.settings !== "object") {
     s.settings = { aiProvider: "gemini", hasApiKey: false };
+  }
+  if (!s.onboarding || typeof s.onboarding !== "object") {
+    s.onboarding = { tourCompleted: false, completedSteps: {} };
+  } else if (!s.onboarding.completedSteps) {
+    s.onboarding.completedSteps = {};
   }
   for (const exam of s.exams) {
     if (!Array.isArray(exam.subjects)) exam.subjects = [];
@@ -363,6 +760,8 @@ async function loadData() {
   document.getElementById("profileSchool").textContent = me.school || "우리반";
   renderSidebar();
   bindMainNav();
+  updateChecklistBadges();
+  maybeFinishOnboardingTour();
   renderView(currentView);
   loadQrInline(); /* 주소·QR 미리 받아 두기 (화면은 접힌 상태) */
   loadApiKeyPanel();
@@ -638,6 +1037,7 @@ function renderLockList() {
       unit.locked = false;
       syncLockRowUi(li, unit);
       scheduleSave();
+      setTimeout(refreshTutorialIfActive, 300);
       showToast("학생이 응시할 수 있습니다.");
     });
     lockList.appendChild(li);
@@ -645,12 +1045,10 @@ function renderLockList() {
 }
 
 function updateChecklistBadges() {
-  const exam = activeExam();
-  const unit = activeUnit();
-  CHECKLIST[0].badge = (exam?.subjects?.length || 0) > 0 ? "done" : "warn";
-  CHECKLIST[1].badge = (state.classes?.length || 0) > 0 || Object.keys(roster).length > 0 ? "done" : "warn";
-  CHECKLIST[2].badge = (activeSubject()?.units?.length || 0) > 0 ? "done" : "warn";
-  CHECKLIST[3].badge = unit?.questions?.some((q) => q.answer) ? "done" : "warn";
+  if (!state) return;
+  CHECKLIST.forEach((c) => {
+    c.badge = isOnboardingStepDone(c.id) ? "done" : "warn";
+  });
 }
 
 function refreshGradesOrTrendView() {
@@ -727,7 +1125,7 @@ function buildDashboardStats() {
     if (key.startsWith("_")) continue;
     if (state.studentScores[key]?._submittedAt) submissions += 1;
   }
-  const setupDone = CHECKLIST.filter((c) => c.badge === "done").length;
+  const prog = getOnboardingProgress();
   return {
     subjects: subjects.length,
     units,
@@ -736,8 +1134,9 @@ function buildDashboardStats() {
     submissions,
     pending: countPendingReviews(),
     published: !!state.resultsPublished,
-    setupDone,
-    setupTotal: CHECKLIST.length,
+    setupDone: prog.done,
+    setupTotal: prog.total,
+    setupPct: prog.pct,
   };
 }
 
@@ -817,22 +1216,30 @@ async function renderHome() {
   const stats = buildDashboardStats();
   const teacherName = document.getElementById("profileName")?.textContent || "선생님";
   const cls = activeClass();
-  const setupPct = stats.setupTotal ? Math.round((stats.setupDone / stats.setupTotal) * 100) : 0;
+  const setupPct = stats.setupPct ?? 0;
+  const showGuide = shouldShowSetupGuide();
 
-  const setupSteps = CHECKLIST.map((c) => {
-    const badgeClass = c.badge === "done" ? "done" : c.badge === "warn" ? "warn" : "pick";
-    return `
+  const setupSteps = showGuide
+    ? CHECKLIST.map((c) => {
+        const badgeClass = c.badge === "done" ? "done" : "warn";
+        const done = isOnboardingStepDone(c.id);
+        return `
       <li class="dash-setup-item ${badgeClass}">
         <span class="dash-setup-dot"></span>
         <div>
           <strong>${escapeHtml(c.title)}</strong>
           <p>${escapeHtml(c.desc)}</p>
         </div>
-        <button type="button" class="btn-dash-link" data-goto="${c.view}" data-id="${c.id}">이동</button>
+        ${
+          done
+            ? `<span class="dash-setup-done-label">완료</span>`
+            : `<button type="button" class="btn-dash-link btn-tutorial-start" data-tutorial="${c.id}">안내 시작</button>`
+        }
       </li>`;
-  }).join("");
+      }).join("")
+    : "";
 
-  const nextTask = CHECKLIST.find((c) => c.badge !== "done");
+  const nextTask = CHECKLIST.find((c) => !isOnboardingStepDone(c.id));
 
   mainEl.innerHTML = `
     <div class="view-home dash-home">
@@ -855,11 +1262,13 @@ async function renderHome() {
               ${stats.pending > 0 ? `<span class="dash-tag warn">채점 대기 ${stats.pending}</span>` : ""}
             </div>
             ${
-              nextTask
-                ? `<button type="button" class="dash-cta" data-goto="${nextTask.view}" data-id="${nextTask.id}">
-                다음 할 일 · ${escapeHtml(nextTask.title)} →
+              showGuide && nextTask
+                ? `<button type="button" class="dash-cta btn-tutorial-start" data-tutorial="${nextTask.id}">
+                다음 할 일 · ${escapeHtml(nextTask.title)} 안내 →
               </button>`
-                : `<span class="dash-cta done">✓ 기본 설정 완료</span>`
+                : !showGuide
+                  ? `<span class="dash-cta done">✓ 시작 가이드 완료</span>`
+                  : `<span class="dash-cta done">✓ 기본 설정 완료</span>`
             }
           </div>
         </header>
@@ -880,13 +1289,20 @@ async function renderHome() {
           <button type="button" class="dash-quick-btn" data-action="qr"><span>📱</span><em>학생 QR</em></button>
         </nav>
 
-        <section class="dash-panel dash-panel-guide" aria-label="시작 가이드">
+        ${
+          showGuide
+            ? `<section class="dash-panel dash-panel-guide" aria-label="시작 가이드">
           <div class="dash-panel-head">
             <h2 class="dash-section-title">시작 가이드 <small>${setupPct}%</small></h2>
+            <p class="dash-guide-once">처음 한 번만 진행합니다. 「안내 시작」을 누르면 화살표로 안내합니다.</p>
             <div class="dash-progress-bar"><span style="width:${setupPct}%"></span></div>
           </div>
           <ol class="dash-setup-list">${setupSteps}</ol>
-        </section>
+        </section>`
+            : `<section class="dash-panel dash-panel-guide is-complete" aria-label="시작 가이드 완료">
+          <p class="dash-guide-done-msg">✓ 시작 가이드를 완료했습니다. 시험·성적 메뉴에서 바로 이용하세요.</p>
+        </section>`
+        }
 
         <section class="dash-panel dash-panel-logs" aria-label="최근 AI 분석">
           <div class="dash-panel-head">
@@ -903,22 +1319,8 @@ async function renderHome() {
   mainEl.querySelectorAll(".btn-dash-link[data-view]").forEach((btn) => {
     btn.addEventListener("click", () => setView(btn.dataset.view));
   });
-  mainEl.querySelector(".dash-cta[data-goto]")?.addEventListener("click", (e) => {
-    const btn = e.currentTarget;
-    if (btn.dataset.id === "qr") {
-      navigateToStudentQr();
-      return;
-    }
-    setView(btn.dataset.goto);
-  });
-  mainEl.querySelectorAll(".btn-dash-link[data-goto]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      if (btn.dataset.id === "qr") {
-        navigateToStudentQr();
-        return;
-      }
-      setView(btn.dataset.goto);
-    });
+  mainEl.querySelectorAll(".btn-tutorial-start").forEach((btn) => {
+    btn.addEventListener("click", () => startTutorialStep(btn.dataset.tutorial));
   });
 
   try {
@@ -1045,6 +1447,7 @@ function renderExam() {
         renderSidebar();
         renderExam();
         showToast("단원이 추가되었습니다.");
+        setTimeout(refreshTutorialIfActive, 400);
         return true;
       },
     });
@@ -1173,6 +1576,7 @@ function addSubjectFlow() {
       renderSidebar();
       setView("exam");
       showToast(`「${name}」 과목이 추가되었습니다.`);
+      setTimeout(refreshTutorialIfActive, 400);
       return true;
     },
   });
@@ -2215,6 +2619,7 @@ document.getElementById("addClassBtn").addEventListener("click", () => {
       await saveNow();
       renderSidebar();
       showToast("학반이 추가되었습니다.");
+      setTimeout(refreshTutorialIfActive, 400);
       return true;
     },
   });
@@ -2254,4 +2659,5 @@ gradingSocket.on("grading:scoreUpdate", (p) => {
   if (currentView !== "grades" && currentView !== "trend") setView("grades");
 });
 
+initTutorialUi();
 loadData();
