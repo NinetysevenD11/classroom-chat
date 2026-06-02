@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/grading.css?v=6" />
+  <link rel="stylesheet" href="/css/grading.css?v=7" />
 </head>
 <body class="grading-app">
   <div class="grading-shell">
@@ -113,6 +113,24 @@
     </div>
   </div>
 
+  <div id="manualGradeModal" class="g-dialog hidden" role="dialog" aria-modal="true">
+    <div class="g-dialog-backdrop" data-close="manualGradeModal"></div>
+    <div class="g-dialog-panel g-dialog-panel-manual">
+      <div class="g-dialog-head manual-grade-head">
+        <div>
+          <h3>서술형 수동채점</h3>
+          <p id="manualGradeMeta" class="manual-grade-meta"></p>
+        </div>
+        <button type="button" class="g-dialog-close" data-close="manualGradeModal" aria-label="닫기">✕</button>
+      </div>
+      <div id="manualGradeBody" class="g-dialog-body manual-grade-body"></div>
+      <div class="g-dialog-foot manual-grade-foot">
+        <button type="button" class="btn btn-save-manual" id="manualGradeSave">저장</button>
+        <button type="button" class="btn btn-ghost" data-close="manualGradeModal">닫기</button>
+      </div>
+    </div>
+  </div>
+
   <div id="gradingDialog" class="g-dialog hidden" role="dialog" aria-modal="true">
     <div class="g-dialog-backdrop" data-close-dialog></div>
     <div class="g-dialog-panel">
@@ -136,6 +154,6 @@
         "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
     }
   </script>
-  <script src="/js/grading.js?v=7"></script>
+  <script src="/js/grading.js?v=9"></script>
 </body>
 </html>

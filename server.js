@@ -548,6 +548,61 @@ app.post("/api/grading/review", requireAuth, async (req, res) => {
   }
 });
 
+/** 한 서술형 문항에 대해 여러 학생 일괄 채점 */
+app.post("/api/grading/review-question", requireAuth, async (req, res) => {
+  const userId = req.session.userId;
+  if (isAdminUserId(userId)) return res.status(403).json({ ok: false, error: "사용할 수 없습니다." });
+
+  const { unitId, questionNum, marks } = req.body || {};
+  const qKey = String(questionNum ?? "");
+  if (!unitId || !qKey || !marks || typeof marks !== "object") {
+    return res.status(400).json({ ok: false, error: "시험·문항·채점 정보가 필요합니다." });
+  }
+
+  const grading = getGradingState(userId);
+  const hit = findUnitInGrading(grading, unitId);
+  if (!hit) return res.status(404).json({ ok: false, error: "시험을 찾을 수 없습니다." });
+
+  const q = hit.unit.questions?.find((item) => String(item.num) === qKey);
+  if (!q || q.type !== "essay") {
+    return res.status(400).json({ ok: false, error: "서술형 문항이 아닙니다." });
+  }
+
+  let updated = 0;
+  for (const [studentKey, mark] of Object.entries(marks)) {
+    if (!["correct", "wrong", "partial"].includes(mark)) continue;
+    const rec = grading.studentScores?.[studentKey];
+    const submission = rec?._detail?.[unitId];
+    if (!submission) continue;
+
+    submission.essayMarks = submission.essayMarks || {};
+    submission.essayMarks[qKey] = mark;
+
+    const { finalScore, pendingEssay, earned, max, detail } = recomputeSubmissionScore(hit.unit, submission);
+    submission.detail = detail;
+    submission.earned = earned;
+    submission.max = max;
+    submission.pendingEssay = pendingEssay;
+    submission.provisionalScore = finalScore;
+
+    if (pendingEssay === 0) {
+      submission.finalized = true;
+      rec[unitId] = finalScore ?? 0;
+    } else {
+      submission.finalized = false;
+      rec[unitId] = "채점중";
+    }
+    updated += 1;
+  }
+
+  try {
+    await saveGradingState(userId, grading, { preserveSecrets: false });
+    res.json({ ok: true, updated, questionNum: qKey, unitId });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: "저장에 실패했습니다." });
+  }
+});
+
 app.get("/api/grading/me", requireAuth, (req, res) => {
   res.json({
     userId: req.session.userId,
@@ -673,10 +728,18 @@ function recomputeSubmissionScore(unit, submission) {
       if (mark === "correct") {
         earned += pts;
         d.correct = true;
+        d.partial = false;
         d.pending = false;
         d.teacherMarked = true;
       } else if (mark === "wrong") {
         d.correct = false;
+        d.partial = false;
+        d.pending = false;
+        d.teacherMarked = true;
+      } else if (mark === "partial") {
+        earned += Math.max(pts === 1 ? 0 : 1, Math.round(pts / 2));
+        d.correct = false;
+        d.partial = true;
         d.pending = false;
         d.teacherMarked = true;
       } else if (d.skipped || !String(d.given || "").trim()) {

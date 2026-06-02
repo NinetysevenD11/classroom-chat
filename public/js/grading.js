@@ -203,6 +203,13 @@ function activeUnit() {
   return sub.units?.find((u) => u.id === state.activeUnitId) || sub.units?.[0] || null;
 }
 
+function activeClass() {
+  return state?.classes?.find((c) => c.id === state.activeClassId) || null;
+}
+
+/** 서술형 수동채점 모달 세션 */
+let manualGradeSession = null;
+
 function createQuestion(num) {
   return { id: newId(), num, type: "mc", answer: "", points: "1", rubric: "" };
 }
@@ -568,10 +575,23 @@ function setView(view) {
 }
 
 function renderView(view) {
+  if (!state) {
+    if (mainEl) {
+      mainEl.innerHTML = `<div class="view-home"><p class="muted">데이터를 불러오는 중…</p></div>`;
+    }
+    return;
+  }
   updateChecklistBadges();
-  if (view === "home") renderHome();
-  else if (view === "exam") renderExam();
-  else if (view === "grades") renderGrades();
+  try {
+    if (view === "home") renderHome();
+    else if (view === "exam") renderExam();
+    else if (view === "grades") renderGrades();
+  } catch (err) {
+    console.error("[채점] 화면 렌더 오류", err);
+    if (mainEl) {
+      mainEl.innerHTML = `<div class="view-home"><p class="error-inline">화면을 표시하지 못했습니다. 새로고침해 주세요.<br><small>${escapeHtml(err.message)}</small></p></div>`;
+    }
+  }
 }
 
 function renderHome() {
@@ -782,7 +802,13 @@ function bindQuestionEditors(unit) {
         },
       });
     });
-    card.querySelector("[data-manual]")?.addEventListener("click", () => setView("grades"));
+    card.querySelector("[data-manual]")?.addEventListener("click", () => {
+      if (q.type !== "essay") {
+        showToast("서술형 문항만 수동 채점할 수 있습니다.", true);
+        return;
+      }
+      openManualGradeModal(q, unit, sub);
+    });
   });
   document.getElementById("addQuestionBtn")?.addEventListener("click", () => {
     const n = unit.questions.length + 1;
@@ -946,6 +972,145 @@ function calcStudentAverage(studentKey, units) {
   return (nums.reduce((a, b) => a + Number(b), 0) / nums.length).toFixed(1);
 }
 
+function collectQuestionSubmissions(unitId, questionNum) {
+  const qKey = String(questionNum);
+  const rows = [];
+  for (const [studentKey, rec] of Object.entries(state.studentScores || {})) {
+    if (studentKey.startsWith("_")) continue;
+    const sub = rec._detail?.[unitId];
+    if (!sub?.detail) continue;
+    const d = sub.detail[qKey];
+    if (!d) continue;
+    const colon = studentKey.indexOf(":");
+    const seat = Number(studentKey.slice(0, colon));
+    const name = studentKey.slice(colon + 1);
+    rows.push({
+      studentKey,
+      seat: Number.isFinite(seat) ? seat : 0,
+      name,
+      given: d.given || "",
+      skipped: !!d.skipped,
+      mark: sub.essayMarks?.[qKey] || null,
+    });
+  }
+  rows.sort((a, b) => a.seat - b.seat);
+  return rows;
+}
+
+function renderManualGradeRow(row) {
+  const mark = manualGradeSession?.marks?.[row.studentKey] || "";
+  const answer = row.skipped || !String(row.given).trim() ? "(미작성)" : row.given;
+  return `
+    <article class="manual-grade-row" data-student-key="${escapeHtml(row.studentKey)}">
+      <div class="manual-grade-student">
+        <div class="manual-grade-name">${row.seat}번 ${escapeHtml(row.name)}</div>
+        <div class="manual-grade-answer">${escapeHtml(answer)}</div>
+      </div>
+      <div class="manual-grade-btns" role="group" aria-label="${row.seat}번 채점">
+        <button type="button" class="mg-btn mg-correct ${mark === "correct" ? "is-on" : ""}" data-mark="correct">정답</button>
+        <button type="button" class="mg-btn mg-partial ${mark === "partial" ? "is-on" : ""}" data-mark="partial">부분점수</button>
+        <button type="button" class="mg-btn mg-wrong ${mark === "wrong" ? "is-on" : ""}" data-mark="wrong">오답</button>
+      </div>
+    </article>`;
+}
+
+function renderManualGradeBody() {
+  const body = document.getElementById("manualGradeBody");
+  if (!body || !manualGradeSession) return;
+  const { question, rows, rubricLabel } = manualGradeSession;
+
+  if (!rows.length) {
+    body.innerHTML = `<p class="manual-grade-empty">이 단원에 제출한 학생이 없습니다.<br>학생이 시험을 제출하면 여기에 답안이 표시됩니다.</p>`;
+    return;
+  }
+
+  body.innerHTML = `
+    <div class="manual-grade-block">
+      <div class="manual-grade-qhead">${question.num}번 서술형 기준: ${escapeHtml(rubricLabel)}</div>
+      <div class="manual-grade-list">
+        ${rows.map((r) => renderManualGradeRow(r)).join("")}
+      </div>
+    </div>`;
+
+  body.querySelectorAll(".manual-grade-row").forEach((rowEl) => {
+    const key = rowEl.dataset.studentKey;
+    rowEl.querySelectorAll(".mg-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        manualGradeSession.marks[key] = btn.dataset.mark;
+        rowEl.querySelectorAll(".mg-btn").forEach((b) => b.classList.remove("is-on"));
+        btn.classList.add("is-on");
+      });
+    });
+  });
+}
+
+function openManualGradeModal(question, unit, subject) {
+  const rows = collectQuestionSubmissions(unit.id, question.num);
+  const cls = activeClass();
+  const rubricLabel = (question.rubric || "").trim() || "1";
+
+  manualGradeSession = {
+    unitId: unit.id,
+    questionNum: question.num,
+    question,
+    subject,
+    unit,
+    marks: {},
+    rows,
+    rubricLabel,
+  };
+
+  for (const row of rows) {
+    if (row.mark) manualGradeSession.marks[row.studentKey] = row.mark;
+  }
+
+  const classLabel = cls?.name || "우리반";
+  const unitLabel = `${subject.name}_${unit.name}`;
+  document.getElementById("manualGradeMeta").textContent =
+    `${subject.name} · ${classLabel} · ${unitLabel} · ${question.num}번 / 1개 문항 · ${rows.length}개 답안`;
+
+  renderManualGradeBody();
+  document.getElementById("manualGradeModal").classList.remove("hidden");
+}
+
+function closeManualGradeModal() {
+  document.getElementById("manualGradeModal")?.classList.add("hidden");
+  manualGradeSession = null;
+}
+
+async function saveManualGradeModal() {
+  if (!manualGradeSession) return;
+  const marks = {};
+  for (const [key, mark] of Object.entries(manualGradeSession.marks || {})) {
+    if (["correct", "wrong", "partial"].includes(mark)) marks[key] = mark;
+  }
+  if (!Object.keys(marks).length) {
+    showToast("채점할 학생을 선택해 주세요.", true);
+    return;
+  }
+
+  const res = await fetch("/api/grading/review-question", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({
+      unitId: manualGradeSession.unitId,
+      questionNum: manualGradeSession.questionNum,
+      marks,
+    }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "저장 실패");
+
+  const gradingRes = await fetch("/api/grading", { credentials: "include" });
+  state.studentScores = normalizeState(await gradingRes.json()).studentScores;
+
+  showToast(`${data.updated || Object.keys(marks).length}명 채점을 저장했습니다.`);
+  closeManualGradeModal();
+  updateMainNavBadge();
+  if (currentView === "grades") renderGrades();
+}
+
 async function postReview(studentKey, unitId, essayMarks, finalize) {
   const res = await fetch("/api/grading/review", {
     method: "POST",
@@ -981,13 +1146,14 @@ function buildStudentResultHtml(studentKey, seat, name) {
     const answerLines = sub?.detail
       ? Object.entries(sub.detail)
           .map(([num, info]) => {
-            const mark = info.correct ? "✓" : info.pending ? "⋯" : "✗";
+            const mark = info.correct ? "✓" : info.partial ? "△" : info.pending ? "⋯" : "✗";
             const givenText = info.skipped || !info.given ? "(미작성)" : info.given;
             const essayMarks = sub.essayMarks || {};
             const isEssayPending = info.pending && String(info.given || "").trim();
             const essayBtns = isEssayPending
               ? `<div class="essay-grade-actions" data-unit-id="${escapeHtml(u.id)}" data-q-num="${escapeHtml(num)}">
                   <button type="button" class="essay-mark ${essayMarks[num] === "correct" ? "is-correct" : ""}" data-mark="correct">정답</button>
+                  <button type="button" class="essay-mark ${essayMarks[num] === "partial" ? "is-partial" : ""}" data-mark="partial">부분</button>
                   <button type="button" class="essay-mark ${essayMarks[num] === "wrong" ? "is-wrong" : ""}" data-mark="wrong">오답</button>
                 </div>`
               : "";
@@ -1101,6 +1267,17 @@ function printStudentReport(studentKey, seat, name) {
 document.querySelectorAll('[data-close="studentResultModal"]').forEach((el) => {
   el.addEventListener("click", closeStudentResultModal);
 });
+
+document.querySelectorAll('[data-close="manualGradeModal"]').forEach((el) => {
+  el.addEventListener("click", closeManualGradeModal);
+});
+document.getElementById("manualGradeSave")?.addEventListener("click", async () => {
+  try {
+    await saveManualGradeModal();
+  } catch (err) {
+    showToast(err.message || "저장하지 못했습니다.", true);
+  }
+});
 document.getElementById("studentResultPrint")?.addEventListener("click", () => {
   const modal = document.getElementById("studentResultModal");
   if (modal.classList.contains("hidden")) return;
@@ -1130,6 +1307,7 @@ function bindMainNav() {
 }
 
 function renderGrades() {
+  if (!state || !mainEl) return;
   const cls = activeClass();
   const students = getStudentsForGrades();
   const units = getAllUnits();
@@ -1150,7 +1328,7 @@ function renderGrades() {
               <td class="col-submit">${formatSubmitted(state.studentScores?.[key]?._submittedAt)}</td>
               <td class="col-actions">
                 <div class="row-actions">
-                  <button type="button" class="view" data-view="${escapeHtml(key)}" data-seat="${st.seat}" data-name="${escapeHtml(st.name)}">학생결과보기</button>
+                  <button type="button" class="btn-row-view" data-student-result="${escapeHtml(key)}" data-seat="${st.seat}" data-name="${escapeHtml(st.name)}">학생결과보기</button>
                   <button type="button" class="print" data-print="${escapeHtml(key)}" data-seat="${st.seat}" data-name="${escapeHtml(st.name)}">인쇄</button>
                   <button type="button" class="reset" data-reset="${escapeHtml(key)}">초기화</button>
                   <button type="button" class="del" data-del="${escapeHtml(key)}">삭제</button>
@@ -1234,9 +1412,9 @@ function renderGrades() {
     } catch (_) {}
   }, 5000);
 
-  mainEl.querySelectorAll("[data-view]").forEach((btn) => {
+  mainEl.querySelectorAll("[data-student-result]").forEach((btn) => {
     btn.addEventListener("click", () => {
-      openStudentResult(btn.dataset.view, btn.dataset.seat, btn.dataset.name);
+      openStudentResult(btn.dataset.studentResult, btn.dataset.seat, btn.dataset.name);
     });
   });
 
