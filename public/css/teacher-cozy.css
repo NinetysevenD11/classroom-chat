@@ -128,10 +128,31 @@ html[data-theme="light"] body:not(.pip-mode)::after {
   opacity: 0.85;
 }
 
-html[data-theme="dark"] body:not(.pip-mode) > *,
-html[data-theme="light"] body:not(.pip-mode) > * {
+/* 레이아웃만 쌓임 순서 — 모달·오버레이는 제외 (fixed가 relative로 덮이면 채팅 아래로 내려감) */
+html[data-theme="dark"] body:not(.pip-mode) > .topbar,
+html[data-theme="dark"] body:not(.pip-mode) > .toolbar,
+html[data-theme="dark"] body:not(.pip-mode) > .grid,
+html[data-theme="dark"] body:not(.pip-mode) > .teacher-chat,
+html[data-theme="light"] body:not(.pip-mode) > .topbar,
+html[data-theme="light"] body:not(.pip-mode) > .toolbar,
+html[data-theme="light"] body:not(.pip-mode) > .grid,
+html[data-theme="light"] body:not(.pip-mode) > .teacher-chat {
   position: relative;
   z-index: 1;
+}
+
+body:not(.pip-mode) .modal,
+body:not(.pip-mode) .question-overlay {
+  position: fixed !important;
+  inset: 0;
+}
+
+body:not(.pip-mode) .modal {
+  z-index: 200 !important;
+}
+
+body:not(.pip-mode) .question-overlay {
+  z-index: 150 !important;
 }
 
 /* ── 공통 레이아웃 카드 ── */

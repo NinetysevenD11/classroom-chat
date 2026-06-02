@@ -1,3 +1,13 @@
+(async function restoreSessionIfLoggedIn() {
+  try {
+    const res = await fetch("/api/auth/me", { credentials: "include" });
+    const data = await res.json();
+    if (data.ok) {
+      window.location.replace(data.isAdmin ? "/admin" : "/");
+    }
+  } catch (_) {}
+})();
+
 const tabLogin = document.getElementById("tabLogin");
 const tabSignup = document.getElementById("tabSignup");
 const submitBtn = document.getElementById("submitBtn");
@@ -33,6 +43,7 @@ authForm.addEventListener("submit", async (e) => {
     const res = await fetch(mode === "login" ? "/api/login" : "/api/signup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({ id, password }),
     });
     const data = await res.json();

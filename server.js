@@ -24,6 +24,7 @@ import {
   getLastLoginByUser,
   getRecentLoginLogs,
   ensureAdminAccount,
+  createSessionStore,
 } from "./storage.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -140,6 +141,12 @@ function clientIp(req) {
   return req.socket?.remoteAddress || null;
 }
 
+function saveSession(req) {
+  return new Promise((resolve, reject) => {
+    req.session.save((err) => (err ? reject(err) : resolve()));
+  });
+}
+
 // ----- 교실 (선생님 계정별, 입장 코드 없음) -----
 // rooms[userId] = { seats, socketSeat, seatSocket }
 const rooms = {};
@@ -226,11 +233,21 @@ const isProd = process.env.NODE_ENV === "production";
 await initStorage();
 await ensureAdminAccount(makeUser);
 
+const sessionStore = await createSessionStore(session);
 const sessionMiddleware = session({
   secret: sessionSecret,
+  name: "classroom.sid",
+  store: sessionStore,
   resave: false,
   saveUninitialized: false,
-  cookie: { maxAge: 1000 * 60 * 60 * 12, secure: isProd, sameSite: "lax" }, // 12시간 유지
+  rolling: true,
+  cookie: {
+    maxAge: 1000 * 60 * 60 * 24 * 7,
+    secure: isProd,
+    sameSite: "lax",
+    httpOnly: true,
+    path: "/",
+  },
 });
 
 app.use(express.json());
@@ -239,9 +256,22 @@ app.use(sessionMiddleware);
 io.engine.use(sessionMiddleware);
 app.use(express.static(path.join(__dirname, "public")));
 
-// 로그인 페이지
+// 로그인 페이지 (이미 로그인된 경우 교사·관리자 화면으로)
 app.get("/login", (req, res) => {
+  const userId = req.session?.userId;
+  if (userId && users[userId]) {
+    if (isAdminUserId(userId)) return res.redirect("/admin");
+    return res.redirect("/");
+  }
   res.sendFile(path.join(__dirname, "public", "login.html"));
+});
+
+app.get("/api/auth/me", (req, res) => {
+  const userId = req.session?.userId;
+  if (!userId || !users[userId]) {
+    return res.json({ ok: false });
+  }
+  res.json({ ok: true, userId, isAdmin: isAdminUserId(userId) });
 });
 
 // 회원가입 (아이디 + 비밀번호만)
@@ -262,6 +292,7 @@ app.post("/api/signup", async (req, res) => {
     await saveUser(id, u);
     req.session.userId = id;
     await recordLogin(id, { ip: clientIp(req) });
+    await saveSession(req);
     res.json({ ok: true, isAdmin: false });
   } catch (err) {
     console.error("[저장] 회원가입 저장 실패:", err);
@@ -279,8 +310,10 @@ app.post("/api/login", async (req, res) => {
   req.session.userId = id;
   try {
     await recordLogin(id, { ip: clientIp(req) });
+    await saveSession(req);
   } catch (err) {
     console.error("[저장] 로그인 기록 실패:", err);
+    return res.json({ ok: false, error: "로그인 세션을 저장하지 못했습니다. 다시 시도해 주세요." });
   }
   res.json({ ok: true, isAdmin: isAdminUserId(id) });
 });
@@ -364,8 +397,16 @@ function purgeTeacherSession(userId) {
   delete rooms[userId];
 }
 
-// 교사 화면(로그인 필요, 관리자는 관리 페이지로)
+// 교실 도구함 허브(사이드바 + 앱 선택, 관리자는 관리 페이지로)
 app.get("/", requireAuth, (req, res) => {
+  if (isAdminUserId(req.session.userId)) {
+    return res.redirect("/admin");
+  }
+  res.sendFile(path.join(__dirname, "views", "hub.html"));
+});
+
+// 우리반 칠판(교사 화면)
+app.get("/app/chalkboard", requireAuth, (req, res) => {
   if (isAdminUserId(req.session.userId)) {
     return res.redirect("/admin");
   }

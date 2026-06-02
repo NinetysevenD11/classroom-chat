@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>교실 도구함</title>
+  <link rel="stylesheet" href="/css/hub.css?v=1" />
+  <script>
+    (function () {
+      var t = localStorage.getItem("theme");
+      document.documentElement.setAttribute("data-theme", t === "light" ? "light" : "dark");
+    })();
+  </script>
+</head>
+<body class="hub-layout">
+  <aside id="sidebar" class="sidebar" aria-label="기능 메뉴">
+    <div class="sidebar-top">
+      <button type="button" id="sidebarToggle" class="sidebar-toggle" title="메뉴 접기/펼치기" aria-expanded="true">
+        <span class="toggle-icon" aria-hidden="true">☰</span>
+      </button>
+      <div class="sidebar-brand">
+        <span class="brand-icon" aria-hidden="true">🏫</span>
+        <span class="brand-text">교실 도구함</span>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav" id="sidebarNav">
+      <!-- hub.js에서 앱 목록 렌더 -->
+    </nav>
+
+    <div class="sidebar-footer">
+      <button type="button" id="hubLogout" class="sidebar-logout" title="로그아웃">
+        <span class="nav-icon" aria-hidden="true">🚪</span>
+        <span class="nav-label">로그아웃</span>
+      </button>
+    </div>
+  </aside>
+
+  <main class="hub-main">
+    <iframe
+      id="appFrame"
+      class="hub-frame"
+      src="/app/chalkboard"
+      title="우리반 칠판"
+      allow="clipboard-read; clipboard-write"
+    ></iframe>
+  </main>
+
+  <script src="/js/hub.js?v=1"></script>
+</body>
+</html>

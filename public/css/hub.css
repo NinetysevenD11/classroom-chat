@@ -1,0 +1,256 @@
+/**
+ * 교실 도구함 — 공통 사이드바 셸
+ */
+
+[data-theme="dark"] {
+  --hub-bg: #151f28;
+  --hub-sidebar: #1a2834;
+  --hub-sidebar-border: rgba(255, 255, 255, 0.08);
+  --hub-text: #e8f2ec;
+  --hub-muted: #8faf9e;
+  --hub-hover: rgba(255, 255, 255, 0.08);
+  --hub-active: rgba(168, 216, 234, 0.22);
+  --hub-active-border: #a8d8ea;
+  --hub-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
+}
+
+[data-theme="light"] {
+  --hub-bg: #e8f4ef;
+  --hub-sidebar: #fffdf9;
+  --hub-sidebar-border: rgba(45, 74, 62, 0.1);
+  --hub-text: #2d4a3e;
+  --hub-muted: #6b8f80;
+  --hub-hover: rgba(45, 74, 62, 0.06);
+  --hub-active: rgba(168, 216, 234, 0.45);
+  --hub-active-border: #7eb8c9;
+  --hub-shadow: 0 4px 20px rgba(45, 74, 62, 0.12);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  font-family: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  background: var(--hub-bg);
+  color: var(--hub-text);
+}
+
+.hub-layout {
+  display: flex;
+  height: 100%;
+  min-height: 100dvh;
+}
+
+/* ── 사이드바 ── */
+.sidebar {
+  flex: 0 0 240px;
+  width: 240px;
+  display: flex;
+  flex-direction: column;
+  background: var(--hub-sidebar);
+  border-right: 2px solid var(--hub-sidebar-border);
+  box-shadow: var(--hub-shadow);
+  transition: width 0.22s ease, flex-basis 0.22s ease;
+  z-index: 10;
+  overflow: hidden;
+}
+
+.sidebar.is-collapsed {
+  flex: 0 0 64px;
+  width: 64px;
+}
+
+.sidebar-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 12px 10px;
+  border-bottom: 2px solid var(--hub-sidebar-border);
+  min-height: 56px;
+}
+
+.sidebar-toggle {
+  flex: 0 0 40px;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 12px;
+  background: var(--hub-hover);
+  color: var(--hub-text);
+  font-size: 18px;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.15s;
+}
+
+.sidebar-toggle:hover {
+  background: var(--hub-active);
+}
+
+.sidebar-toggle:active {
+  transform: scale(0.96);
+}
+
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.brand-icon {
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+.brand-text {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  opacity: 1;
+  transition: opacity 0.15s;
+}
+
+.sidebar.is-collapsed .brand-text,
+.sidebar.is-collapsed .nav-label {
+  opacity: 0;
+  width: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.sidebar.is-collapsed .sidebar-brand {
+  display: none;
+}
+
+.sidebar.is-collapsed .sidebar-top {
+  justify-content: center;
+  padding: 14px 8px 10px;
+}
+
+.sidebar-nav {
+  flex: 1;
+  padding: 12px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow-y: auto;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 2px solid transparent;
+  border-radius: 14px;
+  background: transparent;
+  color: var(--hub-text);
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  text-align: left;
+}
+
+.nav-item:hover {
+  background: var(--hub-hover);
+}
+
+.nav-item.is-active {
+  background: var(--hub-active);
+  border-color: var(--hub-active-border);
+}
+
+.nav-icon {
+  flex: 0 0 28px;
+  width: 28px;
+  text-align: center;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.nav-label {
+  white-space: nowrap;
+  transition: opacity 0.15s;
+}
+
+.sidebar.is-collapsed .nav-item {
+  justify-content: center;
+  padding: 12px 8px;
+}
+
+.sidebar-footer {
+  padding: 10px;
+  border-top: 2px solid var(--hub-sidebar-border);
+}
+
+.sidebar-logout {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  border: none;
+  border-radius: 14px;
+  background: transparent;
+  color: var(--hub-muted);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.sidebar-logout:hover {
+  background: rgba(240, 108, 100, 0.15);
+  color: #f06c64;
+}
+
+.sidebar.is-collapsed .sidebar-logout {
+  justify-content: center;
+  padding: 12px 8px;
+}
+
+/* ── 메인(앱) 영역 ── */
+.hub-main {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--hub-bg);
+}
+
+.hub-frame {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: block;
+  background: var(--hub-bg);
+}
+
+@media (max-width: 640px) {
+  .sidebar:not(.is-collapsed) {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 100;
+  }
+
+  .sidebar.is-collapsed {
+    flex: 0 0 56px;
+    width: 56px;
+  }
+}

@@ -44,6 +44,36 @@ export let classRosters = {};
 export let loginLogs = [];
 export let sessionSecret = "";
 
+export function getMongoClient() {
+  return mongoClient;
+}
+
+/** MongoDB 또는 로컬 파일에 세션 저장 (새로고침·재시작 후에도 로그인 유지) */
+export async function createSessionStore(Session) {
+  const TTL_SEC = 60 * 60 * 24 * 7;
+  if (mongoClient) {
+    const MongoStore = (await import("connect-mongo")).default;
+    console.log("[세션] MongoDB에 저장됩니다.");
+    return MongoStore.create({
+      client: mongoClient,
+      dbName: process.env.MONGODB_DB || "classroom_chat",
+      collectionName: "sessions",
+      ttl: TTL_SEC,
+    });
+  }
+  const FileStoreInit = (await import("session-file-store")).default;
+  const FileStore = FileStoreInit(Session);
+  ensureDataDir();
+  const sessionsPath = path.join(DATA_DIR, ".sessions");
+  if (!fs.existsSync(sessionsPath)) fs.mkdirSync(sessionsPath, { recursive: true });
+  console.log(`[세션] 파일 저장 (${sessionsPath})`);
+  return new FileStore({
+    path: sessionsPath,
+    ttl: TTL_SEC,
+    retries: 0,
+  });
+}
+
 export function getAdminIdsFromEnv() {
   return (process.env.ADMIN_IDS || "")
     .split(",")

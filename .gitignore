@@ -1,4 +1,5 @@
 node_modules/
+.sessions/
 .session_secret
 users.json
 student_profiles.json
