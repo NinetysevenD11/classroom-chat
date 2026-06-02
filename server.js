@@ -457,9 +457,13 @@ app.get("/api/grading/api-key", requireAuth, (req, res) => {
   res.json({
     ok: true,
     settings,
-    canScan: !!(creds.geminiKey || creds.openaiKey),
-    envGemini: !!process.env.GEMINI_API_KEY?.trim(),
-    envOpenai: !!process.env.OPENAI_API_KEY?.trim(),
+    canScan: !!creds.apiKey,
+    envKeys: {
+      openai: !!process.env.OPENAI_API_KEY?.trim(),
+      gemini: !!process.env.GEMINI_API_KEY?.trim(),
+      claude: !!process.env.ANTHROPIC_API_KEY?.trim(),
+      grok: !!process.env.XAI_API_KEY?.trim(),
+    },
   });
 });
 
@@ -467,16 +471,15 @@ app.put("/api/grading/api-key", requireAuth, async (req, res) => {
   const userId = req.session.userId;
   if (isAdminUserId(userId)) return res.status(403).json({ ok: false, error: "사용할 수 없습니다." });
   try {
-    const { geminiApiKey, openaiApiKey, aiProvider, clearGemini, clearOpenai } = req.body || {};
+    const { apiKey, aiProvider, clearApiKey, clearAll } = req.body || {};
     const settings = await updateUserApiKeys(userId, {
-      geminiApiKey,
-      openaiApiKey,
+      apiKey,
       aiProvider,
-      clearGemini: !!clearGemini,
-      clearOpenai: !!clearOpenai,
+      clearApiKey: !!clearApiKey,
+      clearAll: !!clearAll,
     });
     const creds = getAiCredentials(userId);
-    res.json({ ok: true, settings, canScan: !!(creds.geminiKey || creds.openaiKey) });
+    res.json({ ok: true, settings, canScan: !!creds.apiKey });
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });
   }
@@ -690,15 +693,14 @@ app.post("/api/grading/trend-analysis", requireAuth, async (req, res) => {
   }
 
   const creds = getAiCredentials(userId);
-  if (!creds.geminiKey && !creds.openaiKey) {
+  if (!creds.apiKey) {
     return res.status(400).json({ ok: false, error: "AI API 키를 사이드바 하단에 저장해 주세요." });
   }
 
   try {
     const analysis = await analyzeStudentTrend(trendData, {
-      geminiKey: creds.geminiKey,
-      openaiKey: creds.openaiKey,
       provider: creds.provider,
+      apiKey: creds.apiKey,
     });
     res.json({ ok: true, analysis, trendData });
   } catch (err) {
@@ -881,9 +883,8 @@ app.post("/api/grading/scan", requireAuth, async (req, res) => {
 
     const creds = getAiCredentials(userId);
     const aiQuestions = await scanExamPaper(files, {
-      geminiKey: creds.geminiKey,
-      openaiKey: creds.openaiKey,
       provider: creds.provider,
+      apiKey: creds.apiKey,
     });
     const stored = questionsToStored(aiQuestions, uid);
     found.unit.questions = stored;

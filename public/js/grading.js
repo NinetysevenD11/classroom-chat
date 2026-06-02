@@ -64,7 +64,7 @@ function normalizeState(raw) {
   if (!Array.isArray(s.classes)) s.classes = [];
   if (!s.studentScores || typeof s.studentScores !== "object") s.studentScores = {};
   if (!s.settings || typeof s.settings !== "object") {
-    s.settings = { aiProvider: "gemini", hasGemini: false, hasOpenai: false };
+    s.settings = { aiProvider: "gemini", hasApiKey: false };
   }
   for (const exam of s.exams) {
     if (!Array.isArray(exam.subjects)) exam.subjects = [];
@@ -368,7 +368,24 @@ async function loadData() {
   loadApiKeyPanel();
 }
 
-let apiKeyMeta = { canScan: false, envGemini: false, envOpenai: false };
+const AI_PROVIDER_LABELS = { openai: "OpenAI", gemini: "Gemini", claude: "Claude", grok: "Grok" };
+const AI_KEY_PLACEHOLDERS = {
+  openai: "sk-...",
+  gemini: "AIza...",
+  claude: "sk-ant-...",
+  grok: "xai-...",
+};
+
+let apiKeyMeta = { canScan: false, envKeys: {} };
+
+function selectedAiProvider() {
+  return document.getElementById("aiProviderSelect")?.value || "gemini";
+}
+
+function updateApiKeyInputPlaceholder(provider) {
+  const input = document.getElementById("apiKeyInput");
+  if (input) input.placeholder = AI_KEY_PLACEHOLDERS[provider] || "API 키 입력";
+}
 
 async function loadApiKeyPanel() {
   try {
@@ -379,15 +396,15 @@ async function loadApiKeyPanel() {
     const s = data.settings || {};
     const providerEl = document.getElementById("aiProviderSelect");
     if (providerEl && s.aiProvider) providerEl.value = s.aiProvider;
+    updateApiKeyInputPlaceholder(s.aiProvider || selectedAiProvider());
     updateApiKeyStatusUI(s);
     const hint = document.getElementById("apiKeyHint");
     if (hint) {
+      const label = AI_PROVIDER_LABELS[s.aiProvider] || s.aiProvider;
       if (data.canScan) {
-        hint.textContent = s.hasGemini
-          ? "저장된 Gemini 키로 시험지 AI 분석이 가능합니다."
-          : s.hasOpenai
-            ? "저장된 OpenAI 키로 분석합니다."
-            : "서버 기본 키로 분석합니다.";
+        hint.textContent = s.hasApiKey
+          ? `저장된 ${label} 키로 시험지 AI 분석이 가능합니다.`
+          : "서버 기본 키로 분석합니다.";
       } else {
         hint.textContent = "키를 저장해야 시험지 AI 정답 생성을 사용할 수 있습니다.";
       }
@@ -396,39 +413,42 @@ async function loadApiKeyPanel() {
 }
 
 function updateApiKeyStatusUI(s) {
-  const g = document.getElementById("geminiKeyStatus");
-  const o = document.getElementById("openaiKeyStatus");
-  if (g) {
-    g.textContent = s.hasGemini ? `저장됨: ${s.geminiHint}` : "미등록";
-    g.classList.toggle("is-on", !!s.hasGemini);
-  }
-  if (o) {
-    o.textContent = s.hasOpenai ? `저장됨: ${s.openaiHint}` : "미등록";
-    o.classList.toggle("is-on", !!s.hasOpenai);
+  const el = document.getElementById("apiKeyStatus");
+  if (!el) return;
+  const provider = s.aiProvider || selectedAiProvider();
+  const label = AI_PROVIDER_LABELS[provider] || provider;
+  const registered = s.keysRegistered?.[provider];
+  if (s.hasApiKey) {
+    el.textContent = `${label} 저장됨: ${s.apiKeyHint}`;
+    el.classList.add("is-on");
+  } else if (registered) {
+    el.textContent = `${label} 키 저장됨 (다른 AI 선택 중)`;
+    el.classList.add("is-on");
+  } else {
+    el.textContent = `${label} 미등록`;
+    el.classList.remove("is-on");
   }
 }
 
 async function saveApiKeys() {
-  const gemini = document.getElementById("geminiKeyInput")?.value?.trim() || "";
-  const openai = document.getElementById("openaiKeyInput")?.value?.trim() || "";
-  const aiProvider = document.getElementById("aiProviderSelect")?.value || "gemini";
-  if (!gemini && !openai) {
-    showToast("Gemini 또는 OpenAI 키를 입력하세요.", true);
+  const apiKey = document.getElementById("apiKeyInput")?.value?.trim() || "";
+  const aiProvider = selectedAiProvider();
+  if (!apiKey) {
+    showToast("API 키를 입력하세요.", true);
     return;
   }
   const res = await fetch("/api/grading/api-key", {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
-    body: JSON.stringify({ geminiApiKey: gemini, openaiApiKey: openai, aiProvider }),
+    body: JSON.stringify({ apiKey, aiProvider }),
   });
   const data = await res.json();
   if (!res.ok) {
     showToast(data.error || "저장 실패", true);
     return;
   }
-  document.getElementById("geminiKeyInput").value = "";
-  document.getElementById("openaiKeyInput").value = "";
+  document.getElementById("apiKeyInput").value = "";
   if (state) state.settings = data.settings;
   apiKeyMeta.canScan = data.canScan;
   updateApiKeyStatusUI(data.settings);
@@ -436,13 +456,36 @@ async function saveApiKeys() {
   showToast("API 키가 저장되었습니다.");
 }
 
+async function saveAiProviderOnly() {
+  const aiProvider = selectedAiProvider();
+  const res = await fetch("/api/grading/api-key", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ aiProvider }),
+  });
+  const data = await res.json();
+  if (!res.ok) return;
+  if (state) state.settings = data.settings;
+  apiKeyMeta.canScan = data.canScan;
+  updateApiKeyInputPlaceholder(aiProvider);
+  updateApiKeyStatusUI(data.settings);
+  const hint = document.getElementById("apiKeyHint");
+  if (hint && data.canScan) {
+    const label = AI_PROVIDER_LABELS[aiProvider] || aiProvider;
+    hint.textContent = data.settings?.hasApiKey
+      ? `저장된 ${label} 키로 시험지 AI 분석이 가능합니다.`
+      : "서버 기본 키로 분석합니다.";
+  }
+}
+
 function clearApiKeys() {
-  confirmDialog("API 키 삭제", "저장된 내 Gemini·OpenAI 키를 모두 삭제할까요?", async () => {
+  confirmDialog("API 키 삭제", "저장된 모든 AI API 키를 삭제할까요?", async () => {
     const res = await fetch("/api/grading/api-key", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify({ clearGemini: true, clearOpenai: true }),
+      body: JSON.stringify({ clearAll: true }),
     });
     const data = await res.json();
     if (!res.ok) {
@@ -559,6 +602,13 @@ function selectSubject(sub) {
   else setView("exam");
 }
 
+function syncLockRowUi(li, unit) {
+  const lockBtn = li.querySelector('[data-lock="1"]');
+  const openBtn = li.querySelector('[data-lock="0"]');
+  if (lockBtn) lockBtn.classList.toggle("locked", !!unit.locked);
+  if (openBtn) openBtn.classList.toggle("open", !unit.locked);
+}
+
 function renderLockList() {
   lockList.innerHTML = "";
   const sub = activeSubject();
@@ -576,16 +626,18 @@ function renderLockList() {
         <button type="button" class="btn-lock ${!unit.locked ? "open" : ""}" data-lock="0">📶 열림</button>
       </div>
     `;
-    li.querySelector('[data-lock="1"]').addEventListener("click", async () => {
+    li.querySelector('[data-lock="1"]').addEventListener("click", () => {
+      if (unit.locked) return;
       unit.locked = true;
-      await saveNow();
-      renderLockList();
+      syncLockRowUi(li, unit);
+      scheduleSave();
       showToast("학생 화면에서 숨깁니다.");
     });
-    li.querySelector('[data-lock="0"]').addEventListener("click", async () => {
+    li.querySelector('[data-lock="0"]').addEventListener("click", () => {
+      if (!unit.locked) return;
       unit.locked = false;
-      await saveNow();
-      renderLockList();
+      syncLockRowUi(li, unit);
+      scheduleSave();
       showToast("학생이 응시할 수 있습니다.");
     });
     lockList.appendChild(li);
@@ -1867,6 +1919,10 @@ document.getElementById("qrSaveBtn").addEventListener("click", async () => {
 document.getElementById("addSubjectBtn").addEventListener("click", addSubjectFlow);
 document.getElementById("saveApiKeysBtn")?.addEventListener("click", saveApiKeys);
 document.getElementById("clearApiKeysBtn")?.addEventListener("click", clearApiKeys);
+document.getElementById("aiProviderSelect")?.addEventListener("change", () => {
+  updateApiKeyInputPlaceholder(selectedAiProvider());
+  saveAiProviderOnly();
+});
 
 document.getElementById("addClassBtn").addEventListener("click", () => {
   openDialog({

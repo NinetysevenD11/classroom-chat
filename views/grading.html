@@ -64,25 +64,21 @@
 
       <section class="sb-block sb-api-footer">
         <h2 class="sb-title">🔑 내 AI API 키</h2>
-        <p class="sb-hint">로그인한 계정에만 저장됩니다. <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" class="sb-link">Gemini 키 발급</a></p>
+        <p class="sb-hint">로그인한 계정에만 저장됩니다. 선택한 AI의 키를 입력하세요.</p>
         <label class="sb-api-label">
-          <span>Gemini API 키 (권장)</span>
-          <input type="password" id="geminiKeyInput" class="sb-api-input" placeholder="AIza..." autocomplete="off" spellcheck="false" />
-        </label>
-        <p id="geminiKeyStatus" class="sb-key-status"></p>
-        <label class="sb-api-label">
-          <span>OpenAI API 키 (선택)</span>
-          <input type="password" id="openaiKeyInput" class="sb-api-input" placeholder="sk-..." autocomplete="off" spellcheck="false" />
-        </label>
-        <p id="openaiKeyStatus" class="sb-key-status"></p>
-        <label class="sb-api-label">
-          <span>우선 사용</span>
+          <span>AI 선택</span>
           <select id="aiProviderSelect" class="sb-select">
-            <option value="gemini">Gemini (PDF·이미지)</option>
-            <option value="openai">OpenAI (이미지)</option>
-            <option value="auto">자동 (Gemini → OpenAI)</option>
+            <option value="openai">OpenAI</option>
+            <option value="gemini">Gemini</option>
+            <option value="claude">Claude</option>
+            <option value="grok">Grok</option>
           </select>
         </label>
+        <label class="sb-api-label">
+          <span>API 키</span>
+          <input type="password" id="apiKeyInput" class="sb-api-input" placeholder="API 키 입력" autocomplete="off" spellcheck="false" />
+        </label>
+        <p id="apiKeyStatus" class="sb-key-status"></p>
         <div class="sb-api-actions">
           <button type="button" id="saveApiKeysBtn" class="btn btn-blue btn-wide">API 키 저장</button>
           <button type="button" id="clearApiKeysBtn" class="btn btn-ghost btn-wide">내 키 삭제</button>
@@ -159,6 +155,6 @@
         "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
     }
   </script>
-  <script src="/js/grading.js?v=13"></script>
+  <script src="/js/grading.js?v=14"></script>
 </body>
 </html>

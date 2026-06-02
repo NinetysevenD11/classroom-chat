@@ -37,6 +37,26 @@ const OPENAI_MODEL_CANDIDATES = [
   "gpt-4.1",
 ];
 
+const CLAUDE_MODEL_CANDIDATES = [
+  "claude-sonnet-4-20250514",
+  "claude-3-5-sonnet-20241022",
+  "claude-3-5-haiku-20241022",
+  "claude-3-haiku-20240307",
+];
+
+const GROK_MODEL_CANDIDATES = [
+  "grok-2-vision-1212",
+  "grok-2-vision-latest",
+  "grok-vision-beta",
+];
+
+const PROVIDER_LABELS = {
+  openai: "OpenAI",
+  gemini: "Gemini",
+  claude: "Claude",
+  grok: "Grok",
+};
+
 function parseJsonFromText(text) {
   const raw = String(text || "").trim();
   const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
@@ -265,69 +285,149 @@ async function scanWithOpenAI(files, apiKey) {
   );
 }
 
+function buildClaudeImageBlocks(files) {
+  const blocks = [];
+  for (const f of files) {
+    const parsed = dataUrlParts(f.dataUrl);
+    if (!parsed) continue;
+    if (parsed.mimeType === "application/pdf") {
+      throw new Error("Claude는 PDF를 지원하지 않습니다. AI 선택에서 Gemini를 쓰거나 이미지로 올려 주세요.");
+    }
+    if (!parsed.mimeType.startsWith("image/")) continue;
+    blocks.push({
+      type: "image",
+      source: { type: "base64", media_type: parsed.mimeType, data: parsed.data },
+    });
+  }
+  if (!blocks.length) {
+    throw new Error("Claude는 이미지(JPG/PNG)만 분석합니다.");
+  }
+  return blocks;
+}
+
+async function callClaudeModel(apiKey, model, imageBlocks) {
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model,
+      max_tokens: 8192,
+      temperature: 0.2,
+      messages: [
+        {
+          role: "user",
+          content: [{ type: "text", text: SCAN_PROMPT }, ...imageBlocks, { type: "text", text: "시험지를 분석해 주세요." }],
+        },
+      ],
+    }),
+  });
+  const json = await res.json();
+  if (!res.ok) {
+    const msg = json?.error?.message || res.statusText;
+    const err = new Error(`Claude (${model}): ${msg}`);
+    err.retryable = isRetryableModelError(msg);
+    throw err;
+  }
+  const text = (json.content || []).filter((p) => p.type === "text").map((p) => p.text).join("");
+  if (!text.trim()) throw new Error(`Claude (${model}): 빈 응답`);
+  return normalizeQuestions(parseJsonFromText(text).questions);
+}
+
+async function scanWithClaude(files, apiKey) {
+  const key = String(apiKey || "").trim();
+  if (!key) throw new Error("Claude API 키가 없습니다.");
+  const imageBlocks = buildClaudeImageBlocks(files);
+  const errors = [];
+  for (const model of CLAUDE_MODEL_CANDIDATES) {
+    try {
+      const result = await callClaudeModel(key, model, imageBlocks);
+      console.log(`[채점 AI] Claude 성공: ${model}`);
+      return result;
+    } catch (err) {
+      errors.push(err.message);
+      if (!err.retryable && !isRetryableModelError(err.message)) break;
+    }
+  }
+  throw new Error(errors[0] || "Claude 분석에 실패했습니다.");
+}
+
+async function callOpenAICompatibleVision(apiKey, baseUrl, models, imageParts, label) {
+  const errors = [];
+  for (const model of models) {
+    try {
+      const res = await fetch(`${baseUrl}/chat/completions`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model,
+          messages: [
+            { role: "system", content: SCAN_PROMPT },
+            { role: "user", content: [{ type: "text", text: "시험지를 분석해 주세요." }, ...imageParts] },
+          ],
+          max_tokens: 4096,
+          temperature: 0.2,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        const msg = json?.error?.message || `${label} API 오류`;
+        const err = new Error(`${label} (${model}): ${msg}`);
+        err.retryable = isRetryableModelError(msg);
+        throw err;
+      }
+      const parsed = parseJsonFromText(json.choices?.[0]?.message?.content || "");
+      console.log(`[채점 AI] ${label} 성공: ${model}`);
+      return normalizeQuestions(parsed.questions);
+    } catch (err) {
+      errors.push(err.message);
+      if (!err.retryable && !isRetryableModelError(err.message)) break;
+    }
+  }
+  throw new Error(errors[0] || `${label} 분석에 실패했습니다.`);
+}
+
+async function scanWithGrok(files, apiKey) {
+  const key = String(apiKey || "").trim();
+  if (!key) throw new Error("Grok API 키가 없습니다.");
+  const imageParts = buildOpenAIImageParts(files);
+  return callOpenAICompatibleVision(key, "https://api.x.ai/v1", GROK_MODEL_CANDIDATES, imageParts, "Grok");
+}
+
 /**
  * @param {{ dataUrl: string, name?: string }[]} files
- * @param {{ geminiKey?: string|null, openaiKey?: string|null, provider?: string }} creds
+ * @param {{ provider?: string, apiKey?: string|null }} creds
  */
 export async function scanExamPaper(files, creds = {}) {
   const list = (files || []).filter((f) => f?.dataUrl && f.dataUrl.length < 12_000_000);
   if (!list.length) throw new Error("업로드된 파일이 없습니다.");
 
-  const provider = creds.provider || "auto";
-  const geminiKey = creds.geminiKey?.trim() || null;
-  const openaiKey = creds.openaiKey?.trim() || null;
+  const provider = creds.provider || "gemini";
+  const apiKey = creds.apiKey?.trim() || null;
+  const label = PROVIDER_LABELS[provider] || provider;
 
-  const errors = [];
-
-  const tryGemini = () => {
-    if (!geminiKey) return null;
-    if (provider === "openai") return null;
-    return scanWithGemini(list, geminiKey);
-  };
-
-  const tryOpenai = () => {
-    if (!openaiKey) return null;
-    if (provider === "gemini") return null;
-    return scanWithOpenAI(list, openaiKey);
-  };
-
-  if (provider === "gemini") {
-    if (!geminiKey) throw new Error("Gemini API 키를 사이드바 하단에 저장해 주세요.");
-    return scanWithGemini(list, geminiKey);
+  if (!apiKey) {
+    throw new Error(`${label} API 키를 사이드바 하단에 저장해 주세요.`);
   }
 
-  if (provider === "openai") {
-    if (!openaiKey) throw new Error("OpenAI API 키를 사이드바 하단에 저장해 주세요.");
-    return scanWithOpenAI(list, openaiKey);
+  switch (provider) {
+    case "gemini":
+      return scanWithGemini(list, apiKey);
+    case "openai":
+      return scanWithOpenAI(list, apiKey);
+    case "claude":
+      return scanWithClaude(list, apiKey);
+    case "grok":
+      return scanWithGrok(list, apiKey);
+    default:
+      throw new Error(`지원하지 않는 AI: ${provider}`);
   }
-
-  // auto: Gemini 여러 모델 시도 → 실패 시 OpenAI
-  if (geminiKey) {
-    try {
-      return await scanWithGemini(list, geminiKey);
-    } catch (err) {
-      errors.push(err.message);
-      if (openaiKey) {
-        try {
-          return await scanWithOpenAI(list, openaiKey);
-        } catch (err2) {
-          errors.push(err2.message);
-        }
-      } else {
-        throw err;
-      }
-    }
-  }
-
-  if (openaiKey) {
-    return scanWithOpenAI(list, openaiKey);
-  }
-
-  throw new Error(
-    errors.length
-      ? errors.join("\n\n")
-      : "AI API 키가 없습니다. 사이드바 하단에서 Gemini 또는 OpenAI 키를 저장해 주세요."
-  );
 }
 
 export function questionsToStored(aiList, uidFn) {
@@ -453,28 +553,113 @@ async function analyzeWithOpenAIText(data, apiKey) {
   throw new Error(errors[0] || "OpenAI 분석 실패");
 }
 
-/** @param {object} trendData 학생·과목별 점수·오답 요약 */
-export async function analyzeStudentTrend(trendData, creds = {}) {
-  const provider = creds.provider || "auto";
-  const geminiKey = creds.geminiKey?.trim() || null;
-  const openaiKey = creds.openaiKey?.trim() || null;
+async function callClaudeText(apiKey, model, userText) {
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model,
+      max_tokens: 2048,
+      temperature: 0.35,
+      messages: [
+        {
+          role: "user",
+          content: [{ type: "text", text: TREND_ANALYSIS_PROMPT }, { type: "text", text: userText }],
+        },
+      ],
+    }),
+  });
+  const json = await res.json();
+  if (!res.ok) {
+    const msg = json?.error?.message || res.statusText;
+    const err = new Error(`Claude (${model}): ${msg}`);
+    err.retryable = isRetryableModelError(msg);
+    throw err;
+  }
+  return (json.content || []).filter((p) => p.type === "text").map((p) => p.text).join("");
+}
 
-  if (provider === "gemini") {
-    if (!geminiKey) throw new Error("Gemini API 키를 사이드바 하단에 저장해 주세요.");
-    return analyzeWithGeminiText(trendData, geminiKey);
-  }
-  if (provider === "openai") {
-    if (!openaiKey) throw new Error("OpenAI API 키를 사이드바 하단에 저장해 주세요.");
-    return analyzeWithOpenAIText(trendData, openaiKey);
-  }
-  if (geminiKey) {
+async function analyzeWithClaudeText(data, apiKey) {
+  const key = String(apiKey || "").trim();
+  if (!key) throw new Error("Claude API 키가 없습니다.");
+  const userText = JSON.stringify(data, null, 2);
+  const errors = [];
+  for (const model of CLAUDE_MODEL_CANDIDATES) {
     try {
-      return await analyzeWithGeminiText(trendData, geminiKey);
+      const text = await callClaudeText(key, model, userText);
+      return normalizeTrendAnalysis(parseJsonFromText(text));
     } catch (err) {
-      if (openaiKey) return analyzeWithOpenAIText(trendData, openaiKey);
-      throw err;
+      errors.push(err.message);
+      if (!err.retryable && !isRetryableModelError(err.message)) break;
     }
   }
-  if (openaiKey) return analyzeWithOpenAIText(trendData, openaiKey);
-  throw new Error("AI API 키가 없습니다. 사이드바 하단에서 키를 저장해 주세요.");
+  throw new Error(errors[0] || "Claude 분석 실패");
+}
+
+async function analyzeWithGrokText(data, apiKey) {
+  const key = String(apiKey || "").trim();
+  if (!key) throw new Error("Grok API 키가 없습니다.");
+  const userText = JSON.stringify(data, null, 2);
+  const errors = [];
+  for (const model of GROK_MODEL_CANDIDATES) {
+    try {
+      const res = await fetch("https://api.x.ai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${key}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model,
+          temperature: 0.35,
+          max_tokens: 2048,
+          messages: [
+            { role: "system", content: TREND_ANALYSIS_PROMPT },
+            { role: "user", content: userText },
+          ],
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        const msg = json?.error?.message || "Grok API 오류";
+        const err = new Error(`Grok (${model}): ${msg}`);
+        err.retryable = isRetryableModelError(msg);
+        throw err;
+      }
+      const text = json.choices?.[0]?.message?.content || "";
+      return normalizeTrendAnalysis(parseJsonFromText(text));
+    } catch (err) {
+      errors.push(err.message);
+      if (!err.retryable && !isRetryableModelError(err.message)) break;
+    }
+  }
+  throw new Error(errors[0] || "Grok 분석 실패");
+}
+
+/** @param {object} trendData 학생·과목별 점수·오답 요약 */
+export async function analyzeStudentTrend(trendData, creds = {}) {
+  const provider = creds.provider || "gemini";
+  const apiKey = creds.apiKey?.trim() || null;
+  const label = PROVIDER_LABELS[provider] || provider;
+
+  if (!apiKey) {
+    throw new Error(`${label} API 키를 사이드바 하단에 저장해 주세요.`);
+  }
+
+  switch (provider) {
+    case "gemini":
+      return analyzeWithGeminiText(trendData, apiKey);
+    case "openai":
+      return analyzeWithOpenAIText(trendData, apiKey);
+    case "claude":
+      return analyzeWithClaudeText(trendData, apiKey);
+    case "grok":
+      return analyzeWithGrokText(trendData, apiKey);
+    default:
+      throw new Error(`지원하지 않는 AI: ${provider}`);
+  }
 }

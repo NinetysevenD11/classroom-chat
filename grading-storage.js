@@ -8,6 +8,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = process.env.DATA_DIR || __dirname;
 const GRADING_FILE = path.join(DATA_DIR, "grading_data.json");
 
+export const AI_PROVIDERS = ["openai", "gemini", "claude", "grok"];
+
 export let gradingData = {};
 
 export function uid() {
@@ -26,19 +28,40 @@ export function defaultGradingState() {
     activeSubjectId: null,
     activeUnitId: null,
     activeClassId: null,
-    settings: {
-      geminiApiKey: "",
-      openaiApiKey: "",
-      aiProvider: "gemini",
-    },
+    settings: defaultSettings(),
   };
+}
+
+export function defaultSettings() {
+  return {
+    aiProvider: "gemini",
+    apiKeys: { openai: "", gemini: "", claude: "", grok: "" },
+  };
+}
+
+function migrateLegacySettings(settings) {
+  const s = settings && typeof settings === "object" ? settings : {};
+  if (!s.apiKeys || typeof s.apiKeys !== "object") {
+    s.apiKeys = { openai: "", gemini: "", claude: "", grok: "" };
+  }
+  for (const p of AI_PROVIDERS) {
+    if (s.apiKeys[p] === undefined) s.apiKeys[p] = "";
+  }
+  if (s.geminiApiKey && !s.apiKeys.gemini) s.apiKeys.gemini = String(s.geminiApiKey).trim();
+  if (s.openaiApiKey && !s.apiKeys.openai) s.apiKeys.openai = String(s.openaiApiKey).trim();
+  delete s.geminiApiKey;
+  delete s.openaiApiKey;
+  if (!AI_PROVIDERS.includes(s.aiProvider)) {
+    s.aiProvider = s.aiProvider === "auto" ? "gemini" : "gemini";
+  }
+  return s;
 }
 
 function ensureSettings(state) {
   if (!state.settings || typeof state.settings !== "object") {
-    state.settings = { geminiApiKey: "", openaiApiKey: "", aiProvider: "gemini" };
+    state.settings = defaultSettings();
   }
-  if (!state.settings.aiProvider) state.settings.aiProvider = "gemini";
+  state.settings = migrateLegacySettings(state.settings);
   return state.settings;
 }
 
@@ -53,46 +76,58 @@ export function maskApiKey(key) {
 export function sanitizeGradingForClient(state) {
   const s = { ...state };
   const settings = ensureSettings(s);
+  const provider = settings.aiProvider || "gemini";
+  const keyForProvider = String(settings.apiKeys[provider] || "").trim();
   s.settings = {
-    aiProvider: settings.aiProvider || "gemini",
-    hasGemini: !!String(settings.geminiApiKey || "").trim(),
-    hasOpenai: !!String(settings.openaiApiKey || "").trim(),
-    geminiHint: maskApiKey(settings.geminiApiKey),
-    openaiHint: maskApiKey(settings.openaiApiKey),
+    aiProvider: provider,
+    hasApiKey: !!keyForProvider,
+    apiKeyHint: maskApiKey(keyForProvider),
+    keysRegistered: Object.fromEntries(
+      AI_PROVIDERS.map((p) => [p, !!String(settings.apiKeys[p] || "").trim()])
+    ),
   };
   return s;
+}
+
+function envKeyForProvider(provider) {
+  const map = {
+    openai: process.env.OPENAI_API_KEY,
+    gemini: process.env.GEMINI_API_KEY,
+    claude: process.env.ANTHROPIC_API_KEY,
+    grok: process.env.XAI_API_KEY,
+  };
+  return (map[provider] || "").trim() || null;
 }
 
 export function getAiCredentials(userId) {
   const state = getGradingState(userId);
   const settings = ensureSettings(state);
-  const userGemini = String(settings.geminiApiKey || "").trim();
-  const userOpenai = String(settings.openaiApiKey || "").trim();
-  const envGemini = (process.env.GEMINI_API_KEY || "").trim();
-  const envOpenai = (process.env.OPENAI_API_KEY || "").trim();
-  const provider = settings.aiProvider || "gemini";
+  const provider = AI_PROVIDERS.includes(settings.aiProvider) ? settings.aiProvider : "gemini";
+  const userKey = String(settings.apiKeys[provider] || "").trim();
+  const envKey = envKeyForProvider(provider);
 
   return {
     provider,
-    geminiKey: userGemini || envGemini || null,
-    openaiKey: userOpenai || envOpenai || null,
-    source: {
-      gemini: userGemini ? "user" : envGemini ? "env" : null,
-      openai: userOpenai ? "user" : envOpenai ? "env" : null,
-    },
+    apiKey: userKey || envKey || null,
+    source: userKey ? "user" : envKey ? "env" : null,
   };
 }
 
-export async function updateUserApiKeys(userId, { geminiApiKey, openaiApiKey, aiProvider, clearGemini, clearOpenai }) {
+export async function updateUserApiKeys(userId, { apiKey, aiProvider, clearApiKey, clearAll }) {
   const state = getGradingState(userId);
   const settings = ensureSettings(state);
-  if (clearGemini) settings.geminiApiKey = "";
-  else if (geminiApiKey !== undefined) settings.geminiApiKey = String(geminiApiKey).trim();
-  if (clearOpenai) settings.openaiApiKey = "";
-  else if (openaiApiKey !== undefined) settings.openaiApiKey = String(openaiApiKey).trim();
-  if (aiProvider === "gemini" || aiProvider === "openai" || aiProvider === "auto") {
-    settings.aiProvider = aiProvider;
+
+  if (clearAll) {
+    for (const p of AI_PROVIDERS) settings.apiKeys[p] = "";
+  } else if (clearApiKey) {
+    const p = AI_PROVIDERS.includes(aiProvider) ? aiProvider : settings.aiProvider;
+    settings.apiKeys[p] = "";
+  } else {
+    if (AI_PROVIDERS.includes(aiProvider)) settings.aiProvider = aiProvider;
+    const p = settings.aiProvider;
+    if (apiKey !== undefined) settings.apiKeys[p] = String(apiKey).trim();
   }
+
   await saveGradingState(userId, state, { preserveSecrets: false });
   return sanitizeGradingForClient(state).settings;
 }
@@ -118,18 +153,10 @@ export async function initGradingStorage() {
   const mongo = getMongoClient();
   if (mongo) {
     const db = mongo.db(process.env.MONGODB_DB || "classroom_chat");
-    const doc = await db.collection("grading").findOne({ _id: "main" });
-    gradingData = doc?.data || {};
-    if (!Object.keys(gradingData).length) {
-      try {
-        const fileData = JSON.parse(fs.readFileSync(GRADING_FILE, "utf8"));
-        if (Object.keys(fileData).length) {
-          gradingData = fileData;
-          await saveAllGradingData();
-          console.log("[채점] grading_data.json을 MongoDB로 옮겼습니다.");
-        }
-      } catch (_) {}
-    }
+    try {
+      const doc = await db.collection("grading").findOne({ _id: "main" });
+      if (doc?.data) gradingData = doc.data;
+    } catch (_) {}
     return;
   }
   loadFromFile();
@@ -164,6 +191,31 @@ export function getGradingState(userId) {
   return s;
 }
 
+export async function saveGradingState(userId, state, opts = {}) {
+  const preserveSecrets = opts.preserveSecrets !== false;
+  const prev = gradingData[userId];
+  const prevSettings = prev?.settings ? migrateLegacySettings({ ...prev.settings }) : null;
+
+  if (prev?.studentScores && state.studentScores) {
+    state.studentScores = mergeStudentScores(prev.studentScores, state.studentScores);
+  }
+
+  ensureSettings(state);
+  const incoming = migrateLegacySettings(state.settings);
+
+  if (preserveSecrets && prevSettings?.apiKeys) {
+    for (const p of AI_PROVIDERS) {
+      if (!String(incoming.apiKeys[p] || "").trim() && prevSettings.apiKeys[p]) {
+        incoming.apiKeys[p] = prevSettings.apiKeys[p];
+      }
+    }
+  }
+
+  state.settings = incoming;
+  gradingData[userId] = state;
+  await saveAllGradingData();
+}
+
 /** 클라이언트 저장 시 서버에만 있는 제출·채점 상세가 지워지지 않도록 병합 */
 function mergeStudentScores(prevScores, incomingScores) {
   if (!prevScores || typeof prevScores !== "object") return incomingScores;
@@ -184,7 +236,12 @@ function mergeStudentScores(prevScores, incomingScores) {
         if (!incUnit) {
           incRec._detail[unitId] = prevUnit;
         } else if (prevUnit?.detail && !incUnit.detail) {
-          incRec._detail[unitId] = { ...prevUnit, ...incUnit, detail: prevUnit.detail, answers: prevUnit.answers ?? incUnit.answers };
+          incRec._detail[unitId] = {
+            ...prevUnit,
+            ...incUnit,
+            detail: prevUnit.detail,
+            answers: prevUnit.answers ?? incUnit.answers,
+          };
         }
       }
     }
@@ -199,30 +256,4 @@ function mergeStudentScores(prevScores, incomingScores) {
     }
   }
   return merged;
-}
-
-export async function saveGradingState(userId, state, opts = {}) {
-  const preserveSecrets = opts.preserveSecrets !== false;
-  const prev = gradingData[userId];
-  const prevSettings = prev?.settings;
-  if (prev?.studentScores && state.studentScores) {
-    state.studentScores = mergeStudentScores(prev.studentScores, state.studentScores);
-  }
-  ensureSettings(state);
-  const incoming = state.settings;
-  state.settings = {
-    geminiApiKey: String(incoming.geminiApiKey || "").trim(),
-    openaiApiKey: String(incoming.openaiApiKey || "").trim(),
-    aiProvider: incoming.aiProvider || prevSettings?.aiProvider || "gemini",
-  };
-  if (preserveSecrets && prevSettings) {
-    if (!state.settings.geminiApiKey && prevSettings.geminiApiKey) {
-      state.settings.geminiApiKey = prevSettings.geminiApiKey;
-    }
-    if (!state.settings.openaiApiKey && prevSettings.openaiApiKey) {
-      state.settings.openaiApiKey = prevSettings.openaiApiKey;
-    }
-  }
-  gradingData[userId] = state;
-  await saveAllGradingData();
 }
