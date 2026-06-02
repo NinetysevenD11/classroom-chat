@@ -493,6 +493,61 @@ app.put("/api/grading", requireAuth, async (req, res) => {
   }
 });
 
+app.post("/api/grading/review", requireAuth, async (req, res) => {
+  const userId = req.session.userId;
+  if (isAdminUserId(userId)) return res.status(403).json({ ok: false, error: "사용할 수 없습니다." });
+
+  const { studentKey, unitId, essayMarks, finalize } = req.body || {};
+  if (!studentKey || !unitId) {
+    return res.status(400).json({ ok: false, error: "학생·시험 정보가 필요합니다." });
+  }
+
+  const grading = getGradingState(userId);
+  const hit = findUnitInGrading(grading, unitId);
+  if (!hit) return res.status(404).json({ ok: false, error: "시험을 찾을 수 없습니다." });
+
+  const rec = grading.studentScores?.[studentKey];
+  const submission = rec?._detail?.[unitId];
+  if (!submission) {
+    return res.status(404).json({ ok: false, error: "제출 내역이 없습니다." });
+  }
+
+  if (essayMarks && typeof essayMarks === "object") {
+    submission.essayMarks = { ...(submission.essayMarks || {}), ...essayMarks };
+  }
+
+  const { finalScore, pendingEssay, earned, max, detail } = recomputeSubmissionScore(hit.unit, submission);
+  submission.detail = detail;
+  submission.earned = earned;
+  submission.max = max;
+  submission.pendingEssay = pendingEssay;
+
+  if (finalize) {
+    if (pendingEssay > 0) {
+      return res.status(400).json({ ok: false, error: "서술형 채점이 남아 있습니다. 문항별 정답/오답을 선택해 주세요." });
+    }
+    submission.finalized = true;
+    rec[unitId] = finalScore ?? 0;
+  } else {
+    rec[unitId] = "채점중";
+    submission.provisionalScore = finalScore;
+  }
+
+  try {
+    await saveGradingState(userId, grading, { preserveSecrets: false });
+    res.json({
+      ok: true,
+      score: rec[unitId],
+      finalized: !!submission.finalized,
+      pendingEssay,
+      provisionalScore: submission.provisionalScore,
+      submission,
+    });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: "저장에 실패했습니다." });
+  }
+});
+
 app.get("/api/grading/me", requireAuth, (req, res) => {
   res.json({
     userId: req.session.userId,
@@ -597,6 +652,50 @@ function gradeUnitAnswers(unit, answers) {
 
   const autoScore = max > 0 ? Math.round((earned / max) * 100) : pendingEssay > 0 ? null : 0;
   return { earned, max, pendingEssay, detail, autoScore };
+}
+
+function recomputeSubmissionScore(unit, submission) {
+  const detail = submission?.detail || {};
+  const essayMarks = submission?.essayMarks || {};
+  let earned = 0;
+  let max = 0;
+  let pendingEssay = 0;
+
+  for (const q of unit.questions || []) {
+    const pts = Number(q.points) || 1;
+    const key = String(q.num);
+    max += pts;
+    const d = detail[key];
+    if (!d) continue;
+
+    if (q.type === "essay") {
+      const mark = essayMarks[key];
+      if (mark === "correct") {
+        earned += pts;
+        d.correct = true;
+        d.pending = false;
+        d.teacherMarked = true;
+      } else if (mark === "wrong") {
+        d.correct = false;
+        d.pending = false;
+        d.teacherMarked = true;
+      } else if (d.skipped || !String(d.given || "").trim()) {
+        d.correct = false;
+        d.pending = false;
+      } else if (d.correct) {
+        earned += pts;
+      } else {
+        pendingEssay += 1;
+        d.pending = true;
+      }
+      continue;
+    }
+
+    if (d.correct) earned += pts;
+  }
+
+  const finalScore = max > 0 ? Math.round((earned / max) * 100) : pendingEssay > 0 ? null : 0;
+  return { earned, max, pendingEssay, detail, finalScore };
 }
 
 app.post("/api/grading/scan", requireAuth, async (req, res) => {
@@ -967,10 +1066,21 @@ io.on("connection", (socket) => {
     if (!grading.studentScores[key]) grading.studentScores[key] = {};
     if (!grading.studentScores[key]._detail) grading.studentScores[key]._detail = {};
 
-    grading.studentScores[key]._detail[unitId] = { answers, detail, earned, max, pendingEssay };
-    grading.studentScores[key][unitId] =
-      pendingEssay > 0 && max === 0 ? "대기" : autoScore ?? 0;
-    grading.studentScores[key]._submittedAt = Date.now();
+    const needsReview = pendingEssay > 0;
+    const submission = {
+      answers,
+      detail,
+      earned,
+      max,
+      pendingEssay,
+      provisionalScore: autoScore,
+      essayMarks: {},
+      finalized: !needsReview,
+      submittedAt: Date.now(),
+    };
+    grading.studentScores[key]._detail[unitId] = submission;
+    grading.studentScores[key][unitId] = needsReview ? "채점중" : autoScore ?? 0;
+    grading.studentScores[key]._submittedAt = submission.submittedAt;
 
     try {
       await saveGradingState(userId, grading);
@@ -982,11 +1092,15 @@ io.on("connection", (socket) => {
         unitName: unit.name,
         score: grading.studentScores[key][unitId],
         submittedAt: grading.studentScores[key]._submittedAt,
+        submission,
+        pendingEssay: pendingEssay > 0,
+        provisionalScore: autoScore,
       });
       cb &&
         cb({
           ok: true,
-          score: grading.studentScores[key][unitId],
+          submitted: true,
+          pendingReview: true,
           pendingEssay: pendingEssay > 0,
         });
     } catch (err) {

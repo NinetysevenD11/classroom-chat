@@ -54,8 +54,8 @@ body {
 .hub-rail-toggle {
   display: none;
   position: fixed;
-  left: 10px;
-  top: 12px;
+  left: 8px;
+  top: 10px;
   z-index: 300;
   width: 44px;
   height: 44px;
@@ -112,12 +112,24 @@ body.hub-sidebar-collapsed .sidebar {
 }
 
 .sidebar-top {
-  display: flex;
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  grid-template-rows: auto;
   align-items: center;
-  gap: 8px;
+  column-gap: 8px;
   padding: 14px 12px 10px;
   border-bottom: 2px solid var(--hub-sidebar-border);
   min-height: 56px;
+}
+
+.sidebar-toggle {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.sidebar-brand {
+  grid-column: 2;
+  grid-row: 1;
 }
 
 .sidebar-toggle {
@@ -247,6 +259,8 @@ body.hub-sidebar-collapsed .sidebar {
 
 body.hub-sidebar-collapsed .hub-main {
   width: 100%;
+  padding-left: 56px;
+  box-sizing: border-box;
 }
 
 .hub-frame {

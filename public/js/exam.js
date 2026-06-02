@@ -18,6 +18,12 @@ const answers = {};
 let mySeat = null;
 let myName = null;
 
+const PAPER_SCALE_MIN = 0.5;
+const PAPER_SCALE_MAX = 3;
+const PAPER_SCALE_STEP = 0.25;
+let paperScale = 1;
+let paperZoomBound = false;
+
 const clientId = localStorage.getItem("examClientId") || newId();
 localStorage.setItem("examClientId", clientId);
 
@@ -92,19 +98,115 @@ async function openUnit(unit) {
   renderAnswerForm(detail.questions || []);
 }
 
+function clampPaperScale(v) {
+  return Math.min(PAPER_SCALE_MAX, Math.max(PAPER_SCALE_MIN, Math.round(v * 100) / 100));
+}
+
+function getPaperZoomInner() {
+  return examPaper.querySelector(".paper-zoom-inner");
+}
+
+function applyPaperScale() {
+  const inner = getPaperZoomInner();
+  const label = document.getElementById("paperZoomLabel");
+  if (!inner) return;
+  inner.style.transform = `scale(${paperScale})`;
+  inner.style.width = paperScale > 0 ? `${100 / paperScale}%` : "100%";
+  if (label) label.textContent = `${Math.round(paperScale * 100)}%`;
+}
+
+function setPaperScale(next) {
+  paperScale = clampPaperScale(next);
+  applyPaperScale();
+}
+
+function touchDistance(touches) {
+  const dx = touches[0].clientX - touches[1].clientX;
+  const dy = touches[0].clientY - touches[1].clientY;
+  return Math.hypot(dx, dy);
+}
+
+function bindPaperZoomControls() {
+  if (paperZoomBound) return;
+  paperZoomBound = true;
+
+  document.getElementById("paperZoomIn")?.addEventListener("click", () => {
+    setPaperScale(paperScale + PAPER_SCALE_STEP);
+  });
+  document.getElementById("paperZoomOut")?.addEventListener("click", () => {
+    setPaperScale(paperScale - PAPER_SCALE_STEP);
+  });
+  document.getElementById("paperZoomReset")?.addEventListener("click", () => {
+    setPaperScale(1);
+    examPaper.scrollTop = 0;
+    examPaper.scrollLeft = 0;
+  });
+
+  let pinchStartDist = 0;
+  let pinchStartScale = 1;
+
+  examPaper.addEventListener(
+    "touchstart",
+    (e) => {
+      if (e.touches.length === 2) {
+        pinchStartDist = touchDistance(e.touches);
+        pinchStartScale = paperScale;
+        examPaper.classList.add("is-pinching");
+      }
+    },
+    { passive: true }
+  );
+
+  examPaper.addEventListener(
+    "touchmove",
+    (e) => {
+      if (e.touches.length !== 2 || !pinchStartDist) return;
+      e.preventDefault();
+      const dist = touchDistance(e.touches);
+      setPaperScale(pinchStartScale * (dist / pinchStartDist));
+    },
+    { passive: false }
+  );
+
+  const endPinch = () => {
+    pinchStartDist = 0;
+    examPaper.classList.remove("is-pinching");
+  };
+  examPaper.addEventListener("touchend", endPinch);
+  examPaper.addEventListener("touchcancel", endPinch);
+
+  examPaper.addEventListener(
+    "wheel",
+    (e) => {
+      if (!getPaperZoomInner()) return;
+      e.preventDefault();
+      const delta = e.deltaY > 0 ? -PAPER_SCALE_STEP : PAPER_SCALE_STEP;
+      setPaperScale(paperScale + delta);
+    },
+    { passive: false }
+  );
+}
+
 function renderPaper(images) {
+  bindPaperZoomControls();
+  paperScale = 1;
+  examPaper.scrollTop = 0;
+  examPaper.scrollLeft = 0;
+
   if (!images.length) {
     examPaper.innerHTML = `<p class="paper-empty">등록된 시험지가 없습니다.<br>선생님께 문의하세요.</p>`;
     return;
   }
-  examPaper.innerHTML = images
+  const pages = images
     .map((src) => {
       if (src.startsWith("data:application/pdf")) {
         return `<embed src="${src}" type="application/pdf" />`;
       }
-      return `<img src="${src}" alt="시험지" loading="lazy" />`;
+      return `<img src="${src}" alt="시험지" loading="lazy" draggable="false" />`;
     })
     .join("");
+  examPaper.innerHTML = `<div class="paper-zoom-inner">${pages}</div>`;
+  applyPaperScale();
 }
 
 function renderAnswerForm(questions) {
@@ -219,11 +321,10 @@ examSubmitBtn.addEventListener("click", () => {
   socket.emit("exam:submit", { unitId: currentUnit.id, answers: payload, clientId }, (res) => {
     examSubmitBtn.disabled = false;
     if (res?.ok) {
-      let msg = res.pendingEssay
-        ? `제출 완료! 자동 채점: ${res.score}점 (일부 서술형은 선생님이 채점합니다)`
-        : `제출 완료! 점수: ${res.score}점`;
+      let msg =
+        "제출이 완료되었습니다.\n선생님이 확인·채점한 뒤, 결과가 공개되면 점수를 확인할 수 있습니다.";
       if (emptyCount > 0) {
-        msg += `\n(미작성 ${emptyCount}문항은 오답 처리되었습니다)`;
+        msg += `\n(미작성 ${emptyCount}문항은 오답으로 처리됩니다)`;
       }
       document.getElementById("submitModalText").textContent = msg;
       document.getElementById("submitModal").classList.remove("hidden");

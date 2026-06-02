@@ -7,11 +7,17 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/grading.css?v=5" />
+  <link rel="stylesheet" href="/css/grading.css?v=6" />
 </head>
 <body class="grading-app">
   <div class="grading-shell">
     <aside class="grading-sidebar" aria-label="채점 도구 메뉴">
+      <nav class="sb-main-nav" aria-label="주요 메뉴">
+        <button type="button" class="sb-nav-btn" data-view="home">🏠 안내</button>
+        <button type="button" class="sb-nav-btn" data-view="exam">📝 시험·정답</button>
+        <button type="button" class="sb-nav-btn sb-nav-grades" data-view="grades">📊 실시간 성적</button>
+      </nav>
+
       <section class="sb-block sb-qr-block">
         <h2 class="sb-title">학생 접속 QR코드</h2>
         <div class="sb-qr-preview">
@@ -130,6 +136,6 @@
         "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
     }
   </script>
-  <script src="/js/grading.js?v=6"></script>
+  <script src="/js/grading.js?v=7"></script>
 </body>
 </html>

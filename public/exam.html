@@ -2,13 +2,13 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <title>시험 응시</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/exam.css?v=2" />
+  <link rel="stylesheet" href="/css/exam.css?v=3" />
 </head>
 <body>
   <section id="joinView" class="view join-view">
@@ -36,8 +36,16 @@
     <div id="examWorkspace" class="exam-workspace hidden">
       <div class="split-pane">
         <div class="pane pane-paper">
-          <h2 class="pane-title">시험지</h2>
-          <div id="examPaper" class="paper-scroll"></div>
+          <div class="pane-head">
+            <h2 class="pane-title">시험지</h2>
+            <div class="paper-zoom-controls" aria-label="시험지 확대·축소">
+              <button type="button" id="paperZoomOut" class="paper-zoom-btn" title="축소">−</button>
+              <span id="paperZoomLabel" class="paper-zoom-label">100%</span>
+              <button type="button" id="paperZoomIn" class="paper-zoom-btn" title="확대">+</button>
+              <button type="button" id="paperZoomReset" class="paper-zoom-btn paper-zoom-reset" title="원래 크기">맞춤</button>
+            </div>
+          </div>
+          <div id="examPaper" class="paper-scroll" tabindex="0"></div>
         </div>
         <div class="pane pane-answers">
           <h2 class="pane-title">답안 작성</h2>
@@ -58,6 +66,6 @@
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
-  <script src="/js/exam.js?v=3"></script>
+  <script src="/js/exam.js?v=5"></script>
 </body>
 </html>

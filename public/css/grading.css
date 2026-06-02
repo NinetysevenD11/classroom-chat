@@ -31,6 +31,50 @@ body {
 }
 
 /* ── 사이드바 ── */
+.sb-main-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sb-nav-btn {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #e2e8f0;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.sb-nav-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.sb-nav-btn.is-active {
+  background: rgba(59, 130, 246, 0.35);
+  border-color: rgba(147, 197, 253, 0.5);
+  color: #fff;
+}
+
+.sb-nav-btn .nav-pending-badge {
+  float: right;
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: #f59e0b;
+  color: #1a1a1a;
+  font-weight: 800;
+}
+
 .grading-sidebar {
   flex: 0 0 280px;
   width: 280px;
@@ -1115,6 +1159,59 @@ body {
 
 .grades-table .col-score {
   color: #334155;
+}
+
+.grades-table .score-pending {
+  color: #b45309;
+  font-weight: 700;
+}
+
+.grades-table .score-pending small {
+  font-weight: 500;
+  font-size: 11px;
+  color: #92400e;
+}
+
+.grades-table .score-final {
+  color: #15803d;
+  font-weight: 800;
+}
+
+.essay-grade-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+
+.essay-grade-actions button {
+  padding: 4px 10px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.essay-grade-actions button.is-correct {
+  background: #dcfce7;
+  border-color: #22c55e;
+  color: #166534;
+}
+
+.essay-grade-actions button.is-wrong {
+  background: #fee2e2;
+  border-color: #ef4444;
+  color: #991b1b;
+}
+
+.result-unit-foot {
+  margin-top: 10px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
 }
 
 .grades-table .avg {

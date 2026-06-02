@@ -164,10 +164,50 @@ export function getGradingState(userId) {
   return s;
 }
 
+/** 클라이언트 저장 시 서버에만 있는 제출·채점 상세가 지워지지 않도록 병합 */
+function mergeStudentScores(prevScores, incomingScores) {
+  if (!prevScores || typeof prevScores !== "object") return incomingScores;
+  if (!incomingScores || typeof incomingScores !== "object") return prevScores;
+  const merged = { ...incomingScores };
+  for (const key of Object.keys(prevScores)) {
+    const prevRec = prevScores[key];
+    const incRec = merged[key];
+    if (!incRec) {
+      merged[key] = prevRec;
+      continue;
+    }
+    if (prevRec._detail) {
+      incRec._detail = { ...prevRec._detail, ...(incRec._detail || {}) };
+      for (const unitId of Object.keys(prevRec._detail)) {
+        const prevUnit = prevRec._detail[unitId];
+        const incUnit = incRec._detail[unitId];
+        if (!incUnit) {
+          incRec._detail[unitId] = prevUnit;
+        } else if (prevUnit?.detail && !incUnit.detail) {
+          incRec._detail[unitId] = { ...prevUnit, ...incUnit, detail: prevUnit.detail, answers: prevUnit.answers ?? incUnit.answers };
+        }
+      }
+    }
+    if (prevRec._submittedAt && !incRec._submittedAt) {
+      incRec._submittedAt = prevRec._submittedAt;
+    }
+    for (const uid of Object.keys(prevRec)) {
+      if (uid.startsWith("_")) continue;
+      if (incRec[uid] === undefined && prevRec[uid] !== undefined) {
+        incRec[uid] = prevRec[uid];
+      }
+    }
+  }
+  return merged;
+}
+
 export async function saveGradingState(userId, state, opts = {}) {
   const preserveSecrets = opts.preserveSecrets !== false;
   const prev = gradingData[userId];
   const prevSettings = prev?.settings;
+  if (prev?.studentScores && state.studentScores) {
+    state.studentScores = mergeStudentScores(prev.studentScores, state.studentScores);
+  }
   ensureSettings(state);
   const incoming = state.settings;
   state.settings = {

@@ -324,6 +324,7 @@ async function loadData() {
   document.getElementById("profileName").textContent = me.displayName || me.userId || "선생님";
   document.getElementById("profileSchool").textContent = me.school || "우리반";
   renderSidebar();
+  bindMainNav();
   renderView(currentView);
   loadQrInline();
   loadApiKeyPanel();
@@ -562,6 +563,7 @@ function updateChecklistBadges() {
 
 function setView(view) {
   currentView = view;
+  bindMainNav();
   renderView(view);
 }
 
@@ -860,9 +862,54 @@ function getRosterStudents() {
   return list;
 }
 
+/** 명단 + 제출만 한 학생(점수 기록 키) */
+function getStudentsForGrades() {
+  const map = new Map();
+  for (const st of getRosterStudents()) {
+    map.set(`${st.seat}:${st.name}`, st);
+  }
+  for (const key of Object.keys(state.studentScores || {})) {
+    if (key.startsWith("_") || !key.includes(":")) continue;
+    if (map.has(key)) continue;
+    const colon = key.indexOf(":");
+    const seat = Number(key.slice(0, colon));
+    const name = key.slice(colon + 1);
+    if (name) map.set(key, { seat: Number.isFinite(seat) ? seat : 0, name });
+  }
+  return [...map.values()].sort((a, b) => a.seat - b.seat);
+}
+
+function countPendingReviews() {
+  let n = 0;
+  for (const rec of Object.values(state.studentScores || {})) {
+    const detail = rec._detail || {};
+    for (const sub of Object.values(detail)) {
+      if (sub && sub.finalized === false) n += 1;
+    }
+  }
+  return n;
+}
+
 function scoreFor(studentKey, unitId) {
   const v = state.studentScores?.[studentKey]?.[unitId];
   return v === undefined || v === null ? "—" : v;
+}
+
+function scoreCellHtml(studentKey, unitId) {
+  const rec = state.studentScores?.[studentKey];
+  if (!rec) return "—";
+  const v = rec[unitId];
+  const sub = rec._detail?.[unitId];
+  if (sub && sub.finalized === false) {
+    const prov = sub.provisionalScore;
+    if (prov !== null && prov !== undefined) {
+      return `<span class="score-pending">${prov}<small> (확정전)</small></span>`;
+    }
+    return `<span class="score-pending">채점중</span>`;
+  }
+  if (v === "—" || v === undefined || v === null) return "—";
+  if (v === "채점중" || v === "대기") return `<span class="score-pending">채점중</span>`;
+  return `<span class="score-final">${escapeHtml(String(v))}</span>`;
 }
 
 function formatSubmitted(ts) {
@@ -877,16 +924,44 @@ function formatSubmitted(ts) {
 }
 
 function displayScore(val) {
-  if (val === "—" || val === undefined || val === null) return "0";
-  if (val === "대기") return "대기";
+  if (val === "—" || val === undefined || val === null) return "—";
+  if (val === "채점중" || val === "대기") return "채점중";
   return val;
 }
 
 function calcStudentAverage(studentKey, units) {
-  const scores = units.map((u) => scoreFor(studentKey, u.id));
-  const nums = scores.filter((s) => s !== "—" && s !== "대기" && !isNaN(Number(s)));
-  if (!nums.length) return "0";
+  const nums = [];
+  for (const u of units) {
+    const v = scoreFor(studentKey, u.id);
+    const sub = state.studentScores?.[studentKey]?._detail?.[u.id];
+    if (sub?.finalized === false) {
+      if (sub.provisionalScore !== null && sub.provisionalScore !== undefined) {
+        nums.push(Number(sub.provisionalScore));
+      }
+      continue;
+    }
+    if (v !== "—" && v !== "채점중" && v !== "대기" && !isNaN(Number(v))) nums.push(Number(v));
+  }
+  if (!nums.length) return "—";
   return (nums.reduce((a, b) => a + Number(b), 0) / nums.length).toFixed(1);
+}
+
+async function postReview(studentKey, unitId, essayMarks, finalize) {
+  const res = await fetch("/api/grading/review", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ studentKey, unitId, essayMarks, finalize }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "채점 저장 실패");
+  if (!state.studentScores[studentKey]) state.studentScores[studentKey] = {};
+  state.studentScores[studentKey][unitId] = data.score;
+  if (data.submission) {
+    state.studentScores[studentKey]._detail = state.studentScores[studentKey]._detail || {};
+    state.studentScores[studentKey]._detail[unitId] = data.submission;
+  }
+  return data;
 }
 
 function buildStudentResultHtml(studentKey, seat, name) {
@@ -898,24 +973,43 @@ function buildStudentResultHtml(studentKey, seat, name) {
   let rows = "";
   for (const u of units) {
     const sc = scoreFor(studentKey, u.id);
-    const d = detail[u.id];
-    const answerLines = d?.detail
-      ? Object.entries(d.detail)
+    const sub = detail[u.id];
+    const scoreLabel = sub && sub.finalized === false
+      ? `자동 ${sub.provisionalScore ?? "—"}점 (확정 전)`
+      : `${displayScore(sc)}점`;
+
+    const answerLines = sub?.detail
+      ? Object.entries(sub.detail)
           .map(([num, info]) => {
             const mark = info.correct ? "✓" : info.pending ? "⋯" : "✗";
             const givenText = info.skipped || !info.given ? "(미작성)" : info.given;
-            return `<tr><td>${num}번</td><td>${mark}</td><td>${escapeHtml(givenText)}</td><td>${info.points}점</td></tr>`;
+            const essayMarks = sub.essayMarks || {};
+            const isEssayPending = info.pending && String(info.given || "").trim();
+            const essayBtns = isEssayPending
+              ? `<div class="essay-grade-actions" data-unit-id="${escapeHtml(u.id)}" data-q-num="${escapeHtml(num)}">
+                  <button type="button" class="essay-mark ${essayMarks[num] === "correct" ? "is-correct" : ""}" data-mark="correct">정답</button>
+                  <button type="button" class="essay-mark ${essayMarks[num] === "wrong" ? "is-wrong" : ""}" data-mark="wrong">오답</button>
+                </div>`
+              : "";
+            return `<tr data-q-row="${escapeHtml(num)}"><td>${num}번</td><td>${mark}</td><td>${escapeHtml(givenText)}${essayBtns}</td><td>${info.points}점</td></tr>`;
           })
           .join("")
       : `<tr><td colspan="4">제출 내역 없음</td></tr>`;
 
+    const finalizeBtn = sub && sub.finalized === false
+      ? `<div class="result-unit-foot">
+          <button type="button" class="btn btn-blue btn-finalize-unit" data-unit-id="${escapeHtml(u.id)}">이 시험 채점 확정</button>
+        </div>`
+      : "";
+
     rows += `
-      <section class="result-unit-block">
-        <h4>${escapeHtml(u.colLabel || u.name)} <span class="result-score">${displayScore(sc)}점</span></h4>
+      <section class="result-unit-block" data-unit-id="${escapeHtml(u.id)}">
+        <h4>${escapeHtml(u.colLabel || u.name)} <span class="result-score">${scoreLabel}</span></h4>
         <table class="result-answers-table">
           <thead><tr><th>문항</th><th>채점</th><th>학생 답</th><th>배점</th></tr></thead>
           <tbody>${answerLines}</tbody>
         </table>
+        ${finalizeBtn}
       </section>`;
   }
 
@@ -931,6 +1025,44 @@ function buildStudentResultHtml(studentKey, seat, name) {
     ${rows}`;
 }
 
+function bindStudentResultModal(studentKey) {
+  const modal = document.getElementById("studentResultModal");
+  const body = document.getElementById("studentResultBody");
+
+  body.querySelectorAll(".essay-mark").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const unitId = btn.closest(".essay-grade-actions")?.dataset.unitId;
+      const qNum = btn.closest(".essay-grade-actions")?.dataset.qNum;
+      if (!unitId || !qNum) return;
+      const marks = { [qNum]: btn.dataset.mark };
+      try {
+        await postReview(studentKey, unitId, marks, false);
+        openStudentResult(studentKey, modal.dataset.seat, modal.dataset.studentName);
+        if (currentView === "grades") renderGrades();
+        updateMainNavBadge();
+        showToast("서술형 채점을 반영했습니다.");
+      } catch (err) {
+        showToast(err.message, true);
+      }
+    });
+  });
+
+  body.querySelectorAll(".btn-finalize-unit").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const unitId = btn.dataset.unitId;
+      try {
+        await postReview(studentKey, unitId, null, true);
+        openStudentResult(studentKey, modal.dataset.seat, modal.dataset.studentName);
+        if (currentView === "grades") renderGrades();
+        updateMainNavBadge();
+        showToast("채점을 확정했습니다.");
+      } catch (err) {
+        showToast(err.message, true);
+      }
+    });
+  });
+}
+
 function openStudentResult(studentKey, seat, name) {
   const modal = document.getElementById("studentResultModal");
   const body = document.getElementById("studentResultBody");
@@ -940,6 +1072,7 @@ function openStudentResult(studentKey, seat, name) {
   modal.dataset.seat = seat;
   modal.dataset.studentName = name;
   modal.classList.remove("hidden");
+  bindStudentResultModal(studentKey);
 }
 
 function closeStudentResultModal() {
@@ -974,9 +1107,31 @@ document.getElementById("studentResultPrint")?.addEventListener("click", () => {
   printStudentReport(modal.dataset.studentKey, modal.dataset.seat, modal.dataset.studentName);
 });
 
+function updateMainNavBadge() {
+  const pending = countPendingReviews();
+  document.querySelectorAll(".sb-nav-btn[data-view='grades']").forEach((btn) => {
+    const old = btn.querySelector(".nav-pending-badge");
+    if (old) old.remove();
+    if (pending > 0) {
+      const b = document.createElement("span");
+      b.className = "nav-pending-badge";
+      b.textContent = String(pending);
+      btn.appendChild(b);
+    }
+  });
+}
+
+function bindMainNav() {
+  document.querySelectorAll(".sb-nav-btn[data-view]").forEach((btn) => {
+    btn.classList.toggle("is-active", btn.dataset.view === currentView);
+    btn.onclick = () => setView(btn.dataset.view);
+  });
+  updateMainNavBadge();
+}
+
 function renderGrades() {
   const cls = activeClass();
-  const students = getRosterStudents();
+  const students = getStudentsForGrades();
   const units = getAllUnits();
   const unitHeaders = units.map((u) => `<th class="col-unit">${escapeHtml(u.colLabel || u.name)}</th>`).join("");
 
@@ -984,14 +1139,13 @@ function renderGrades() {
     ? students
         .map((st) => {
           const key = `${st.seat}:${st.name}`;
-          const scores = units.map((u) => scoreFor(key, u.id));
           const avg = calcStudentAverage(key, units);
           const online = !!onlineSeats[st.seat];
           return `
             <tr data-student-key="${escapeHtml(key)}">
               <td class="col-no"><span class="dot ${online ? "on" : "off"}"></span>${st.seat}</td>
               <td class="name">${escapeHtml(st.name)}</td>
-              ${units.length ? scores.map((s) => `<td class="col-score">${displayScore(s)}</td>`).join("") : ""}
+              ${units.length ? units.map((u) => `<td class="col-score">${scoreCellHtml(key, u.id)}</td>`).join("") : ""}
               <td class="avg">${avg}</td>
               <td class="col-submit">${formatSubmitted(state.studentScores?.[key]?._submittedAt)}</td>
               <td class="col-actions">
@@ -1202,10 +1356,24 @@ gradingSocket.on("connect", () => {
 gradingSocket.on("grading:scoreUpdate", (p) => {
   if (!state || !p?.studentKey) return;
   if (!state.studentScores[p.studentKey]) state.studentScores[p.studentKey] = {};
-  state.studentScores[p.studentKey][p.unitId] = p.score;
-  state.studentScores[p.studentKey]._submittedAt = p.submittedAt || Date.now();
+  const rec = state.studentScores[p.studentKey];
+  rec[p.unitId] = p.score;
+  rec._submittedAt = p.submittedAt || Date.now();
+  if (p.submission) {
+    rec._detail = rec._detail || {};
+    rec._detail[p.unitId] = p.submission;
+  }
+  updateMainNavBadge();
   if (currentView === "grades") renderGrades();
-  showToast(`${p.name || ""} ${p.score}점 제출`);
+  const needsReview = p.submission && p.submission.finalized === false;
+  if (needsReview) {
+    const prov = p.provisionalScore;
+    const hint = prov !== null && prov !== undefined ? ` (자동 ${prov}점)` : "";
+    showToast(`${p.name || "학생"} 답안 제출${hint} — 서술형 채점 후 확정해 주세요.`);
+  } else {
+    showToast(`${p.name || "학생"} 답안 제출 (${p.score}점)`);
+  }
+  if (currentView !== "grades") setView("grades");
 });
 
 loadData();
