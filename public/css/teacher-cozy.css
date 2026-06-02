@@ -477,6 +477,30 @@ body:not(.pip-mode) .bubble {
   border-radius: 14px !important;
 }
 
+/* 모둠 칠판 — 채팅 가독성 */
+body.board-group-mode .group-board .tile .bubble.show {
+  background: var(--bubble-bg) !important;
+  color: var(--bubble-text) !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  border: 2px solid rgba(255, 234, 167, 0.55) !important;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.15) !important;
+}
+
+html[data-theme="light"] body.board-group-mode .group-board .tile .bubble.show {
+  border-color: rgba(45, 74, 62, 0.12) !important;
+  box-shadow: 0 3px 0 rgba(45, 74, 62, 0.08) !important;
+}
+
+body.board-group-mode .group-board .tile.has-chat {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.22) !important;
+}
+
+body.board-group-mode .group-board .tile.has-chat-expanded {
+  outline: 2px solid var(--cozy-coral);
+  z-index: 2;
+}
+
 html[data-theme="dark"] body:not(.pip-mode) .controls button {
   background: var(--cozy-surface) !important;
   border: 2px solid rgba(255, 255, 255, 0.1) !important;

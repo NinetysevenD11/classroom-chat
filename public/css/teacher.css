@@ -1637,10 +1637,94 @@ body.board-group-mode .group-board {
   background: rgba(168, 216, 234, 0.25);
 }
 
+/* 모둠 칠판: 말풍선을 아바타 위가 아닌 카드 하단 전용 영역으로 */
+.group-board .group-table,
+.group-board .group-cluster {
+  overflow: visible;
+}
+
 .group-board .tile {
-  width: 118px;
-  min-height: 132px;
+  width: min(100%, 172px);
+  min-height: unset;
+  height: auto;
+  flex: 0 1 172px;
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.group-board .tile .seat-head {
+  position: relative;
+  top: auto;
+  left: auto;
+  right: auto;
+  flex-shrink: 0;
+  padding: 5px 8px 4px;
+  order: 1;
+}
+
+.group-board .tile .video-area {
+  flex: 0 0 68px;
+  width: 100%;
+  min-height: 68px;
+  max-height: 68px;
+  order: 2;
+}
+
+.group-board .tile .avatar-emoji {
+  font-size: 34px;
+}
+
+.group-board .tile .controls {
+  top: 28px;
+}
+
+.group-board .tile .status-dot {
+  top: 6px;
+  right: 6px;
+}
+
+.group-board .tile .muted-tag {
+  font-size: 10px;
+  padding: 2px 6px;
+}
+
+.group-board .tile .bubble {
+  position: relative;
+  bottom: auto;
+  left: auto;
+  right: auto;
+  order: 3;
   flex: 0 0 auto;
+  display: none;
+  width: 100%;
+  margin: 0;
+  padding: 8px 10px;
+  font-size: 15px;
+  line-height: 1.45;
+  max-height: 6.5em;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  border-top: 2px solid rgba(255, 229, 102, 0.75);
+  border-radius: 0 0 14px 14px;
+  z-index: 4;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.group-board .tile .bubble.show {
+  display: block;
+  opacity: 1;
+  transform: none;
+}
+
+.group-board .tile.has-chat .bubble.show {
+  cursor: pointer;
+}
+
+.group-board .tile.has-chat-expanded .bubble.show {
+  max-height: 14em;
 }
 
 .group-teacher-row {

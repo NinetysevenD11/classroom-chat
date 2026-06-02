@@ -183,7 +183,7 @@ function renderSeat(seat, data) {
     nameEl.textContent = "빈 자리";
     delete lastMessages[seat];
     delete logs[seat];
-    tile.querySelector(".bubble").classList.remove("show");
+    clearTileBubble(tile);
   }
   updateSeatPhoto(tile, seat, data.photo || null);
   const photoBtn = tile.querySelector(".photo-btn");
@@ -203,9 +203,7 @@ function renderSeat(seat, data) {
     muteBtn.title = data.muted ? "음소거 해제" : "음소거";
   }
   if (data.muted) {
-    // 음소거되면 화면의 말풍선을 숨긴다.
-    const bubble = tile.querySelector(".bubble");
-    bubble.classList.remove("show");
+    clearTileBubble(tile);
   } else if (data.lastMessage) {
     lastMessages[seat] = data.lastMessage.text;
     showBubble(tile, data.lastMessage.text, false);
@@ -273,13 +271,32 @@ async function kickSeat(seat) {
 
 function showBubble(tile, text, pop = true) {
   const bubble = tile.querySelector(".bubble");
-  bubble.textContent = text;
-  bubble.classList.add("show");
-  if (pop) {
+  const msg = String(text || "").trim();
+  bubble.textContent = msg;
+  bubble.title = msg;
+  if (msg) {
+    bubble.classList.add("show");
+    tile.classList.add("has-chat");
+  } else {
+    bubble.classList.remove("show");
+    tile.classList.remove("has-chat", "has-chat-expanded");
+  }
+  if (pop && msg) {
     bubble.classList.remove("pop");
     void bubble.offsetWidth; // 리플로우로 애니메이션 재시작
     bubble.classList.add("pop");
   }
+}
+
+function clearTileBubble(tile) {
+  if (!tile) return;
+  const bubble = tile.querySelector(".bubble");
+  if (bubble) {
+    bubble.textContent = "";
+    bubble.title = "";
+    bubble.classList.remove("show", "pop");
+  }
+  tile.classList.remove("has-chat", "has-chat-expanded");
 }
 
 // Google 한국의 음성으로 발화 객체 생성
@@ -352,7 +369,7 @@ socket.on("chats:reset", () => {
     delete lastMessages[i];
     delete logs[i];
     const t = tiles[i];
-    if (t) t.querySelector(".bubble").classList.remove("show");
+    if (t) clearTileBubble(t);
   }
   if (!studentPanel.classList.contains("hidden")) renderPanelLog();
 });
