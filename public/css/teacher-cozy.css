@@ -733,3 +733,35 @@ html[data-theme="dark"] body.pip-mode .tile {
 body.pip-mode .tile:hover {
   background: rgba(240, 108, 100, 0.15) !important;
 }
+
+/* 모둠 배치 모달 하단 버튼 통일 */
+.group-foot-btn {
+  border-radius: var(--cozy-radius-pill) !important;
+}
+
+html[data-theme="dark"] .group-foot-btn.primary,
+html[data-theme="light"] .group-foot-btn.primary {
+  background: var(--cozy-coral) !important;
+  color: #fff !important;
+  border: none !important;
+  box-shadow: 0 4px 0 var(--cozy-coral-dark) !important;
+}
+
+html[data-theme="dark"] .group-foot-btn.primary:active,
+html[data-theme="light"] .group-foot-btn.primary:active {
+  box-shadow: 0 2px 0 var(--cozy-coral-dark) !important;
+}
+
+html[data-theme="dark"] .group-foot-btn.secondary {
+  background: var(--cozy-surface-2) !important;
+  color: var(--cozy-text) !important;
+  border: 2px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.2) !important;
+}
+
+html[data-theme="light"] .group-foot-btn.secondary {
+  background: #fffcf7 !important;
+  color: var(--cozy-text) !important;
+  border: 2px solid rgba(45, 74, 62, 0.12) !important;
+  box-shadow: 0 3px 0 rgba(45, 74, 62, 0.08) !important;
+}
