@@ -4,4 +4,5 @@ node_modules/
 users.json
 student_profiles.json
 class_rosters.json
+grading_data.json
 login_logs.json

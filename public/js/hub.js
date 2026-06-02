@@ -7,6 +7,12 @@ const APPS = [
     icon: "📋",
     path: "/app/chalkboard",
   },
+  {
+    id: "grading",
+    label: "채점도구",
+    icon: "📝",
+    path: "/app/grading",
+  },
 ];
 
 const sidebar = document.getElementById("sidebar");

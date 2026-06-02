@@ -1,0 +1,158 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Noto Sans KR", sans-serif;
+  background: #f1f5f9;
+  color: #0f172a;
+  min-height: 100dvh;
+}
+
+.view {
+  min-height: 100dvh;
+}
+
+.exam-join {
+  max-width: 360px;
+  margin: 0 auto;
+  padding: 48px 20px;
+  text-align: center;
+}
+
+.exam-join h1 {
+  margin: 0 0 8px;
+  font-size: 22px;
+}
+
+.exam-join p {
+  color: #64748b;
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+
+.exam-join input {
+  width: 100%;
+  padding: 14px;
+  margin-bottom: 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  font-size: 16px;
+  font-family: inherit;
+}
+
+.exam-join button {
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 12px;
+  background: #2563eb;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.error {
+  color: #dc2626;
+  font-size: 13px;
+  margin-top: 10px;
+}
+
+.exam-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: #fff;
+  border-bottom: 1px solid #e2e8f0;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.exam-header button {
+  border: none;
+  background: #f1f5f9;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.unit-list {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.unit-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 16px;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.unit-card:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.exam-paper img {
+  width: 100%;
+  display: block;
+  margin-bottom: 8px;
+  border-radius: 8px;
+}
+
+.exam-answers {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.answer-row label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 4px;
+  font-size: 14px;
+}
+
+.answer-row input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  font-size: 16px;
+  font-family: inherit;
+}
+
+.submit-btn {
+  display: block;
+  width: calc(100% - 32px);
+  margin: 16px;
+  padding: 14px;
+  border: none;
+  border-radius: 12px;
+  background: #16a34a;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.hidden {
+  display: none !important;
+}

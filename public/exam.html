@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>시험 응시 · 우리반</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/exam.css?v=1" />
+</head>
+<body>
+  <section id="joinView" class="view">
+    <div class="exam-join">
+      <h1>📝 시험 응시</h1>
+      <p>이름과 4자리 비밀번호(번호)를 입력하세요</p>
+      <input id="examName" type="text" placeholder="이름" maxlength="12" autocomplete="name" />
+      <input id="examPin" type="password" inputmode="numeric" maxlength="4" placeholder="비밀번호 4자리 (자리번호)" autocomplete="off" />
+      <button type="button" id="examJoinBtn">입장</button>
+      <p id="examJoinError" class="error"></p>
+    </div>
+  </section>
+
+  <section id="examView" class="view" hidden>
+    <header class="exam-header">
+      <span id="examStudentLabel"></span>
+      <button type="button" id="examLogoutBtn">나가기</button>
+    </header>
+    <div id="examUnitList" class="unit-list"></div>
+    <div id="examPaper" class="exam-paper hidden"></div>
+    <div id="examAnswers" class="exam-answers hidden"></div>
+    <button type="button" id="examSubmitBtn" class="submit-btn hidden">제출하기</button>
+  </section>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/exam.js?v=1"></script>
+</body>
+</html>

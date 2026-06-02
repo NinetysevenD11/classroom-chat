@@ -26,6 +26,11 @@ import {
   ensureAdminAccount,
   createSessionStore,
 } from "./storage.js";
+import {
+  initGradingStorage,
+  getGradingState,
+  saveGradingState,
+} from "./grading-storage.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -231,6 +236,7 @@ app.set("trust proxy", 1);
 const isProd = process.env.NODE_ENV === "production";
 
 await initStorage();
+await initGradingStorage();
 await ensureAdminAccount(makeUser);
 
 const sessionStore = await createSessionStore(session);
@@ -250,7 +256,7 @@ const sessionMiddleware = session({
   },
 });
 
-app.use(express.json());
+app.use(express.json({ limit: "12mb" }));
 app.use(sessionMiddleware);
 // 같은 세션을 Socket.IO에서도 읽을 수 있게 공유 (교사 소켓이 자기 교실을 식별)
 io.engine.use(sessionMiddleware);
@@ -411,6 +417,103 @@ app.get("/app/chalkboard", requireAuth, (req, res) => {
     return res.redirect("/admin");
   }
   res.sendFile(path.join(__dirname, "views", "teacher.html"));
+});
+
+// 채점도구(교사)
+app.get("/app/grading", requireAuth, (req, res) => {
+  if (isAdminUserId(req.session.userId)) {
+    return res.redirect("/admin");
+  }
+  res.sendFile(path.join(__dirname, "views", "grading.html"));
+});
+
+app.get("/exam", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "exam.html"));
+});
+
+function studentBaseUrl(req) {
+  if (publicUrl) return publicUrl;
+  if (process.env.PUBLIC_URL) return process.env.PUBLIC_URL;
+  return `${req.protocol}://${req.get("host")}`;
+}
+
+app.get("/api/grading", requireAuth, (req, res) => {
+  const userId = req.session.userId;
+  if (isAdminUserId(userId)) return res.status(403).json({ error: "관리자는 사용할 수 없습니다." });
+  res.json(getGradingState(userId));
+});
+
+app.put("/api/grading", requireAuth, async (req, res) => {
+  const userId = req.session.userId;
+  if (isAdminUserId(userId)) return res.status(403).json({ error: "관리자는 사용할 수 없습니다." });
+  try {
+    await saveGradingState(userId, req.body);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+app.get("/api/grading/me", requireAuth, (req, res) => {
+  res.json({
+    userId: req.session.userId,
+    displayName: users[req.session.userId]?.displayName || req.session.userId,
+    school: users[req.session.userId]?.school || "우리반",
+  });
+});
+
+app.get("/api/grading/roster", requireAuth, (req, res) => {
+  res.json({ roster: getClassRoster(req.session.userId) });
+});
+
+app.get("/api/grading/online", requireAuth, (req, res) => {
+  const userId = req.session.userId;
+  const room = rooms[userId];
+  const online = {};
+  if (room) {
+    for (let i = 1; i <= STUDENT_SEATS; i++) {
+      if (room.seats[i]?.online) online[i] = true;
+    }
+  }
+  res.json({ online });
+});
+
+app.get("/api/grading/student-url", requireAuth, async (req, res) => {
+  const userId = req.session.userId;
+  if (isAdminUserId(userId)) return res.status(403).json({ error: "관리자는 사용할 수 없습니다." });
+  const base = studentBaseUrl(req);
+  const examUrl = `${base}/exam`;
+  try {
+    const dataUrl = await qrcode.toDataURL(examUrl, { width: 320, margin: 1 });
+    res.json({ url: `${base}/student`, examUrl, dataUrl });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get("/api/exam/public", (req, res) => {
+  const found = findTeacherRoom();
+  if (!found) {
+    return res.json({ ok: false, units: [], message: "선생님이 접속 중이 아닙니다." });
+  }
+  const state = getGradingState(found.userId);
+  const sub = state.exams
+    ?.flatMap((e) => e.subjects || [])
+    ?.find((s) => s.id === state.activeSubjectId);
+  const units = (sub?.units || [])
+    .filter((u) => !u.locked)
+    .map((u) => ({
+      id: u.id,
+      name: u.name,
+      images: u.images || [],
+      questionCount: (u.questions || []).length,
+    }));
+  res.json({
+    ok: true,
+    subject: sub?.name || "",
+    resultsPublished: !!state.resultsPublished,
+    units,
+  });
 });
 
 function notifyTeachers(userId, event, data) {
@@ -657,6 +760,57 @@ io.on("connection", (socket) => {
         question: room.activeQuestion || null,
       });
     notifyTeachers(userId, "seat:update", { seat: chosen, data: seats[chosen] });
+  });
+
+  socket.on("exam:submit", async ({ unitId, answers, clientId }, cb) => {
+    const { userId, room, seat } = resolveStudentContext(socket, clientId);
+    if (!userId || !room || !seat) {
+      cb && cb({ ok: false, error: "먼저 입장해 주세요." });
+      return;
+    }
+    const s = room.seats[seat];
+    if (!s?.name) {
+      cb && cb({ ok: false, error: "입장 정보가 없습니다." });
+      return;
+    }
+    const grading = getGradingState(userId);
+    const sub = grading.exams
+      ?.flatMap((e) => e.subjects || [])
+      ?.find((x) => x.id === grading.activeSubjectId);
+    const unit = sub?.units?.find((u) => u.id === unitId);
+    if (!unit) {
+      cb && cb({ ok: false, error: "시험을 찾을 수 없습니다." });
+      return;
+    }
+    if (unit.locked) {
+      cb && cb({ ok: false, error: "이 단원은 아직 잠겨 있습니다." });
+      return;
+    }
+    let score = 0;
+    let max = 0;
+    for (const q of unit.questions || []) {
+      const pts = Number(q.points) || 1;
+      if (q.type === "essay") continue;
+      max += pts;
+      const given = String(answers?.[q.num] ?? answers?.[String(q.num)] ?? "")
+        .trim()
+        .toLowerCase();
+      const correct = String(q.answer || "")
+        .trim()
+        .toLowerCase();
+      if (given && given === correct) score += pts;
+    }
+    const key = `${seat}:${s.name}`;
+    if (!grading.studentScores) grading.studentScores = {};
+    if (!grading.studentScores[key]) grading.studentScores[key] = {};
+    grading.studentScores[key][unitId] = max > 0 ? Math.round((score / max) * 100) : 0;
+    grading.studentScores[key]._submittedAt = Date.now();
+    try {
+      await saveGradingState(userId, grading);
+      cb && cb({ ok: true, score: grading.studentScores[key][unitId] });
+    } catch (err) {
+      cb && cb({ ok: false, error: "저장에 실패했습니다." });
+    }
   });
 
   socket.on("student:chat", ({ text, clientId }, cb) => {
