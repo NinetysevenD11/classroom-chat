@@ -1,0 +1,18 @@
+/**
+ * 교실 도구함 iframe — 우하단 FAB(56px)과 하단 버튼 겹침 방지
+ */
+html.hub-embedded {
+  --hub-fab-reserve: 76px;
+}
+
+html.hub-embedded body:not(.pip-mode) .teacher-chat {
+  padding-right: calc(clamp(16px, 3vw, 28px) + var(--hub-fab-reserve)) !important;
+}
+
+html.hub-embedded .submit-bar {
+  padding-right: calc(16px + var(--hub-fab-reserve));
+}
+
+html.hub-embedded .grading-app .grading-main {
+  padding-right: var(--hub-fab-reserve);
+}

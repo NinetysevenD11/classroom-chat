@@ -104,7 +104,8 @@ body.hub-menu-open .hub-menu-backdrop {
 .hub-fab-stack {
   position: fixed;
   right: max(16px, env(safe-area-inset-right, 16px));
-  bottom: max(16px, env(safe-area-inset-bottom, 16px));
+  /* 하단 입력/보내기 바 위에 FAB 배치 (겹침 방지) */
+  bottom: max(20px, env(safe-area-inset-bottom, 20px));
   z-index: 500;
   display: flex;
   flex-direction: column;
