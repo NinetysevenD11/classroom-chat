@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/grading.css?v=2" />
+  <link rel="stylesheet" href="/css/grading.css?v=3" />
 </head>
 <body class="grading-app">
   <div class="grading-shell">
@@ -35,12 +35,8 @@
       </section>
 
       <section class="sb-block">
-        <div class="sb-head-row">
-          <h2 class="sb-title">📁 시험 관리</h2>
-        </div>
-        <label class="sb-field-label">평가 세트</label>
-        <select id="examSelect" class="sb-select"></select>
-        <p class="sb-hint">아래 목록은 과목(시험지)입니다. 활성(초록)인 과목만 학생에게 보입니다.</p>
+        <h2 class="sb-title">📁 시험 관리</h2>
+        <p class="sb-hint">초록 점 = 학생에게 공개. 시험지 업로드 시 AI가 정답을 채웁니다.</p>
         <ul id="subjectList" class="sb-list subject-list"></ul>
         <button type="button" id="addSubjectBtn" class="btn btn-wide btn-purple">+ 새 시험(과목) 추가</button>
       </section>
@@ -61,6 +57,12 @@
   </div>
 
   <div id="toast" class="toast hidden" role="status"></div>
+  <div id="aiOverlay" class="ai-overlay hidden" aria-live="polite">
+    <div class="ai-overlay-card">
+      <div class="ai-spinner"></div>
+      <p id="aiOverlayText">AI가 시험지를 분석하는 중…</p>
+    </div>
+  </div>
 
   <div id="gradingDialog" class="g-dialog hidden" role="dialog" aria-modal="true">
     <div class="g-dialog-backdrop" data-close-dialog></div>
@@ -77,6 +79,14 @@
     </div>
   </div>
 
-  <script src="/js/grading.js?v=2"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>
+    if (window.pdfjsLib) {
+      pdfjsLib.GlobalWorkerOptions.workerSrc =
+        "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+    }
+  </script>
+  <script src="/js/grading.js?v=3"></script>
 </body>
 </html>

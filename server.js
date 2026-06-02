@@ -30,7 +30,9 @@ import {
   initGradingStorage,
   getGradingState,
   saveGradingState,
+  uid,
 } from "./grading-storage.js";
+import { scanExamPaper, questionsToStored } from "./grading-ai.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -491,22 +493,110 @@ app.get("/api/grading/student-url", requireAuth, async (req, res) => {
   }
 });
 
+function findUnitInGrading(state, unitId) {
+  for (const exam of state.exams || []) {
+    for (const sub of exam.subjects || []) {
+      const unit = sub.units?.find((u) => u.id === unitId);
+      if (unit) return { exam, sub, unit };
+    }
+  }
+  return null;
+}
+
+function publicQuestions(questions) {
+  return (questions || []).map((q) => ({
+    num: q.num,
+    type: q.type || "mc",
+    choices: q.type === "mc" ? Number(q.choices) || 5 : undefined,
+    points: Number(q.points) || 1,
+  }));
+}
+
+function gradeUnitAnswers(unit, answers) {
+  let earned = 0;
+  let max = 0;
+  let pendingEssay = 0;
+  const detail = {};
+
+  for (const q of unit.questions || []) {
+    const pts = Number(q.points) || 1;
+    const key = String(q.num);
+    const given = String(answers?.[q.num] ?? answers?.[key] ?? "").trim();
+    detail[key] = { given, correct: false, points: pts };
+
+    if (q.type === "essay") {
+      pendingEssay += 1;
+      detail[key].pending = true;
+      continue;
+    }
+
+    max += pts;
+    const correctAns = String(q.answer || "").trim().toLowerCase();
+    const givenNorm = given.toLowerCase();
+    let ok = false;
+    if (q.type === "mc") {
+      ok = givenNorm === correctAns || givenNorm === String(Number(correctAns));
+    } else {
+      ok = givenNorm.length > 0 && givenNorm === correctAns;
+    }
+    if (ok) {
+      earned += pts;
+      detail[key].correct = true;
+    }
+  }
+
+  const autoScore = max > 0 ? Math.round((earned / max) * 100) : pendingEssay > 0 ? null : 0;
+  return { earned, max, pendingEssay, detail, autoScore };
+}
+
+app.post("/api/grading/scan", requireAuth, async (req, res) => {
+  const userId = req.session.userId;
+  if (isAdminUserId(userId)) return res.status(403).json({ ok: false, error: "사용할 수 없습니다." });
+
+  const { unitId, files } = req.body || {};
+  if (!unitId || !Array.isArray(files) || !files.length) {
+    return res.status(400).json({ ok: false, error: "단원과 시험지 파일이 필요합니다." });
+  }
+
+  try {
+    const state = getGradingState(userId);
+    const found = findUnitInGrading(state, unitId);
+    if (!found) return res.status(404).json({ ok: false, error: "단원을 찾을 수 없습니다." });
+
+    const aiQuestions = await scanExamPaper(files);
+    const stored = questionsToStored(aiQuestions, uid);
+    found.unit.questions = stored;
+
+    await saveGradingState(userId, state);
+    res.json({ ok: true, questions: stored, count: stored.length });
+  } catch (err) {
+    console.error("[채점 AI]", err.message);
+    res.status(500).json({ ok: false, error: err.message || "AI 분석 실패" });
+  }
+});
+
 app.get("/api/exam/public", (req, res) => {
   const found = findTeacherRoom();
   if (!found) {
     return res.json({ ok: false, units: [], message: "선생님이 접속 중이 아닙니다." });
   }
   const state = getGradingState(found.userId);
-  const exam = state.exams?.find((e) => e.id === state.activeExamId) || state.exams?.[0];
-  const activeSubjects = (exam?.subjects || []).filter((s) => s.active !== false);
+  const activeSubjects = [];
+  for (const exam of state.exams || []) {
+    for (const sub of exam.subjects || []) {
+      if (sub.active !== false) activeSubjects.push(sub);
+    }
+  }
+
   const units = [];
   for (const sub of activeSubjects) {
     for (const u of sub.units || []) {
       if (u.locked) continue;
       units.push({
         id: u.id,
-        name: `${sub.name} · ${u.name}`,
-        images: u.images || [],
+        subjectName: sub.name,
+        name: u.name,
+        label: `${sub.name} · ${u.name}`,
         questionCount: (u.questions || []).length,
       });
     }
@@ -516,6 +606,31 @@ app.get("/api/exam/public", (req, res) => {
     subject: activeSubjects.map((s) => s.name).join(", ") || "",
     resultsPublished: !!state.resultsPublished,
     units,
+  });
+});
+
+app.get("/api/exam/unit/:unitId", (req, res) => {
+  const found = findTeacherRoom();
+  if (!found) {
+    return res.json({ ok: false, error: "선생님이 접속 중이 아닙니다." });
+  }
+  const state = getGradingState(found.userId);
+  const hit = findUnitInGrading(state, req.params.unitId);
+  if (!hit || hit.unit.locked) {
+    return res.json({ ok: false, error: "응시할 수 없는 시험입니다." });
+  }
+  if (hit.sub.active === false) {
+    return res.json({ ok: false, error: "비활성 과목입니다." });
+  }
+  res.json({
+    ok: true,
+    id: hit.unit.id,
+    name: hit.unit.name,
+    subjectName: hit.sub.name,
+    label: `${hit.sub.name} · ${hit.unit.name}`,
+    images: hit.unit.images || [],
+    questions: publicQuestions(hit.unit.questions),
+    resultsPublished: !!state.resultsPublished,
   });
 });
 
@@ -791,28 +906,34 @@ io.on("connection", (socket) => {
       cb && cb({ ok: false, error: "이 단원은 아직 잠겨 있습니다." });
       return;
     }
-    let score = 0;
-    let max = 0;
-    for (const q of unit.questions || []) {
-      const pts = Number(q.points) || 1;
-      if (q.type === "essay") continue;
-      max += pts;
-      const given = String(answers?.[q.num] ?? answers?.[String(q.num)] ?? "")
-        .trim()
-        .toLowerCase();
-      const correct = String(q.answer || "")
-        .trim()
-        .toLowerCase();
-      if (given && given === correct) score += pts;
-    }
+    const { autoScore, pendingEssay, detail, earned, max } = gradeUnitAnswers(unit, answers);
     const key = `${seat}:${s.name}`;
     if (!grading.studentScores) grading.studentScores = {};
     if (!grading.studentScores[key]) grading.studentScores[key] = {};
-    grading.studentScores[key][unitId] = max > 0 ? Math.round((score / max) * 100) : 0;
+    if (!grading.studentScores[key]._detail) grading.studentScores[key]._detail = {};
+
+    grading.studentScores[key]._detail[unitId] = { answers, detail, earned, max, pendingEssay };
+    grading.studentScores[key][unitId] =
+      pendingEssay > 0 && max === 0 ? "대기" : autoScore ?? 0;
     grading.studentScores[key]._submittedAt = Date.now();
+
     try {
       await saveGradingState(userId, grading);
-      cb && cb({ ok: true, score: grading.studentScores[key][unitId] });
+      notifyTeachers(userId, "grading:scoreUpdate", {
+        seat,
+        name: s.name,
+        studentKey: key,
+        unitId,
+        unitName: unit.name,
+        score: grading.studentScores[key][unitId],
+        submittedAt: grading.studentScores[key]._submittedAt,
+      });
+      cb &&
+        cb({
+          ok: true,
+          score: grading.studentScores[key][unitId],
+          pendingEssay: pendingEssay > 0,
+        });
     } catch (err) {
       cb && cb({ ok: false, error: "저장에 실패했습니다." });
     }

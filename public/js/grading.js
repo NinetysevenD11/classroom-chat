@@ -12,7 +12,8 @@ const mainEl = document.getElementById("gradingMain");
 const subjectList = document.getElementById("subjectList");
 const classList = document.getElementById("classList");
 const lockList = document.getElementById("lockList");
-const examSelect = document.getElementById("examSelect");
+const aiOverlay = document.getElementById("aiOverlay");
+const aiOverlayText = document.getElementById("aiOverlayText");
 const dialogEl = document.getElementById("gradingDialog");
 const dialogTitle = document.getElementById("dialogTitle");
 const dialogBody = document.getElementById("dialogBody");
@@ -85,7 +86,97 @@ function normalizeState(raw) {
     s.activeSubjectId = exam.subjects[0].id;
     s.activeUnitId = exam.subjects[0].units?.[0]?.id || null;
   }
+  // 예전 다중 평가 세트 → 한 세트로 합침
+  if (s.exams.length > 1) {
+    const main = s.exams[0];
+    for (let i = 1; i < s.exams.length; i++) {
+      main.subjects.push(...(s.exams[i].subjects || []));
+    }
+    s.exams = [main];
+    s.activeExamId = main.id;
+  }
   return s;
+}
+
+function getAllUnits() {
+  const units = [];
+  for (const exam of state?.exams || []) {
+    for (const sub of exam.subjects || []) {
+      if (sub.active === false) continue;
+      for (const u of sub.units || []) {
+        units.push({ ...u, subjectName: sub.name, colLabel: `${sub.name}_${u.name}` });
+      }
+    }
+  }
+  return units;
+}
+
+function showAiOverlay(msg) {
+  aiOverlayText.textContent = msg || "AI가 시험지를 분석하는 중…";
+  aiOverlay.classList.remove("hidden");
+}
+
+function hideAiOverlay() {
+  aiOverlay.classList.add("hidden");
+}
+
+async function pdfFileToDataUrls(file, maxPages = 8) {
+  if (!window.pdfjsLib) throw new Error("PDF 라이브러리를 불러오지 못했습니다.");
+  const buf = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+  const urls = [];
+  const total = Math.min(pdf.numPages, maxPages);
+  for (let p = 1; p <= total; p++) {
+    const page = await pdf.getPage(p);
+    const viewport = page.getViewport({ scale: 1.8 });
+    const canvas = document.createElement("canvas");
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    await page.render({ canvasContext: canvas.getContext("2d"), viewport }).promise;
+    urls.push(canvas.toDataURL("image/jpeg", 0.88));
+  }
+  return urls;
+}
+
+async function fileToScanPayload(file) {
+  if (file.type === "application/pdf" || file.name?.toLowerCase().endsWith(".pdf")) {
+    const pages = await pdfFileToDataUrls(file);
+    return pages.map((dataUrl, i) => ({ dataUrl, name: `${file.name}-p${i + 1}` }));
+  }
+  const dataUrl = await new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result);
+    r.onerror = reject;
+    r.readAsDataURL(file);
+  });
+  return [{ dataUrl, name: file.name }];
+}
+
+async function runAiScan(unit) {
+  const files = (unit.images || []).map((dataUrl, i) => ({ dataUrl, name: `page-${i + 1}` }));
+  if (!files.length) {
+    showToast("먼저 시험지 이미지 또는 PDF를 올려 주세요.", true);
+    return;
+  }
+  showAiOverlay("AI가 문항과 정답을 추출하는 중… (30초~1분)");
+  try {
+    const res = await fetch("/api/grading/scan", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ unitId: unit.id, files }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "AI 분석 실패");
+    unit.questions = data.questions || unit.questions;
+    await saveNow();
+    renderExam();
+    showToast(`${data.count || unit.questions.length}문항 자동 생성 완료`);
+  } catch (err) {
+    showToast(err.message || "AI 분석 실패", true);
+  } finally {
+    hideAiOverlay();
+  }
 }
 
 function activeExam() {
@@ -224,32 +315,10 @@ async function loadData() {
   document.getElementById("profileEmail").textContent = me.userId ? `${me.userId}` : "—";
   document.getElementById("profileName").textContent = me.displayName || me.userId || "선생님";
   document.getElementById("profileSchool").textContent = me.school || "우리반";
-  renderExamSelect();
   renderSidebar();
   renderView(currentView);
   loadQrInline();
 }
-
-function renderExamSelect() {
-  examSelect.innerHTML = "";
-  for (const exam of state.exams) {
-    const opt = document.createElement("option");
-    opt.value = exam.id;
-    opt.textContent = exam.name;
-    if (exam.id === state.activeExamId) opt.selected = true;
-    examSelect.appendChild(opt);
-  }
-}
-
-examSelect.addEventListener("change", () => {
-  state.activeExamId = examSelect.value;
-  const exam = activeExam();
-  state.activeSubjectId = exam.subjects[0]?.id || null;
-  state.activeUnitId = exam.subjects[0]?.units?.[0]?.id || null;
-  scheduleSave();
-  renderSidebar();
-  renderView(currentView);
-});
 
 function renderSidebar() {
   const exam = activeExam();
@@ -521,13 +590,15 @@ function renderExam() {
       </div>
       <section class="paper-section">
         <div class="section-head">
-          <h2>시험지 이미지 (학생 화면)</h2>
-          <div>
-            <input type="file" id="paperInput" accept="image/*" multiple hidden />
-            <button type="button" class="btn btn-blue" id="paperSelectBtn">파일 선택</button>
+          <h2>시험지 등록 · AI 정답 생성</h2>
+          <div class="paper-actions">
+            <input type="file" id="paperInput" accept="image/*,application/pdf" multiple hidden />
+            <button type="button" class="btn btn-blue" id="paperSelectBtn">이미지/PDF 올리기</button>
+            <button type="button" class="btn btn-ai" id="aiScanBtn">🤖 AI 정답 자동 생성</button>
             <span class="paper-status">${(unit.images || []).length}장</span>
           </div>
         </div>
+        <p class="paper-hint">시험지를 올린 뒤 「AI 정답 자동 생성」을 누르세요. Render에 <code>GEMINI_API_KEY</code>가 필요합니다.</p>
         <div class="paper-thumbs" id="paperThumbs">${thumbs || '<span class="muted">이미지 없음</span>'}</div>
       </section>
       <section class="answers-section">
@@ -568,6 +639,7 @@ function renderExam() {
     });
   });
 
+  document.getElementById("aiScanBtn")?.addEventListener("click", () => runAiScan(unit));
   bindQuestionEditors(unit);
   bindPaperUpload(unit);
 }
@@ -623,27 +695,28 @@ function bindQuestionEditors(unit) {
 function bindPaperUpload(unit) {
   const input = document.getElementById("paperInput");
   document.getElementById("paperSelectBtn")?.addEventListener("click", () => input?.click());
-  input?.addEventListener("change", () => {
+  input?.addEventListener("change", async () => {
     const files = [...(input.files || [])];
     if (!files.length) return;
     unit.images = unit.images || [];
-    let pending = files.length;
-    for (const file of files) {
-      const reader = new FileReader();
-      reader.onload = async () => {
-        if (typeof reader.result === "string" && reader.result.length < 800000) {
-          unit.images.push(reader.result);
-        } else {
-          showToast("이미지가 너무 큽니다.", true);
+    showAiOverlay("시험지 파일 처리 중…");
+    try {
+      for (const file of files) {
+        const payloads = await fileToScanPayload(file);
+        for (const p of payloads) {
+          if (p.dataUrl.length < 4_000_000) unit.images.push(p.dataUrl);
+          else showToast(`${file.name} 용량이 너무 큽니다.`, true);
         }
-        if (--pending === 0) {
-          await saveNow();
-          renderExam();
-        }
-      };
-      reader.readAsDataURL(file);
+      }
+      await saveNow();
+      renderExam();
+      await runAiScan(unit);
+    } catch (err) {
+      showToast(err.message || "파일 처리 실패", true);
+    } finally {
+      hideAiOverlay();
+      input.value = "";
     }
-    input.value = "";
   });
   document.getElementById("paperThumbs")?.querySelectorAll("[data-rm-img]").forEach((btn) => {
     btn.addEventListener("click", async () => {
@@ -671,7 +744,6 @@ function addSubjectFlow() {
       state.activeUnitId = sub.units[0].id;
       const ok = await saveNow();
       if (!ok) return false;
-      renderExamSelect();
       renderSidebar();
       setView("exam");
       showToast(`「${name}」 과목이 추가되었습니다.`);
@@ -707,18 +779,17 @@ function formatSubmitted(ts) {
 }
 
 function renderGrades() {
-  const sub = activeSubject();
   const cls = activeClass();
   const students = getRosterStudents();
-  const units = sub?.units || [];
-  const cols = units.map((u) => `<th>${escapeHtml(u.name)}</th>`).join("");
+  const units = getAllUnits();
+  const cols = units.map((u) => `<th>${escapeHtml(u.colLabel || u.name)}</th>`).join("");
 
   const rows = students.length
     ? students
         .map((st) => {
           const key = `${st.seat}:${st.name}`;
           const scores = units.map((u) => scoreFor(key, u.id));
-          const nums = scores.filter((s) => s !== "—" && !isNaN(Number(s)));
+          const nums = scores.filter((s) => s !== "—" && s !== "대기" && !isNaN(Number(s)));
           const avg = nums.length ? (nums.reduce((a, b) => a + Number(b), 0) / nums.length).toFixed(1) : "—";
           return `
             <tr>
@@ -873,6 +944,19 @@ document.getElementById("addClassBtn").addEventListener("click", () => {
 document.getElementById("gradingLogout").addEventListener("click", async () => {
   await fetch("/api/logout", { method: "POST", credentials: "include" });
   window.top.location.href = "/login";
+});
+
+const gradingSocket = io({ reconnection: true });
+gradingSocket.on("connect", () => {
+  gradingSocket.emit("teacher:join");
+});
+gradingSocket.on("grading:scoreUpdate", (p) => {
+  if (!state || !p?.studentKey) return;
+  if (!state.studentScores[p.studentKey]) state.studentScores[p.studentKey] = {};
+  state.studentScores[p.studentKey][p.unitId] = p.score;
+  state.studentScores[p.studentKey]._submittedAt = p.submittedAt || Date.now();
+  if (currentView === "grades") renderGrades();
+  showToast(`${p.name || ""} ${p.score}점 제출`);
 });
 
 loadData();
