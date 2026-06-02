@@ -1,30 +1,18 @@
 /**
- * 채점도구 — Sprout Lands 픽셀·목재 테마
+ * 채점도구 — Animal Crossing inspired soft UI
  */
 
 body.grading-app {
-  font-family: var(--sprout-font);
-  color: var(--sprout-text);
-  background-color: var(--sprout-grass) !important;
+  font-family: var(--acnh-font);
+  color: var(--acnh-text);
+  background-color: var(--acnh-sage) !important;
   background-image:
-    radial-gradient(ellipse 75% 45% at 50% 100%, rgba(109, 184, 200, 0.4) 0%, transparent 58%),
-    radial-gradient(ellipse 45% 35% at 10% 15%, rgba(255, 249, 230, 0.55) 0%, transparent 48%),
-    radial-gradient(ellipse 35% 28% at 90% 8%, rgba(201, 184, 232, 0.22) 0%, transparent 42%),
-    repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 11px,
-      rgba(255, 255, 255, 0.05) 11px,
-      rgba(255, 255, 255, 0.05) 12px
-    ),
-    repeating-linear-gradient(
-      90deg,
-      transparent,
-      transparent 11px,
-      rgba(0, 0, 0, 0.03) 11px,
-      rgba(0, 0, 0, 0.03) 12px
-    ),
-    linear-gradient(180deg, #b5dbb2 0%, #9dc89a 50%, #8ec48c 100%) !important;
+    linear-gradient(135deg, transparent 75%, rgba(255, 255, 255, 0.12) 75%),
+    linear-gradient(225deg, transparent 75%, rgba(0, 0, 0, 0.04) 75%),
+    linear-gradient(45deg, transparent 75%, rgba(255, 255, 255, 0.08) 75%),
+    linear-gradient(315deg, var(--acnh-sage-pattern) 25%, transparent 25%),
+    linear-gradient(135deg, var(--acnh-sage) 25%, transparent 25%) !important;
+  background-size: 24px 24px !important;
   background-attachment: fixed;
 }
 
@@ -34,179 +22,107 @@ body.grading-app {
   background: transparent !important;
 }
 
-/* ── 사이드바: 목재 판 ── */
-.grading-sidebar {
-  background: linear-gradient(
-    180deg,
-    var(--sprout-wood-light) 0%,
-    var(--sprout-wood) 35%,
-    var(--sprout-wood-mid) 100%
-  ) !important;
-  color: var(--sprout-text) !important;
-  border-right: 4px solid var(--sprout-wood-border) !important;
-  box-shadow: 6px 0 0 rgba(92, 64, 51, 0.2) !important;
+.grading-main {
+  padding: 20px 24px 48px !important;
 }
 
-.sb-qr-top {
-  background: var(--sprout-cream) !important;
-  border: 3px solid var(--sprout-wood-border) !important;
-  border-radius: var(--sprout-radius-lg) !important;
-  box-shadow: var(--sprout-shadow-soft) !important;
+/* ── 사이드바 ── */
+.grading-sidebar {
+  background: var(--acnh-card) !important;
+  color: var(--acnh-text) !important;
+  border-right: 1px solid var(--acnh-border) !important;
+  box-shadow: var(--acnh-shadow-sm) !important;
+}
+
+.sb-qr-top,
+.sb-block,
+.sb-api-footer {
+  background: var(--acnh-card-muted) !important;
+  border: 1px solid var(--acnh-border) !important;
+  border-radius: var(--acnh-radius-md) !important;
+  box-shadow: none !important;
   margin-bottom: 12px !important;
   padding: 12px !important;
 }
 
 .sb-title {
-  color: var(--sprout-wood-dark) !important;
+  color: var(--acnh-text) !important;
   font-weight: 800 !important;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 
 .sb-hint,
 .sb-qr-url,
 .sb-key-hint,
 .sb-api-label > span {
-  color: var(--sprout-text-muted) !important;
+  color: var(--acnh-text-muted) !important;
 }
 
-.sb-main-nav {
-  border-bottom: none !important;
-  margin-bottom: 12px !important;
-  padding-bottom: 0 !important;
-  gap: 8px !important;
-}
-
-/* 사이드바 버튼 — 실시간 성적·추이 탭과 같은 각진 슬롯 */
 .grading-sidebar .sb-nav-btn,
 .grading-sidebar .btn,
 .grading-sidebar .btn-lock {
-  border-radius: 5px !important;
+  border-radius: var(--acnh-radius-sm) !important;
 }
 
 .sb-nav-btn {
   display: flex;
   align-items: center;
-  min-height: 46px;
+  min-height: 44px;
   padding: 10px 12px;
-  line-height: 1.35;
-  background: linear-gradient(180deg, #fff9ef 0%, #f0e0c0 100%) !important;
-  border: 3px solid var(--sprout-wood-border) !important;
-  border-radius: 5px !important;
-  box-shadow: 3px 3px 0 var(--sprout-wood-border) !important;
-  color: var(--sprout-text) !important;
+  background: var(--acnh-card) !important;
+  border: 1px solid var(--acnh-border) !important;
+  border-radius: var(--acnh-radius-sm) !important;
+  box-shadow: var(--acnh-shadow-sm) !important;
+  color: var(--acnh-text) !important;
   font-weight: 700 !important;
+  transform: none !important;
 }
 
 .sb-nav-btn:hover {
-  background: linear-gradient(180deg, #fffef8 0%, var(--sprout-yellow) 100%) !important;
-  transform: translate(-1px, -1px);
-  box-shadow: 4px 4px 0 var(--sprout-wood-border) !important;
+  background: var(--acnh-yellow) !important;
+  border-color: var(--acnh-border-strong) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: var(--acnh-shadow-sm) !important;
 }
 
 .sb-nav-btn.is-active {
-  background: linear-gradient(180deg, var(--sprout-yellow) 0%, var(--sprout-honey) 100%) !important;
-  border-color: var(--sprout-wood-border) !important;
-  color: var(--sprout-wood-dark) !important;
-  transform: translate(2px, 2px);
-  box-shadow: 1px 1px 0 var(--sprout-wood-border) !important;
+  background: var(--acnh-yellow) !important;
+  border-color: var(--acnh-yellow-deep) !important;
+  box-shadow: var(--acnh-shadow-sm) !important;
+  transform: none !important;
 }
 
-.sb-nav-btn .nav-pending-badge {
-  background: var(--sprout-pink-deep) !important;
-  border: 2px solid var(--sprout-wood-border);
-  color: #fff !important;
+.sb-item {
+  background: var(--acnh-card) !important;
+  border-radius: var(--acnh-radius-sm) !important;
+  border: 1px solid transparent !important;
 }
 
-.sb-block {
-  background: rgba(255, 249, 239, 0.75) !important;
-  border: 3px solid var(--sprout-wood-border) !important;
-  border-radius: var(--sprout-radius-lg) !important;
-  box-shadow: var(--sprout-shadow-soft) !important;
-  margin-bottom: 12px !important;
-  padding: 12px !important;
-}
-
-.sb-api-footer {
-  background: var(--sprout-cream) !important;
-  border: 3px solid var(--sprout-wood-border) !important;
-  border-radius: var(--sprout-radius-lg) var(--sprout-radius-lg) 0 0 !important;
-  box-shadow: var(--sprout-shadow-soft) !important;
-  margin-top: auto !important;
-}
-
-.sb-qr-preview {
-  background: var(--sprout-cream) !important;
-  border: 2px solid var(--sprout-wood-border) !important;
-  border-radius: var(--sprout-radius) !important;
+.sb-item.is-active {
+  background: var(--acnh-mint) !important;
+  border-color: var(--acnh-border) !important;
 }
 
 .sb-api-input,
 .sb-select {
   background: #fff !important;
-  border: 2px solid var(--sprout-wood-border) !important;
-  border-radius: 5px !important;
-  box-shadow: inset 0 2px 0 rgba(92, 64, 51, 0.08);
-}
-
-.sb-item {
-  background: rgba(255, 255, 255, 0.5) !important;
-  border-radius: 5px !important;
-}
-
-.grading-sidebar .sb-item .icon-btn {
-  border-radius: 4px !important;
-}
-
-.sb-item.is-active {
-  background: var(--sprout-yellow) !important;
-  border: 2px solid var(--sprout-wood-border);
+  border: 1px solid var(--acnh-border) !important;
+  border-radius: var(--acnh-radius-sm) !important;
+  box-shadow: none !important;
 }
 
 .sb-link {
-  color: var(--sprout-grass-deep) !important;
+  color: var(--acnh-sage-deep) !important;
   font-weight: 700;
 }
 
-.btn-lock.locked {
-  background: var(--sprout-pink) !important;
-  border: 2px solid var(--sprout-wood-border) !important;
-}
-
-.btn-lock.open {
-  background: var(--sprout-leaf) !important;
-  border: 2px solid var(--sprout-wood-border) !important;
-}
-
-/* ── 메인 ── */
-.grading-main {
-  padding: 20px 24px 40px !important;
-}
-
-.view-home,
-.view-exam,
-.view-grades,
-.view-trend {
-  animation: sproutPop 0.3s ease;
-}
-
-@keyframes sproutPop {
-  from {
-    opacity: 0;
-    transform: translateY(8px) scale(0.99);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
+/* ── 메인 카드 ── */
 .view-home h1,
 .view-exam h1,
 .view-grades h1,
 .view-trend .trend-head h1,
 .trend-section-title,
 .dash-section-title {
-  color: var(--sprout-wood-dark) !important;
+  color: var(--acnh-text) !important;
   font-weight: 800 !important;
 }
 
@@ -214,367 +130,155 @@ body.grading-app {
 .trend-section-desc,
 .paper-hint,
 .dash-guide-once {
-  color: var(--sprout-text-muted) !important;
+  color: var(--acnh-text-muted) !important;
 }
 
-/* 대시보드 */
+.dash-hero,
+.dash-stat-card,
+.dash-quick-btn,
+.dash-panel,
+.trend-chart-card,
+.trend-ai-panel,
+.trend-log-item,
+.grades-table-wrap,
+.exam-panel,
+.paper-card,
+.g-dialog-box,
+.toast {
+  background: var(--acnh-card) !important;
+  border: 1px solid var(--acnh-border) !important;
+  border-radius: var(--acnh-radius-lg) !important;
+  box-shadow: var(--acnh-shadow-sm) !important;
+}
+
 .dash-hero {
-  background: linear-gradient(180deg, var(--sprout-cream) 0%, var(--sprout-wood-light) 100%) !important;
-  border: 4px solid var(--sprout-wood-border) !important;
-  border-radius: var(--sprout-radius-lg) !important;
-  box-shadow: var(--sprout-shadow) !important;
-}
-
-.dash-pills li {
-  background: var(--sprout-cream) !important;
-  border: 2px solid var(--sprout-wood-border) !important;
-  color: var(--sprout-text) !important;
-  border-radius: var(--sprout-radius-slot) !important;
-}
-
-.dash-tag {
-  border: 2px solid var(--sprout-wood-border) !important;
-  background: var(--sprout-cream) !important;
-}
-
-.dash-tag.is-on {
-  background: var(--sprout-leaf) !important;
-  color: #fff !important;
-}
-
-.dash-tag.warn {
-  background: var(--sprout-pink) !important;
-  color: var(--sprout-wood-dark) !important;
-}
-
-.badge-space,
-.class-badge {
-  background: var(--sprout-lavender) !important;
-  color: var(--sprout-wood-dark) !important;
-  border: 2px solid var(--sprout-wood-border) !important;
-  border-radius: var(--sprout-radius-slot) !important;
-  font-weight: 700 !important;
-}
-
-.dash-stat-card {
-  background: linear-gradient(180deg, #fff9ef 0%, #f5e6c8 100%) !important;
-  border: 3px solid var(--sprout-wood-border) !important;
-  border-radius: var(--sprout-radius-slot) !important;
-  box-shadow: 3px 3px 0 var(--sprout-wood-border) !important;
-}
-
-.dash-stat-card strong {
-  color: var(--sprout-wood-dark) !important;
+  background: linear-gradient(135deg, #fff 0%, var(--acnh-mint) 55%, var(--acnh-yellow) 100%) !important;
 }
 
 .dash-stat-card.highlight {
-  background: linear-gradient(180deg, var(--sprout-yellow) 0%, var(--sprout-honey) 100%) !important;
+  background: linear-gradient(180deg, var(--acnh-yellow) 0%, var(--acnh-peach) 100%) !important;
 }
 
-/* 빠른 이동 = 인벤토리 슬롯 */
 .dash-quick-btn {
-  background: linear-gradient(180deg, #fff9ef 0%, #f0e0c0 100%) !important;
-  border: 3px solid var(--sprout-wood-border) !important;
-  border-radius: var(--sprout-radius-slot) !important;
-  box-shadow: 4px 4px 0 var(--sprout-wood-border) !important;
+  border-radius: var(--acnh-radius-md) !important;
+  transform: none !important;
 }
 
 .dash-quick-btn:hover {
-  background: linear-gradient(180deg, #fffef8 0%, var(--sprout-yellow) 100%) !important;
-  transform: translate(-1px, -1px);
-  box-shadow: 5px 5px 0 var(--sprout-wood-border) !important;
+  background: var(--acnh-blue) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: var(--acnh-shadow) !important;
 }
 
 .dash-quick-btn em {
-  color: var(--sprout-wood-dark) !important;
+  color: var(--acnh-text) !important;
 }
 
-.dash-workflow,
-.dash-panel,
-.dash-flow-card,
-.trend-log-item,
-.trend-chart-card,
-.trend-ai-panel {
-  background: var(--sprout-cream) !important;
-  border: 4px solid var(--sprout-wood-border) !important;
-  border-radius: var(--sprout-radius-lg) !important;
-  box-shadow: var(--sprout-shadow-soft) !important;
+/* 성적 추이 — 전체 너비 */
+.view-trend {
+  width: 100% !important;
+  max-width: none !important;
 }
 
-.dash-workflow {
-  background: linear-gradient(180deg, var(--sprout-wood-light) 0%, var(--sprout-wood) 30%, var(--sprout-cream) 30%) !important;
+.view-trend .trend-charts-grid {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr)) !important;
+  width: 100%;
 }
 
-.dash-flow-card {
-  background: linear-gradient(180deg, #fff9ef 0%, #f5e6c8 100%) !important;
-  border: 3px solid var(--sprout-wood-border) !important;
-  box-shadow: 3px 3px 0 var(--sprout-wood-border) !important;
+.view-trend .trend-chart-card,
+.view-trend .trend-ai-panel,
+.view-trend .trend-log-section {
+  width: 100%;
 }
 
-.dash-flow-card:hover {
-  background: linear-gradient(180deg, #fffef8 0%, var(--sprout-yellow) 100%) !important;
-  transform: translate(-1px, -1px);
-  box-shadow: 4px 4px 0 var(--sprout-wood-border) !important;
+.view-trend .trend-chart-wrap {
+  height: min(42vh, 320px);
 }
 
-.dash-cta {
-  background: linear-gradient(180deg, var(--sprout-leaf) 0%, var(--sprout-grass-deep) 100%) !important;
-  border: 3px solid var(--sprout-wood-border) !important;
-  box-shadow: var(--sprout-shadow-soft) !important;
-  color: #fff !important;
+.grades-subject-tab,
+.unit-tab {
+  background: var(--acnh-card) !important;
+  border: 1px solid var(--acnh-border) !important;
+  border-radius: var(--acnh-radius-sm) !important;
+  box-shadow: none !important;
 }
 
-.dash-cta.done {
-  background: var(--sprout-cream) !important;
-  color: var(--sprout-grass-deep) !important;
-  border: 3px solid var(--sprout-wood-border) !important;
-  box-shadow: var(--sprout-shadow-soft) !important;
+.grades-subject-tab.is-active,
+.unit-tab.is-active {
+  background: var(--acnh-yellow) !important;
+  border-color: var(--acnh-yellow-deep) !important;
+  transform: none !important;
 }
 
-.dash-progress-bar {
-  background: rgba(92, 64, 51, 0.2) !important;
-  border: 2px solid var(--sprout-wood-border);
-  height: 14px !important;
-}
-
-.dash-progress-bar span {
-  background: linear-gradient(90deg, var(--sprout-leaf), var(--sprout-yellow)) !important;
-  border-radius: 6px;
-}
-
-.dash-setup-item {
-  background: #fff9ef !important;
-  border: 2px solid var(--sprout-wood-border) !important;
-}
-
-.dash-setup-item.done .dash-setup-dot {
-  background: var(--sprout-leaf) !important;
-}
-
-.dash-online-badge {
-  background: var(--sprout-cream) !important;
-  border: 2px solid var(--sprout-wood-border) !important;
-  color: var(--sprout-grass-deep) !important;
-}
-
-/* 시험·성적 패널 */
-.check-card,
-.guide-box,
-.paper-section,
-.answers-section,
-.grades-table-wrap,
-.grades-subject-bar,
-.g-dialog-panel,
-.guide-step,
-.q-card {
-  background: var(--sprout-cream) !important;
-  border: 4px solid var(--sprout-wood-border) !important;
-  border-radius: var(--sprout-radius-lg) !important;
-  box-shadow: var(--sprout-shadow-soft) !important;
-}
-
-.q-card.type-mc {
-  background: linear-gradient(135deg, var(--sprout-cream), #e8f4fc) !important;
-}
-
-.q-card.type-short {
-  background: linear-gradient(135deg, var(--sprout-cream), #e8f5e4) !important;
-}
-
-.q-card.type-essay {
-  background: linear-gradient(135deg, var(--sprout-cream), var(--sprout-wood-light)) !important;
-}
-
-.grades-table th {
-  background: linear-gradient(180deg, var(--sprout-wood-light), var(--sprout-wood)) !important;
-  color: var(--sprout-wood-dark) !important;
-  border-bottom: 3px solid var(--sprout-wood-border) !important;
-}
-
-.grades-table td {
-  border-bottom: 1px solid rgba(92, 64, 51, 0.12) !important;
+.grades-table thead th {
+  background: var(--acnh-card-muted) !important;
+  color: var(--acnh-text) !important;
 }
 
 .grades-table tbody tr:nth-child(even) {
-  background: rgba(255, 249, 239, 0.6);
+  background: var(--acnh-card-muted) !important;
 }
 
 .grades-table tbody tr:hover {
-  background: var(--sprout-yellow) !important;
+  background: var(--acnh-blue) !important;
 }
 
-.grades-subject-tab {
-  background: linear-gradient(180deg, #fff9ef, #f0e0c0) !important;
-  border: 3px solid var(--sprout-wood-border) !important;
-  border-radius: var(--sprout-radius-slot) !important;
-  box-shadow: 2px 2px 0 var(--sprout-wood-border);
-  color: var(--sprout-text) !important;
-}
-
-.grades-subject-tab.is-active {
-  background: linear-gradient(180deg, var(--sprout-yellow), var(--sprout-honey)) !important;
-  box-shadow: 1px 1px 0 var(--sprout-wood-border);
-  transform: translate(1px, 1px);
-  color: var(--sprout-wood-dark) !important;
-}
-
-.unit-tab {
-  border: 2px solid var(--sprout-wood-border) !important;
-  border-radius: var(--sprout-radius-slot) !important;
-}
-
-.unit-tab.is-active {
-  background: var(--sprout-leaf) !important;
-  color: #fff !important;
-}
-
-/* 버튼 — 픽셀 눌림 */
 .btn,
 .btn-primary,
 .btn-blue,
 .btn-save-manual {
-  font-family: var(--sprout-font) !important;
+  font-family: var(--acnh-font) !important;
   font-weight: 700 !important;
-  border: 3px solid var(--sprout-wood-border) !important;
-  border-radius: 5px !important;
-  box-shadow: 3px 3px 0 var(--sprout-wood-border) !important;
-  transition: transform 0.08s ease, box-shadow 0.08s ease !important;
-}
-
-.grading-sidebar .btn-wide {
-  min-height: 42px;
-  padding: 10px 12px !important;
+  border: 1px solid var(--acnh-border-strong) !important;
+  border-radius: var(--acnh-radius-sm) !important;
+  box-shadow: var(--acnh-shadow-sm) !important;
+  transform: none !important;
 }
 
 .btn:active {
-  transform: translate(2px, 2px) !important;
-  box-shadow: 1px 1px 0 var(--sprout-wood-border) !important;
+  transform: scale(0.98) !important;
+  box-shadow: none !important;
 }
 
 .btn-blue,
-.btn-primary,
-.row-actions .print,
-.sb-qr-actions .btn-blue {
-  background: linear-gradient(180deg, var(--sprout-wood-light), var(--sprout-wood-mid)) !important;
-  color: var(--sprout-wood-dark) !important;
+.btn-primary {
+  background: var(--acnh-blue) !important;
+  color: var(--acnh-text) !important;
 }
 
 .btn-purple {
-  background: linear-gradient(180deg, var(--sprout-lavender), #a898d8) !important;
-  color: var(--sprout-wood-dark) !important;
+  background: var(--acnh-lavender) !important;
+  color: var(--acnh-text) !important;
 }
 
 .btn-green,
 .btn-manual-grade,
 .btn-publish.on {
-  background: linear-gradient(180deg, var(--sprout-leaf), var(--sprout-grass-deep)) !important;
-  color: #fff !important;
+  background: var(--acnh-mint) !important;
+  color: var(--acnh-text) !important;
 }
 
 .btn-ai {
-  background: linear-gradient(180deg, var(--sprout-wood-mid), var(--sprout-wood-dark)) !important;
-  color: #fff !important;
+  background: var(--acnh-peach) !important;
+  color: var(--acnh-text) !important;
 }
 
 .btn-ghost,
 .btn-muted,
 .btn-dash-link {
-  background: var(--sprout-cream) !important;
-  color: var(--sprout-text) !important;
-  border: 2px solid var(--sprout-wood-border) !important;
-  box-shadow: 2px 2px 0 var(--sprout-wood-border) !important;
+  background: var(--acnh-card-muted) !important;
+  color: var(--acnh-text) !important;
+  border: 1px solid var(--acnh-border) !important;
+  box-shadow: none !important;
 }
 
-.btn-excel,
-.btn-print {
-  background: linear-gradient(180deg, var(--sprout-water), var(--sprout-water-deep)) !important;
-  color: #fff !important;
+.grading-sidebar .btn-wide {
+  min-height: 42px;
 }
 
-.row-actions .reset {
-  background: linear-gradient(180deg, var(--sprout-honey), var(--sprout-wood-mid)) !important;
-}
-
-.row-actions .del {
-  background: linear-gradient(180deg, var(--sprout-pink-deep), #d88aa0) !important;
-}
-
-#qrToggleBtn.is-open {
-  background: var(--sprout-yellow) !important;
-  border-color: var(--sprout-wood-border) !important;
-}
-
-.trend-ai-summary {
-  background: var(--sprout-pink) !important;
-  border: 2px solid var(--sprout-wood-border) !important;
-}
-
-.toast {
-  background: var(--sprout-wood-dark) !important;
-  border: 3px solid var(--sprout-wood-border) !important;
-  border-radius: var(--sprout-radius) !important;
-  box-shadow: var(--sprout-shadow) !important;
-}
-
-.g-dialog-backdrop {
-  background: rgba(74, 63, 53, 0.45) !important;
-}
-
-.g-dialog-panel {
-  border: 4px solid var(--sprout-wood-border) !important;
-  box-shadow: 8px 8px 0 var(--sprout-wood-border) !important;
-}
-
-.ai-overlay-card {
-  border: 4px solid var(--sprout-wood-border) !important;
-  box-shadow: var(--sprout-shadow) !important;
-  background: var(--sprout-cream) !important;
-}
-
-.tutorial-popover {
-  border: 4px solid var(--sprout-leaf) !important;
-  box-shadow: var(--sprout-shadow) !important;
-  background: var(--sprout-cream) !important;
-}
-
-.tutorial-arrow {
-  border-color: var(--sprout-leaf) !important;
-}
-
-.tutorial-spotlight {
-  border-radius: var(--sprout-radius-slot) !important;
-}
-
-input,
-select,
-textarea {
-  border: 2px solid var(--sprout-wood-border) !important;
-  border-radius: var(--sprout-radius-slot) !important;
-  background: #fff !important;
-  font-family: var(--sprout-font) !important;
-}
-
-input:focus,
-select:focus,
-textarea:focus {
-  outline: none;
-  border-color: var(--sprout-leaf) !important;
-  box-shadow: 0 0 0 3px rgba(139, 196, 132, 0.35);
-}
-
-.score-pending {
-  color: var(--sprout-wood-mid) !important;
-}
-
-.score-final {
-  color: var(--sprout-grass-deep) !important;
-}
-
-.dot.on {
-  background: var(--sprout-leaf) !important;
-  box-shadow: 0 0 0 2px var(--sprout-wood-border);
-}
-
-.dot.off {
-  background: var(--sprout-text-muted) !important;
+#tutorialOverlay .tutorial-popover {
+  background: var(--acnh-card) !important;
+  border: 1px solid var(--acnh-border) !important;
+  border-radius: var(--acnh-radius-lg) !important;
+  box-shadow: var(--acnh-shadow) !important;
 }

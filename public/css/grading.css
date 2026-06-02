@@ -688,7 +688,6 @@ body {
   grid-template-areas:
     "hero hero hero hero hero hero hero hero stats stats stats stats"
     "quick quick quick quick quick quick quick quick quick quick quick quick"
-    "flow flow flow flow flow flow flow flow flow flow flow flow"
     "subjects subjects subjects subjects subjects subjects logs logs logs logs logs logs"
     "recent recent recent recent recent recent recent recent recent recent recent recent";
 }
@@ -697,7 +696,6 @@ body {
   grid-template-areas:
     "hero hero hero hero hero hero hero hero stats stats stats stats"
     "quick quick quick quick quick quick quick quick quick quick quick quick"
-    "flow flow flow flow flow flow flow flow flow flow flow flow"
     "guide guide guide guide guide guide logs logs logs logs logs logs"
     "recent recent recent recent recent recent recent recent recent recent recent recent";
 }
@@ -708,7 +706,6 @@ body {
       "hero hero hero hero hero hero hero hero hero hero hero hero"
       "stats stats stats stats stats stats stats stats stats stats stats stats"
       "quick quick quick quick quick quick quick quick quick quick quick quick"
-      "flow flow flow flow flow flow flow flow flow flow flow flow"
       "subjects subjects subjects subjects subjects subjects subjects subjects logs logs logs logs"
       "recent recent recent recent recent recent recent recent recent recent recent recent";
   }
@@ -718,7 +715,6 @@ body {
       "hero hero hero hero hero hero hero hero hero hero hero hero"
       "stats stats stats stats stats stats stats stats stats stats stats stats stats"
       "quick quick quick quick quick quick quick quick quick quick quick quick"
-      "flow flow flow flow flow flow flow flow flow flow flow flow"
       "guide guide guide guide guide guide guide guide logs logs logs logs"
       "recent recent recent recent recent recent recent recent recent recent recent recent";
   }
@@ -731,7 +727,6 @@ body {
       "hero"
       "stats"
       "quick"
-      "flow"
       "subjects"
       "logs"
       "recent";
@@ -742,7 +737,6 @@ body {
       "hero"
       "stats"
       "quick"
-      "flow"
       "guide"
       "logs"
       "recent";
@@ -1898,7 +1892,8 @@ body {
 
 /* ── 성적 변화 추이 (별도 화면) ── */
 .view-trend {
-  max-width: 1200px;
+  width: 100%;
+  max-width: none;
 }
 
 .trend-head {
@@ -1954,9 +1949,14 @@ body {
 
 .trend-charts-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
   gap: 16px;
   margin-bottom: 20px;
+  width: 100%;
+}
+
+.trend-log-section {
+  width: 100%;
 }
 
 .trend-chart-card {

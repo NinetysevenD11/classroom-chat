@@ -1,139 +1,89 @@
 /**
- * 교실 도구함 — Sprout Lands / 코지 픽셀 농장 테마
- * 파스텔 잔디·목재 패널·두꺼운 테두리
+ * 교실 도구함 — Animal Crossing inspired soft UI tokens
  */
-@import url("https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Noto+Sans+KR:wght@500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Nunito:wght@500;600;700;800&family=Noto+Sans+KR:wght@500;600;700;800&display=swap");
 
 :root {
-  --sprout-font: "Fredoka", "Noto Sans KR", "Apple SD Gothic Neo", sans-serif;
+  --acnh-font: "Nunito", "Noto Sans KR", "Apple SD Gothic Neo", sans-serif;
 
-  /* 잔디·하늘·물 */
-  --sprout-grass: #9dc89a;
-  --sprout-grass-light: #b5dbb2;
-  --sprout-grass-deep: #7aad78;
-  --sprout-water: #9dd4e0;
-  --sprout-water-deep: #6bb8c8;
-  --sprout-sky: #d8eef5;
+  --acnh-sage: #a8c9a8;
+  --acnh-sage-deep: #8fb58f;
+  --acnh-sage-pattern: #9bb99b;
+  --acnh-bg: #eef4ee;
+  --acnh-card: #ffffff;
+  --acnh-card-muted: #f6f8f6;
+  --acnh-border: rgba(120, 140, 120, 0.22);
+  --acnh-border-strong: rgba(100, 120, 100, 0.35);
 
-  /* 목재·크림 */
-  --sprout-wood-light: #f0d4a8;
-  --sprout-wood: #d4a574;
-  --sprout-wood-mid: #c29470;
-  --sprout-wood-dark: #6b4f3a;
-  --sprout-wood-border: #5c4033;
-  --sprout-cream: #fff9ef;
-  --sprout-cream-deep: #fff3dc;
+  --acnh-text: #3d4a3d;
+  --acnh-text-muted: #6b7a6b;
+  --acnh-shadow: 0 8px 28px rgba(60, 80, 60, 0.1);
+  --acnh-shadow-sm: 0 4px 14px rgba(60, 80, 60, 0.08);
 
-  /* 포인트 */
-  --sprout-pink: #f4cfdf;
-  --sprout-pink-deep: #e8a8c0;
-  --sprout-lavender: #c9b8e8;
-  --sprout-yellow: #f9e076;
-  --sprout-honey: #f5d78e;
-  --sprout-leaf: #8bc484;
+  --acnh-radius-xl: 22px;
+  --acnh-radius-lg: 18px;
+  --acnh-radius-md: 14px;
+  --acnh-radius-sm: 10px;
 
-  --sprout-text: #4a3f35;
-  --sprout-text-muted: #7d6f62;
-  --sprout-shadow: 4px 4px 0 var(--sprout-wood-border);
-  --sprout-shadow-soft: 3px 3px 0 rgba(92, 64, 51, 0.35);
-  --sprout-inset: inset 0 2px 0 rgba(255, 255, 255, 0.45);
-  --sprout-radius: 10px;
-  --sprout-radius-lg: 14px;
-  --sprout-radius-slot: 8px;
+  --acnh-yellow: #f5e6a8;
+  --acnh-yellow-deep: #e8d078;
+  --acnh-blue: #b8dce8;
+  --acnh-blue-deep: #8ec4d8;
+  --acnh-peach: #f5d4c4;
+  --acnh-mint: #c8e8d4;
+  --acnh-lavender: #d8cce8;
 
-  /* 하위 호환 (meadow 변수) */
-  --meadow-font: var(--sprout-font);
-  --meadow-bg: var(--sprout-grass-light);
-  --meadow-bg-warm: var(--sprout-cream-deep);
-  --meadow-surface: rgba(255, 249, 239, 0.96);
-  --meadow-surface-solid: var(--sprout-cream);
-  --meadow-green: var(--sprout-leaf);
-  --meadow-green-deep: var(--sprout-grass-deep);
-  --meadow-moss: var(--sprout-grass-deep);
-  --meadow-sun: var(--sprout-yellow);
-  --meadow-sun-glow: var(--sprout-honey);
-  --meadow-pink: var(--sprout-pink-deep);
-  --meadow-pink-soft: var(--sprout-pink);
-  --meadow-orange: var(--sprout-wood-mid);
-  --meadow-orange-deep: var(--sprout-wood-dark);
-  --meadow-orange-soft: var(--sprout-wood-light);
-  --meadow-brown: var(--sprout-wood-dark);
-  --meadow-text: var(--sprout-text);
-  --meadow-text-muted: var(--sprout-text-muted);
-  --meadow-border: rgba(92, 64, 51, 0.35);
-  --meadow-shadow: var(--sprout-shadow-soft);
-  --meadow-shadow-warm: var(--sprout-shadow);
-  --meadow-radius-xl: 16px;
-  --meadow-radius-lg: var(--sprout-radius-lg);
-  --meadow-radius-md: var(--sprout-radius);
-  --meadow-radius-pill: 10px;
+  /* legacy aliases */
+  --sprout-font: var(--acnh-font);
+  --sprout-grass: var(--acnh-sage);
+  --sprout-grass-light: var(--acnh-bg);
+  --sprout-grass-deep: var(--acnh-sage-deep);
+  --sprout-cream: var(--acnh-card);
+  --sprout-cream-deep: var(--acnh-card-muted);
+  --sprout-wood-border: var(--acnh-border-strong);
+  --sprout-wood-dark: var(--acnh-text);
+  --sprout-text: var(--acnh-text);
+  --sprout-text-muted: var(--acnh-text-muted);
+  --sprout-yellow: var(--acnh-yellow);
+  --sprout-honey: var(--acnh-yellow-deep);
+  --sprout-shadow: var(--acnh-shadow-sm);
+  --sprout-shadow-soft: var(--acnh-shadow-sm);
+  --sprout-radius-lg: var(--acnh-radius-lg);
+  --sprout-radius: var(--acnh-radius-md);
+  --sprout-radius-slot: var(--acnh-radius-sm);
+  --meadow-font: var(--acnh-font);
+  --meadow-bg: var(--acnh-bg);
+  --meadow-surface: var(--acnh-card);
+  --meadow-surface-solid: var(--acnh-card);
+  --meadow-text: var(--acnh-text);
+  --meadow-text-muted: var(--acnh-text-muted);
+  --meadow-border: var(--acnh-border);
+  --meadow-shadow: var(--acnh-shadow-sm);
+  --meadow-radius-xl: var(--acnh-radius-xl);
+  --meadow-radius-lg: var(--acnh-radius-lg);
+  --meadow-radius-md: var(--acnh-radius-md);
 }
 
-/* 잔디 타일 배경 */
+.acnh-pattern-bg,
 .sprout-grass-bg,
 .meadow-dappled-bg {
-  background-color: var(--sprout-grass);
+  background-color: var(--acnh-sage);
   background-image:
-    radial-gradient(ellipse 80% 40% at 50% 100%, rgba(109, 184, 200, 0.45) 0%, transparent 55%),
-    radial-gradient(ellipse 50% 35% at 15% 20%, rgba(255, 249, 230, 0.5) 0%, transparent 50%),
-    radial-gradient(ellipse 40% 30% at 88% 12%, rgba(201, 184, 232, 0.25) 0%, transparent 45%),
-    repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 11px,
-      rgba(255, 255, 255, 0.04) 11px,
-      rgba(255, 255, 255, 0.04) 12px
-    ),
-    repeating-linear-gradient(
-      90deg,
-      transparent,
-      transparent 11px,
-      rgba(0, 0, 0, 0.025) 11px,
-      rgba(0, 0, 0, 0.025) 12px
-    ),
-    linear-gradient(180deg, #b5dbb2 0%, #9dc89a 45%, #8ec48c 100%);
+    linear-gradient(135deg, transparent 75%, rgba(255, 255, 255, 0.12) 75%),
+    linear-gradient(225deg, transparent 75%, rgba(0, 0, 0, 0.04) 75%),
+    linear-gradient(45deg, transparent 75%, rgba(255, 255, 255, 0.08) 75%),
+    linear-gradient(315deg, var(--acnh-sage-pattern) 25%, transparent 25%),
+    linear-gradient(135deg, var(--acnh-sage) 25%, transparent 25%);
+  background-size: 24px 24px;
+  background-position: 0 0, 12px 0, 12px -12px, 0 0;
   background-attachment: fixed;
 }
 
-/* 목재 패널 */
-.sprout-wood-panel {
-  background: linear-gradient(180deg, var(--sprout-wood-light) 0%, var(--sprout-wood) 55%, var(--sprout-wood-mid) 100%);
-  border: 4px solid var(--sprout-wood-border);
-  border-radius: var(--sprout-radius-lg);
-  box-shadow: var(--sprout-shadow), var(--sprout-inset);
-  color: var(--sprout-text);
-}
-
-/* 크림 내용 패널 (목재 테두리) */
+.acnh-card,
 .sprout-cream-panel {
-  background: var(--sprout-cream);
-  border: 4px solid var(--sprout-wood-border);
-  border-radius: var(--sprout-radius-lg);
-  box-shadow: var(--sprout-shadow-soft);
-  color: var(--sprout-text);
-}
-
-/* 인벤토리 슬롯 버튼 */
-.sprout-slot {
-  background: linear-gradient(180deg, #fff9ef 0%, #f5e6c8 100%);
-  border: 3px solid var(--sprout-wood-border);
-  border-radius: var(--sprout-radius-slot);
-  box-shadow: 3px 3px 0 var(--sprout-wood-border), inset 0 1px 0 rgba(255, 255, 255, 0.8);
-  color: var(--sprout-text);
-  font-family: var(--sprout-font);
-  font-weight: 700;
-  transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.15s ease;
-}
-
-.sprout-slot:hover {
-  background: linear-gradient(180deg, #fffef5 0%, var(--sprout-yellow) 100%);
-  transform: translate(-1px, -1px);
-  box-shadow: 4px 4px 0 var(--sprout-wood-border), inset 0 1px 0 rgba(255, 255, 255, 0.9);
-}
-
-.sprout-slot:active,
-.sprout-slot.is-active {
-  transform: translate(2px, 2px);
-  box-shadow: 1px 1px 0 var(--sprout-wood-border), inset 0 2px 4px rgba(92, 64, 51, 0.15);
-  background: linear-gradient(180deg, var(--sprout-yellow) 0%, var(--sprout-honey) 100%);
+  background: var(--acnh-card);
+  border: 1px solid var(--acnh-border);
+  border-radius: var(--acnh-radius-lg);
+  box-shadow: var(--acnh-shadow-sm);
+  color: var(--acnh-text);
 }

@@ -1265,34 +1265,6 @@ function buildDashRecentSubmitHtml() {
   </ul>`;
 }
 
-function buildDashWorkflowHtml() {
-  const steps = [
-    { icon: "📝", title: "시험·정답", desc: "과목·단원·AI 시험지", view: "exam" },
-    { icon: "📱", title: "학생 QR", desc: "접속·주소 공유", action: "qr" },
-    { icon: "📊", title: "실시간 성적", desc: "제출·채점·공개", view: "grades" },
-    { icon: "📈", title: "추이·AI 분석", desc: "그래프·학습 코칭", view: "trend" },
-  ];
-  return steps
-    .map((s) => {
-      const attrs = s.view ? `data-view="${s.view}"` : `data-action="${s.action}"`;
-      return `<button type="button" class="dash-flow-card" ${attrs}>
-        <span class="dash-flow-icon">${s.icon}</span>
-        <strong>${s.title}</strong>
-        <p>${s.desc}</p>
-      </button>`;
-    })
-    .join("");
-}
-
-function bindDashWorkflowNav(root) {
-  const scope = root || mainEl;
-  if (!scope) return;
-  scope.querySelectorAll(".dash-flow-card[data-view]").forEach((btn) => {
-    btn.addEventListener("click", () => setView(btn.dataset.view));
-  });
-  scope.querySelector(".dash-flow-card[data-action='qr']")?.addEventListener("click", () => navigateToStudentQr());
-}
-
 async function renderHome() {
   updateChecklistBadges();
   const stats = buildDashboardStats();
@@ -1372,11 +1344,6 @@ async function renderHome() {
           <button type="button" class="dash-quick-btn" data-action="qr"><span>📱</span><em>학생 QR</em></button>
         </nav>
 
-        <section class="dash-workflow" aria-label="이용 흐름">
-          <h2 class="dash-section-title">이용 흐름</h2>
-          <div class="dash-flow-grid">${buildDashWorkflowHtml()}</div>
-        </section>
-
         ${
           showGuide
             ? `<section class="dash-panel dash-panel-guide" aria-label="시작 가이드">
@@ -1428,7 +1395,6 @@ async function renderHome() {
   }
 
   bindDashQuickNav(mainEl);
-  bindDashWorkflowNav(mainEl);
   mainEl.querySelector(".dash-panel-recent [data-action='qr']")?.addEventListener("click", () => navigateToStudentQr());
   mainEl.querySelectorAll(".btn-dash-link[data-view]").forEach((btn) => {
     btn.addEventListener("click", () => setView(btn.dataset.view));
