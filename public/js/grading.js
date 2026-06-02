@@ -668,6 +668,28 @@ function setView(view) {
   renderView(view);
 }
 
+async function navigateToStudentQr() {
+  setQrPanelOpen(true);
+  if (!qrDataUrl) await loadQrInline();
+  document.querySelector(".sb-qr-block")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  document.querySelector(".grading-sidebar")?.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function bindDashQuickNav(root) {
+  const scope = root || mainEl;
+  if (!scope) return;
+  scope.querySelectorAll(".dash-quick-btn").forEach((btn) => {
+    btn.onclick = () => {
+      const view = btn.dataset.view;
+      if (view) {
+        setView(view);
+        return;
+      }
+      if (btn.dataset.action === "qr") navigateToStudentQr();
+    };
+  });
+}
+
 function renderView(view) {
   if (!state) {
     if (mainEl) {
@@ -877,16 +899,14 @@ async function renderHome() {
     </div>
   `;
 
-  mainEl.querySelectorAll(".dash-quick-btn[data-view], .btn-dash-link[data-view]").forEach((btn) => {
+  bindDashQuickNav(mainEl);
+  mainEl.querySelectorAll(".btn-dash-link[data-view]").forEach((btn) => {
     btn.addEventListener("click", () => setView(btn.dataset.view));
-  });
-  mainEl.querySelector(".dash-quick-btn[data-action='qr']")?.addEventListener("click", () => {
-    document.querySelector(".sb-qr-block")?.scrollIntoView({ behavior: "smooth" });
   });
   mainEl.querySelector(".dash-cta[data-goto]")?.addEventListener("click", (e) => {
     const btn = e.currentTarget;
     if (btn.dataset.id === "qr") {
-      document.querySelector(".sb-qr-block")?.scrollIntoView({ behavior: "smooth" });
+      navigateToStudentQr();
       return;
     }
     setView(btn.dataset.goto);
@@ -894,7 +914,7 @@ async function renderHome() {
   mainEl.querySelectorAll(".btn-dash-link[data-goto]").forEach((btn) => {
     btn.addEventListener("click", () => {
       if (btn.dataset.id === "qr") {
-        document.querySelector(".sb-qr-block")?.scrollIntoView({ behavior: "smooth" });
+        navigateToStudentQr();
         return;
       }
       setView(btn.dataset.goto);

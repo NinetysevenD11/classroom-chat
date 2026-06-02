@@ -680,7 +680,7 @@ body {
   grid-template-columns: repeat(12, 1fr);
   grid-template-areas:
     "hero hero hero hero hero hero hero hero stats stats stats stats"
-    "q1 q2 q3 q4 q4 q4 q4 q4 q4 q4 q4 q4"
+    "quick quick quick quick quick quick quick quick quick quick quick quick"
     "guide guide guide guide guide guide logs logs logs logs logs logs";
 }
 
@@ -689,7 +689,7 @@ body {
     grid-template-areas:
       "hero hero hero hero hero hero hero hero hero hero hero hero"
       "stats stats stats stats stats stats stats stats stats stats stats stats"
-      "q1 q2 q3 q4 q4 q4 q4 q4 q4 q4 q4 q4"
+      "quick quick quick quick quick quick quick quick quick quick quick quick"
       "guide guide guide guide guide guide guide guide logs logs logs logs";
   }
 }
@@ -700,8 +700,7 @@ body {
     grid-template-areas:
       "hero hero"
       "stats stats"
-      "q1 q2"
-      "q3 q4"
+      "quick quick"
       "guide guide"
       "logs logs";
   }
@@ -881,38 +880,39 @@ body {
 }
 
 .dash-quick {
-  display: contents;
+  grid-area: quick;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  width: 100%;
+}
+
+@media (max-width: 640px) {
+  .dash-quick {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .dash-quick-btn {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  padding: 12px 14px;
+  width: 100%;
+  min-width: 0;
+  padding: 12px 10px;
   background: #fff;
   border: 1px solid #e2e8f0;
   border-radius: 12px;
   cursor: pointer;
   font-family: inherit;
-  transition: border-color 0.15s, box-shadow 0.15s;
-}
-
-.dash-quick-btn:nth-child(1) {
-  grid-area: q1;
-}
-.dash-quick-btn:nth-child(2) {
-  grid-area: q2;
-}
-.dash-quick-btn:nth-child(3) {
-  grid-area: q3;
-}
-.dash-quick-btn:nth-child(4) {
-  grid-area: q4;
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
 }
 
 .dash-quick-btn span {
   font-size: 20px;
   line-height: 1;
+  flex-shrink: 0;
 }
 
 .dash-quick-btn em {
@@ -920,11 +920,18 @@ body {
   font-size: 13px;
   font-weight: 700;
   color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .dash-quick-btn:hover {
   border-color: #86efac;
   box-shadow: 0 4px 12px rgba(34, 197, 94, 0.12);
+}
+
+.dash-quick-btn:active {
+  background: #f0fdf4;
 }
 
 .dash-panel {
