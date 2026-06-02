@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>교실 도구함</title>
   <link rel="stylesheet" href="/css/cozy-meadow.css?v=1" />
-  <link rel="stylesheet" href="/css/hub.css?v=5" />
+  <link rel="stylesheet" href="/css/hub.css?v=6" />
   <script>
     (function () {
       var t = localStorage.getItem("theme");
@@ -34,6 +34,11 @@
     </nav>
 
     <div class="sidebar-footer">
+      <section class="hub-profile" aria-label="계정 정보">
+        <div id="hubProfileEmail" class="hub-profile-email">—</div>
+        <div id="hubProfileName" class="hub-profile-name">선생님</div>
+        <div id="hubProfileSchool" class="hub-profile-school">—</div>
+      </section>
       <button type="button" id="hubLogout" class="sidebar-logout" title="로그아웃">
         <span class="nav-icon" aria-hidden="true">🚪</span>
         <span class="nav-label">로그아웃</span>
@@ -51,6 +56,6 @@
     ></iframe>
   </main>
 
-  <script src="/js/hub.js?v=5"></script>
+  <script src="/js/hub.js?v=6"></script>
 </body>
 </html>

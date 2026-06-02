@@ -90,5 +90,28 @@ hubLogout.addEventListener("click", async () => {
   window.location.href = "/login";
 });
 
+async function loadHubProfile() {
+  const emailEl = document.getElementById("hubProfileEmail");
+  const nameEl = document.getElementById("hubProfileName");
+  const schoolEl = document.getElementById("hubProfileSchool");
+  if (!emailEl || !nameEl || !schoolEl) return;
+  try {
+    const res = await fetch("/api/grading/me", { credentials: "include" });
+    if (res.status === 401) {
+      window.location.href = "/login";
+      return;
+    }
+    const me = await res.json();
+    emailEl.textContent = me.userId ? String(me.userId) : "—";
+    nameEl.textContent = me.displayName || me.userId || "선생님";
+    schoolEl.textContent = me.school || "우리반";
+  } catch (_) {
+    emailEl.textContent = "—";
+    nameEl.textContent = "선생님";
+    schoolEl.textContent = "—";
+  }
+}
+
 setCollapsed(isCollapsed());
+loadHubProfile();
 initAppFromUrl();

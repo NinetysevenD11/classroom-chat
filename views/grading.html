@@ -7,20 +7,13 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="/css/cozy-meadow.css?v=1" />
-  <link rel="stylesheet" href="/css/grading.css?v=16" />
-  <link rel="stylesheet" href="/css/grading-cozy.css?v=4" />
+  <link rel="stylesheet" href="/css/grading.css?v=17" />
+  <link rel="stylesheet" href="/css/grading-cozy.css?v=5" />
 </head>
 <body class="grading-app">
   <div class="grading-shell">
     <aside class="grading-sidebar" aria-label="채점 도구 메뉴">
-      <nav class="sb-main-nav" aria-label="주요 메뉴">
-        <button type="button" class="sb-nav-btn" data-view="home">🏠 홈</button>
-        <button type="button" class="sb-nav-btn" data-view="exam">📝 시험·정답</button>
-        <button type="button" class="sb-nav-btn sb-nav-grades" data-view="grades">📊 실시간 성적</button>
-        <button type="button" class="sb-nav-btn sb-nav-trend" data-view="trend">📈 성적 변화 추이</button>
-      </nav>
-
-      <section class="sb-block sb-qr-block">
+      <section class="sb-block sb-qr-block sb-qr-top">
         <h2 class="sb-title">학생 접속 QR코드</h2>
         <div id="qrPreviewPanel" class="sb-qr-panel is-collapsed" aria-hidden="true">
           <div class="sb-qr-preview">
@@ -36,14 +29,12 @@
         </div>
       </section>
 
-      <section class="sb-profile">
-        <div class="sb-profile-text">
-          <div id="profileEmail" class="sb-email">—</div>
-          <div id="profileName" class="sb-name">선생님</div>
-          <div id="profileSchool" class="sb-school">—</div>
-        </div>
-        <button type="button" id="gradingLogout" class="btn btn-logout">로그아웃</button>
-      </section>
+      <nav class="sb-main-nav" aria-label="주요 메뉴">
+        <button type="button" class="sb-nav-btn" data-view="home">🏠 홈</button>
+        <button type="button" class="sb-nav-btn" data-view="exam">📝 시험·정답</button>
+        <button type="button" class="sb-nav-btn sb-nav-grades" data-view="grades">📊 실시간 성적</button>
+        <button type="button" class="sb-nav-btn sb-nav-trend" data-view="trend">📈 성적 변화 추이</button>
+      </nav>
 
       <section class="sb-block">
         <h2 class="sb-title">📁 시험 관리</h2>
@@ -171,6 +162,6 @@
         "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
     }
   </script>
-  <script src="/js/grading.js?v=19"></script>
+  <script src="/js/grading.js?v=20"></script>
 </body>
 </html>

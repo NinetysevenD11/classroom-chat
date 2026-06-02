@@ -1,6 +1,7 @@
 /** 선생님 채점도구 — 동작 중심 (iframe에서 prompt 사용 안 함) */
 
 let state = null;
+let teacherDisplayName = "선생님";
 let currentView = "home";
 let saveTimer = null;
 let roster = {};
@@ -755,9 +756,7 @@ async function loadData() {
   roster = (await rosterRes.json()).roster || {};
   const me = await meRes.json();
   onlineSeats = (await onlineRes.json()).online || {};
-  document.getElementById("profileEmail").textContent = me.userId ? `${me.userId}` : "—";
-  document.getElementById("profileName").textContent = me.displayName || me.userId || "선생님";
-  document.getElementById("profileSchool").textContent = me.school || "우리반";
+  teacherDisplayName = me.displayName || me.userId || "선생님";
   renderSidebar();
   bindMainNav();
   updateChecklistBadges();
@@ -1214,7 +1213,7 @@ function renderTrendLogList(logs, containerId = "trendLogList") {
 async function renderHome() {
   updateChecklistBadges();
   const stats = buildDashboardStats();
-  const teacherName = document.getElementById("profileName")?.textContent || "선생님";
+  const teacherName = teacherDisplayName;
   const cls = activeClass();
   const setupPct = stats.setupPct ?? 0;
   const showGuide = shouldShowSetupGuide();
@@ -2568,6 +2567,7 @@ document.getElementById("qrToggleBtn")?.addEventListener("click", async () => {
   const willOpen = !qrPanelOpen;
   setQrPanelOpen(willOpen);
   if (willOpen && !qrDataUrl) await loadQrInline();
+  setTimeout(refreshTutorialIfActive, 300);
 });
 
 document.getElementById("qrCopyBtn").addEventListener("click", async () => {
@@ -2623,11 +2623,6 @@ document.getElementById("addClassBtn").addEventListener("click", () => {
       return true;
     },
   });
-});
-
-document.getElementById("gradingLogout").addEventListener("click", async () => {
-  await fetch("/api/logout", { method: "POST", credentials: "include" });
-  window.top.location.href = "/login";
 });
 
 const gradingSocket = io({ reconnection: true });
