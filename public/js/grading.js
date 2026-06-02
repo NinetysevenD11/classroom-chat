@@ -1797,8 +1797,8 @@ function renderManualGradeRow(row) {
   return `
     <article class="manual-grade-row" data-student-key="${escapeHtml(row.studentKey)}">
       <div class="manual-grade-student">
-        <div class="manual-grade-name">${row.seat}번 ${escapeHtml(row.name)}</div>
-        <div class="manual-grade-answer">${escapeHtml(answer)}</div>
+        <span class="manual-grade-name">${row.seat}번 ${escapeHtml(row.name)}</span>
+        <span class="manual-grade-answer" title="${escapeHtml(answer)}">${escapeHtml(answer)}</span>
       </div>
       <div class="manual-grade-btns" role="group" aria-label="${row.seat}번 채점">
         <button type="button" class="mg-btn mg-correct ${mark === "correct" ? "is-on" : ""}" data-mark="correct">정답</button>

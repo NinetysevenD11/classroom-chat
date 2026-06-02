@@ -298,8 +298,14 @@ body.grading-app {
 #manualGradeModal .manual-grade-row {
   background: #fff !important;
   border: 1px solid var(--acnh-border) !important;
-  border-radius: var(--acnh-radius-md) !important;
-  box-shadow: var(--acnh-shadow-sm) !important;
+  border-radius: var(--acnh-radius-sm) !important;
+  box-shadow: none !important;
+  padding: 7px 10px !important;
+  min-height: 40px !important;
+}
+
+#manualGradeModal .manual-grade-list {
+  gap: 5px !important;
 }
 
 body.manual-grade-open {
