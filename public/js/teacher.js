@@ -146,6 +146,15 @@ for (let i = 1; i <= TOTAL; i++) {
     }
   }
 
+  const bubbleEl = tile.querySelector(".bubble");
+  if (bubbleEl) {
+    bubbleEl.addEventListener("click", (e) => {
+      if (!boardGroupModeActive || !bubbleEl.classList.contains("show")) return;
+      e.stopPropagation();
+      tile.classList.toggle("has-chat-expanded");
+    });
+  }
+
   grid.appendChild(tile);
   tiles[i] = tile;
 }
@@ -466,27 +475,38 @@ function copyStylesToWindow(targetWin) {
   });
 }
 
-function getPipContentRoot() {
-  if (boardGroupModeActive && groupBoard) return groupBoard;
-  return grid;
+/** 플로팅 창용 1~20번 세로 목록 (모둠 칠판과 별개 — PiP CSS는 .grid 목록 전제) */
+let pipListHost = null;
+
+function buildPipListHost() {
+  if (!pipListHost) {
+    pipListHost = document.createElement("main");
+    pipListHost.id = "pipList";
+    pipListHost.className = "grid";
+    pipListHost.setAttribute("aria-label", "플로팅 학생 목록");
+  }
+  for (let i = 1; i <= TOTAL; i++) {
+    if (tiles[i]) pipListHost.appendChild(tiles[i]);
+  }
+  return pipListHost;
 }
 
 function restorePipContent() {
   const qrModal = document.getElementById("qrModal");
   const chat = document.getElementById("teacherChatForm");
-  const root = getPipContentRoot();
+
   if (boardGroupModeActive && groupBoard) {
-    document.body.insertBefore(groupBoard, qrModal);
-    if (groupTeacherRow && tiles[TEACHER_SEAT]) {
-      groupTeacherRow.appendChild(tiles[TEACHER_SEAT]);
+    if (groupBoard.parentNode !== document.body) {
+      document.body.insertBefore(groupBoard, qrModal);
     }
+    applyGroupBoardLayout();
   } else {
     for (let i = 1; i <= TOTAL; i++) {
       if (tiles[i]) grid.appendChild(tiles[i]);
     }
   }
   document.body.insertBefore(chat, qrModal);
-  if (boardGroupModeActive) applyGroupBoardLayout();
+  pipListHost = null;
 }
 
 function mountPipContent(targetWin) {
@@ -504,8 +524,8 @@ function mountPipContent(targetWin) {
     '<span class="pip-col-no">번호</span><span class="pip-col-name">이름</span><span class="pip-col-hand"></span><span class="pip-col-msg">메시지</span>';
 
   const chat = document.getElementById("teacherChatForm");
-  const root = getPipContentRoot();
-  targetWin.document.body.append(listHeader, root, chat);
+  const host = buildPipListHost();
+  targetWin.document.body.append(listHeader, host, chat);
 }
 
 function openFloatingPopup() {
