@@ -29,7 +29,38 @@ export function defaultGradingState() {
     activeUnitId: null,
     activeClassId: null,
     settings: defaultSettings(),
+    trendAnalysisLogs: [],
   };
+}
+
+const MAX_TREND_LOGS = 300;
+
+function ensureTrendLogs(state) {
+  if (!Array.isArray(state.trendAnalysisLogs)) state.trendAnalysisLogs = [];
+  return state.trendAnalysisLogs;
+}
+
+/** AI 학습 분석 실행마다 기록 (최신순, 상한 300건) */
+export async function appendTrendAnalysisLog(userId, entry) {
+  const state = getGradingState(userId);
+  const logs = ensureTrendLogs(state);
+  const record = {
+    id: uid(),
+    createdAt: Date.now(),
+    ...entry,
+  };
+  logs.unshift(record);
+  if (logs.length > MAX_TREND_LOGS) state.trendAnalysisLogs = logs.slice(0, MAX_TREND_LOGS);
+  await saveGradingState(userId, state, { preserveSecrets: false });
+  return record;
+}
+
+export function getTrendAnalysisLogs(userId, opts = {}) {
+  const state = getGradingState(userId);
+  let logs = ensureTrendLogs(state).slice();
+  const { studentKey, limit = 50 } = opts;
+  if (studentKey) logs = logs.filter((l) => l.studentKey === studentKey);
+  return logs.slice(0, Math.min(limit, 100));
 }
 
 export function defaultSettings() {
@@ -188,6 +219,7 @@ export function getGradingState(userId) {
   if (!s.activeExamId) s.activeExamId = s.exams[0].id;
   if (!s.activeClassId && s.classes?.length) s.activeClassId = s.classes[0].id;
   ensureSettings(s);
+  ensureTrendLogs(s);
   return s;
 }
 
@@ -212,6 +244,11 @@ export async function saveGradingState(userId, state, opts = {}) {
   }
 
   state.settings = incoming;
+  if (prev?.trendAnalysisLogs) {
+    state.trendAnalysisLogs = prev.trendAnalysisLogs;
+  } else {
+    ensureTrendLogs(state);
+  }
   gradingData[userId] = state;
   await saveAllGradingData();
 }

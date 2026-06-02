@@ -33,6 +33,8 @@ import {
   sanitizeGradingForClient,
   getAiCredentials,
   updateUserApiKeys,
+  appendTrendAnalysisLog,
+  getTrendAnalysisLogs,
   uid,
 } from "./grading-storage.js";
 import { scanExamPaper, questionsToStored, analyzeStudentTrend } from "./grading-ai.js";
@@ -702,11 +704,29 @@ app.post("/api/grading/trend-analysis", requireAuth, async (req, res) => {
       provider: creds.provider,
       apiKey: creds.apiKey,
     });
-    res.json({ ok: true, analysis, trendData });
+    const subjectNames = trendData.subjects.map((s) => s.name).join(", ");
+    const log = await appendTrendAnalysisLog(userId, {
+      studentKey,
+      studentSeat: trendData.student?.seat ?? null,
+      studentName: trendData.student?.name ?? "",
+      aiProvider: creds.provider,
+      subjectSummary: subjectNames,
+      analysis,
+    });
+    res.json({ ok: true, analysis, trendData, log });
   } catch (err) {
     console.error("[성적 추이 AI]", err.message);
     res.status(500).json({ ok: false, error: err.message || "AI 분석 실패" });
   }
+});
+
+app.get("/api/grading/trend-analysis-logs", requireAuth, (req, res) => {
+  const userId = req.session.userId;
+  if (isAdminUserId(userId)) return res.status(403).json({ ok: false, error: "사용할 수 없습니다." });
+  const studentKey = req.query.studentKey ? String(req.query.studentKey) : undefined;
+  const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 30));
+  const logs = getTrendAnalysisLogs(userId, { studentKey, limit });
+  res.json({ ok: true, logs });
 });
 
 app.get("/api/grading/me", requireAuth, (req, res) => {

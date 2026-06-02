@@ -120,7 +120,8 @@ body.grading-app {
 
 .view-home,
 .view-exam,
-.view-grades {
+.view-grades,
+.view-trend {
   animation: meadowFadeIn 0.35s ease;
 }
 
@@ -155,6 +156,27 @@ body.grading-app {
   color: #9d5a6e !important;
   border: 2px solid rgba(240, 168, 188, 0.4) !important;
   border-radius: var(--meadow-radius-pill) !important;
+}
+
+.dash-hero {
+  background: linear-gradient(135deg, #fffef8, var(--meadow-sun), var(--meadow-pink-soft)) !important;
+  border: 2px solid var(--meadow-border) !important;
+}
+
+.dash-stat-card,
+.dash-panel,
+.dash-action-card,
+.trend-log-item {
+  border: 2px solid var(--meadow-border) !important;
+  border-radius: var(--meadow-radius) !important;
+}
+
+.dash-action-card:hover {
+  border-color: var(--meadow-green) !important;
+}
+
+.dash-stat-card.highlight {
+  background: var(--meadow-sun) !important;
 }
 
 .check-card,

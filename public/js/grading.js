@@ -689,32 +689,215 @@ function renderView(view) {
   }
 }
 
-function renderHome() {
-  const cards = CHECKLIST.map((c) => {
+function buildDashboardStats() {
+  const subjects = getExamSubjects();
+  let units = 0;
+  let questions = 0;
+  for (const s of subjects) {
+    for (const u of s.units || []) {
+      units += 1;
+      questions += (u.questions || []).length;
+    }
+  }
+  const students = getStudentsForGrades();
+  let submissions = 0;
+  for (const key of Object.keys(state.studentScores || {})) {
+    if (key.startsWith("_")) continue;
+    if (state.studentScores[key]?._submittedAt) submissions += 1;
+  }
+  const setupDone = CHECKLIST.filter((c) => c.badge === "done").length;
+  return {
+    subjects: subjects.length,
+    units,
+    questions,
+    students: students.length,
+    submissions,
+    pending: countPendingReviews(),
+    published: !!state.resultsPublished,
+    setupDone,
+    setupTotal: CHECKLIST.length,
+  };
+}
+
+function formatLogTime(ts) {
+  if (!ts) return "";
+  return new Date(ts).toLocaleString("ko-KR", {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function trendLogItemHtml(log, opts = {}) {
+  const compact = !!opts.compact;
+  const a = log.analysis || {};
+  const summary = String(a.trendSummary || "").slice(0, compact ? 120 : 500);
+  const name = log.studentName || log.studentKey?.split(":")[1] || "학생";
+  const seat = log.studentSeat ?? log.studentKey?.split(":")[0] ?? "";
+  return `
+    <article class="trend-log-item" data-log-id="${escapeHtml(log.id)}">
+      <header class="trend-log-head">
+        <span class="trend-log-student">${escapeHtml(seat)}번 ${escapeHtml(name)}</span>
+        <time class="trend-log-time">${formatLogTime(log.createdAt)}</time>
+      </header>
+      <p class="trend-log-meta">${escapeHtml(log.subjectSummary || "")}${log.aiProvider ? ` · ${escapeHtml(log.aiProvider)}` : ""}</p>
+      <p class="trend-log-summary">${escapeHtml(summary)}${summary.length < String(a.trendSummary || "").length ? "…" : ""}</p>
+      <button type="button" class="btn btn-ghost btn-sm trend-log-expand">${compact ? "보기" : "전체 보기"}</button>
+    </article>`;
+}
+
+async function fetchTrendAnalysisLogs(studentKey, limit = 30) {
+  const q = new URLSearchParams({ limit: String(limit) });
+  if (studentKey) q.set("studentKey", studentKey);
+  const res = await fetch(`/api/grading/trend-analysis-logs?${q}`, { credentials: "include" });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "기록을 불러오지 못했습니다.");
+  return data.logs || [];
+}
+
+function renderTrendLogList(logs, containerId = "trendLogList") {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  if (!logs.length) {
+    el.innerHTML = `<p class="trend-log-empty">아직 저장된 AI 학습 분석 기록이 없습니다. 「AI 학습 분석」을 실행하면 여기에 쌓입니다.</p>`;
+    return;
+  }
+  el.innerHTML = logs.map((log) => trendLogItemHtml(log, { compact: true })).join("");
+  el.querySelectorAll(".trend-log-expand").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const item = btn.closest(".trend-log-item");
+      const id = item?.dataset.logId;
+      const log = logs.find((l) => l.id === id);
+      if (!log) return;
+      if (currentView === "home") {
+        trendSelectedStudentKey = log.studentKey;
+        setView("trend");
+        return;
+      }
+      if (log.analysis) {
+        trendAnalysisCache[log.studentKey] = log.analysis;
+        renderTrendAnalysisPanel(log.analysis);
+        showToast("선택한 기록의 분석을 표시합니다.");
+      }
+    });
+  });
+}
+
+async function renderHome() {
+  updateChecklistBadges();
+  const stats = buildDashboardStats();
+  const teacherName = document.getElementById("profileName")?.textContent || "선생님";
+  const cls = activeClass();
+  const setupPct = stats.setupTotal ? Math.round((stats.setupDone / stats.setupTotal) * 100) : 0;
+
+  const setupSteps = CHECKLIST.map((c) => {
     const badgeClass = c.badge === "done" ? "done" : c.badge === "warn" ? "warn" : "pick";
-    const badgeLabel = c.badge === "done" ? "완료" : c.badge === "warn" ? "확인" : "선택";
     return `
-      <article class="check-card">
-        <span class="check-badge ${badgeClass}">${badgeLabel}</span>
-        <h3>${escapeHtml(c.title)}</h3>
-        <p>${escapeHtml(c.desc)}</p>
-        <button type="button" class="btn-goto" data-goto="${c.view}" data-id="${c.id}">위치 보기</button>
-      </article>
-    `;
+      <li class="dash-setup-item ${badgeClass}">
+        <span class="dash-setup-dot"></span>
+        <div>
+          <strong>${escapeHtml(c.title)}</strong>
+          <p>${escapeHtml(c.desc)}</p>
+        </div>
+        <button type="button" class="btn-dash-link" data-goto="${c.view}" data-id="${c.id}">이동</button>
+      </li>`;
   }).join("");
 
   mainEl.innerHTML = `
-    <div class="view-home">
-      <div class="hero">
-        <h1>선생님을 위한 채점도구</h1>
-        <p class="hero-sub">학생은 왼쪽 QR로 /exam 에 접속합니다. 과목을 추가하고 정답·잠금을 설정한 뒤 성적표에서 확인하세요.</p>
-        <span class="badge-space">교사 전용 데이터 공간</span>
+    <div class="view-home dash-home">
+      <header class="dash-hero">
+        <p class="dash-greeting">안녕하세요, <strong>${escapeHtml(teacherName)}</strong>님</p>
+        <h1>교실 도구함 · 채점도구</h1>
+        <p class="dash-mission">
+          시험지를 올리면 AI가 문항·정답을 잡아 주고, 학생은 QR로 태블릿 시험에 응시합니다.
+          제출 즉시 자동 채점되며, 서술형은 선생님이 확정합니다. 성적은 실시간으로 모이고,
+          추이 그래프와 AI 학습 분석으로 학생별 강·약점을 파악할 수 있습니다.
+        </p>
+        <div class="dash-hero-tags">
+          <span class="badge-space">${escapeHtml(cls?.name || "우리반")}</span>
+          <span class="dash-tag ${stats.published ? "is-on" : ""}">${stats.published ? "성적 공개 중" : "성적 비공개"}</span>
+          ${stats.pending > 0 ? `<span class="dash-tag warn">서술형 채점 대기 ${stats.pending}건</span>` : ""}
+        </div>
+      </header>
+
+      <section class="dash-stats" aria-label="현황 요약">
+        <article class="dash-stat-card">
+          <span class="dash-stat-icon">📚</span>
+          <div><strong>${stats.subjects}</strong><span>과목</span></div>
+        </article>
+        <article class="dash-stat-card">
+          <span class="dash-stat-icon">📑</span>
+          <div><strong>${stats.units}</strong><span>단원</span></div>
+        </article>
+        <article class="dash-stat-card">
+          <span class="dash-stat-icon">✏️</span>
+          <div><strong>${stats.questions}</strong><span>문항</span></div>
+        </article>
+        <article class="dash-stat-card">
+          <span class="dash-stat-icon">👥</span>
+          <div><strong>${stats.students}</strong><span>학생</span></div>
+        </article>
+        <article class="dash-stat-card">
+          <span class="dash-stat-icon">📤</span>
+          <div><strong>${stats.submissions}</strong><span>제출</span></div>
+        </article>
+        <article class="dash-stat-card highlight">
+          <span class="dash-stat-icon">⏳</span>
+          <div><strong>${stats.pending}</strong><span>채점 대기</span></div>
+        </article>
+      </section>
+
+      <section class="dash-actions" aria-label="빠른 이동">
+        <h2 class="dash-section-title">빠른 이동</h2>
+        <div class="dash-action-grid">
+          <button type="button" class="dash-action-card" data-view="exam">
+            <span class="dash-action-icon">📝</span>
+            <strong>시험·정답</strong>
+            <p>과목·단원·문항·AI 시험지 스캔</p>
+          </button>
+          <button type="button" class="dash-action-card" data-view="grades">
+            <span class="dash-action-icon">📊</span>
+            <strong>실시간 성적</strong>
+            <p>제출·점수·결과 공개·인쇄</p>
+          </button>
+          <button type="button" class="dash-action-card" data-view="trend">
+            <span class="dash-action-icon">📈</span>
+            <strong>성적 변화 추이</strong>
+            <p>그래프·AI 학습 분석 기록</p>
+          </button>
+          <button type="button" class="dash-action-card" data-action="qr">
+            <span class="dash-action-icon">📱</span>
+            <strong>학생 QR</strong>
+            <p>왼쪽 사이드바 QR·주소 복사</p>
+          </button>
+        </div>
+      </section>
+
+      <div class="dash-columns">
+        <section class="dash-panel" aria-label="시작 체크리스트">
+          <div class="dash-panel-head">
+            <h2 class="dash-section-title">시작 가이드</h2>
+            <span class="dash-progress-label">${setupPct}%</span>
+          </div>
+          <div class="dash-progress-bar"><span style="width:${setupPct}%"></span></div>
+          <ol class="dash-setup-list">${setupSteps}</ol>
+        </section>
+        <section class="dash-panel" aria-label="최근 AI 분석 기록">
+          <h2 class="dash-section-title">최근 AI 학습 분석</h2>
+          <div id="dashRecentLogs" class="trend-log-list compact"><p class="muted">불러오는 중…</p></div>
+        </section>
       </div>
-      <div class="checklist-grid">${cards}</div>
     </div>
   `;
 
-  mainEl.querySelectorAll(".btn-goto").forEach((btn) => {
+  mainEl.querySelectorAll(".dash-action-card[data-view]").forEach((btn) => {
+    btn.addEventListener("click", () => setView(btn.dataset.view));
+  });
+  mainEl.querySelector("[data-action='qr']")?.addEventListener("click", () => {
+    document.querySelector(".sb-qr-block")?.scrollIntoView({ behavior: "smooth" });
+  });
+  mainEl.querySelectorAll(".btn-dash-link").forEach((btn) => {
     btn.addEventListener("click", () => {
       if (btn.dataset.id === "qr") {
         document.querySelector(".sb-qr-block")?.scrollIntoView({ behavior: "smooth" });
@@ -723,6 +906,14 @@ function renderHome() {
       setView(btn.dataset.goto);
     });
   });
+
+  try {
+    const logs = await fetchTrendAnalysisLogs(null, 5);
+    renderTrendLogList(logs, "dashRecentLogs");
+  } catch (_) {
+    const el = document.getElementById("dashRecentLogs");
+    if (el) el.innerHTML = `<p class="trend-log-empty">기록을 불러오지 못했습니다.</p>`;
+  }
 }
 
 function renderExam() {
@@ -1541,11 +1732,6 @@ async function fetchTrendAnalysis(studentKey) {
   const panel = document.getElementById("trendAiPanel");
   if (!panel) return;
 
-  if (trendAnalysisCache[studentKey]) {
-    renderTrendAnalysisPanel(trendAnalysisCache[studentKey]);
-    return;
-  }
-
   if (!apiKeyMeta.canScan) {
     showToast("사이드바 하단에서 AI API 키를 먼저 저장해 주세요.", true);
     document.querySelector(".sb-api-footer")?.scrollIntoView({ behavior: "smooth" });
@@ -1567,7 +1753,9 @@ async function fetchTrendAnalysis(studentKey) {
     if (!res.ok) throw new Error(data.error || "분석 실패");
     trendAnalysisCache[studentKey] = data.analysis;
     renderTrendAnalysisPanel(data.analysis);
-    showToast("AI 학습 분석을 완료했습니다.");
+    const logs = await fetchTrendAnalysisLogs(studentKey, 20);
+    renderTrendLogList(logs, "trendLogList");
+    showToast("AI 학습 분석을 완료하고 기록에 저장했습니다.");
   } catch (err) {
     panel.classList.remove("is-loading");
     panel.innerHTML = `<h3>🤖 AI 학습 분석</h3><p class="error-inline">${escapeHtml(err.message)}</p>`;
@@ -1600,7 +1788,7 @@ function bindTrendSection(students) {
     select.value = trendSelectedStudentKey;
   }
 
-  select.onchange = () => {
+  select.onchange = async () => {
     trendSelectedStudentKey = select.value || null;
     renderTrendCharts(trendSelectedStudentKey);
     const panel = document.getElementById("trendAiPanel");
@@ -1609,6 +1797,10 @@ function bindTrendSection(students) {
     } else if (panel) {
       panel.classList.add("hidden");
     }
+    try {
+      const logs = await fetchTrendAnalysisLogs(trendSelectedStudentKey, 20);
+      renderTrendLogList(logs, "trendLogList");
+    } catch (_) {}
   };
 
   const analyzeBtn = document.getElementById("trendAiAnalyzeBtn");
@@ -1886,6 +2078,11 @@ function renderTrend() {
       </div>
       <div id="trendChartsGrid" class="trend-charts-grid"></div>
       <div id="trendAiPanel" class="trend-ai-panel hidden" aria-live="polite"></div>
+      <section class="trend-log-section" aria-label="AI 학습 분석 기록">
+        <h2 class="dash-section-title">📋 AI 학습 분석 기록</h2>
+        <p class="trend-section-desc">「AI 학습 분석」을 실행할 때마다 결과가 저장됩니다.</p>
+        <div id="trendLogList" class="trend-log-list"><p class="muted">불러오는 중…</p></div>
+      </section>
     </div>`;
 
   trendSelectedStudentKey = preservedTrendStudent;
@@ -1893,6 +2090,12 @@ function renderTrend() {
 
   bindGradesSubjectTabs();
   bindTrendSection(students);
+  fetchTrendAnalysisLogs(trendSelectedStudentKey, 20)
+    .then((logs) => renderTrendLogList(logs, "trendLogList"))
+    .catch(() => {
+      const el = document.getElementById("trendLogList");
+      if (el) el.innerHTML = `<p class="trend-log-empty">기록을 불러오지 못했습니다.</p>`;
+    });
 }
 
 let qrPanelOpen = false;
