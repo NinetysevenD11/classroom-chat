@@ -561,21 +561,34 @@ function gradeUnitAnswers(unit, answers) {
     const given = String(answers?.[q.num] ?? answers?.[key] ?? "").trim();
     detail[key] = { given, correct: false, points: pts };
 
-    if (q.type === "essay") {
-      pendingEssay += 1;
-      detail[key].pending = true;
-      continue;
-    }
-
     max += pts;
     const correctAns = String(q.answer || "").trim().toLowerCase();
     const givenNorm = given.toLowerCase();
+
+    if (q.type === "essay") {
+      if (!givenNorm) {
+        detail[key].skipped = true;
+        continue;
+      }
+      if (correctAns && givenNorm === correctAns) {
+        earned += pts;
+        detail[key].correct = true;
+      } else {
+        pendingEssay += 1;
+        detail[key].pending = true;
+      }
+      continue;
+    }
+
     let ok = false;
     if (q.type === "mc") {
-      ok = givenNorm === correctAns || givenNorm === String(Number(correctAns));
+      ok =
+        givenNorm.length > 0 &&
+        (givenNorm === correctAns || givenNorm === String(Number(correctAns)));
     } else {
       ok = givenNorm.length > 0 && givenNorm === correctAns;
     }
+    if (!givenNorm) detail[key].skipped = true;
     if (ok) {
       earned += pts;
       detail[key].correct = true;

@@ -903,7 +903,8 @@ function buildStudentResultHtml(studentKey, seat, name) {
       ? Object.entries(d.detail)
           .map(([num, info]) => {
             const mark = info.correct ? "✓" : info.pending ? "⋯" : "✗";
-            return `<tr><td>${num}번</td><td>${mark}</td><td>${escapeHtml(info.given || "—")}</td><td>${info.points}점</td></tr>`;
+            const givenText = info.skipped || !info.given ? "(미작성)" : info.given;
+            return `<tr><td>${num}번</td><td>${mark}</td><td>${escapeHtml(givenText)}</td><td>${info.points}점</td></tr>`;
           })
           .join("")
       : `<tr><td colspan="4">제출 내역 없음</td></tr>`;

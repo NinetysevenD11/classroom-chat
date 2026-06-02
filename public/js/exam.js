@@ -162,14 +162,22 @@ function renderAnswerForm(questions) {
   }
 }
 
-function validateAnswers(questions) {
-  for (const q of questions) {
-    const v = answers[q.num];
-    if (v === undefined || String(v).trim() === "") {
-      return q.num;
-    }
+/** 미작성 문항은 빈 문자열로 포함 (서버에서 오답 처리) */
+function collectAnswersForSubmit(questions) {
+  const out = { ...answers };
+  for (const q of questions || []) {
+    if (out[q.num] === undefined || out[q.num] === null) out[q.num] = "";
   }
-  return null;
+  return out;
+}
+
+function countEmptyAnswers(questions) {
+  let n = 0;
+  for (const q of questions || []) {
+    const v = answers[q.num];
+    if (v === undefined || String(v).trim() === "") n += 1;
+  }
+  return n;
 }
 
 document.getElementById("examBackBtn").addEventListener("click", () => {
@@ -203,21 +211,20 @@ document.getElementById("examJoinBtn").addEventListener("click", () => {
 
 examSubmitBtn.addEventListener("click", () => {
   if (!currentUnit || !unitDetail) return;
-  const missing = validateAnswers(unitDetail.questions || []);
-  if (missing) {
-    alert(`${missing}번 답안을 작성해 주세요.`);
-    const el = examAnswers.querySelector(`[data-q="${missing}"]`);
-    el?.scrollIntoView({ behavior: "smooth", block: "center" });
-    return;
-  }
+  const questions = unitDetail.questions || [];
+  const emptyCount = countEmptyAnswers(questions);
+  const payload = collectAnswersForSubmit(questions);
 
   examSubmitBtn.disabled = true;
-  socket.emit("exam:submit", { unitId: currentUnit.id, answers: { ...answers }, clientId }, (res) => {
+  socket.emit("exam:submit", { unitId: currentUnit.id, answers: payload, clientId }, (res) => {
     examSubmitBtn.disabled = false;
     if (res?.ok) {
-      const msg = res.pendingEssay
-        ? `제출 완료! 자동 채점: ${res.score} (서술형은 선생님이 채점합니다)`
-        : `제출 완료! 점수: ${res.score}`;
+      let msg = res.pendingEssay
+        ? `제출 완료! 자동 채점: ${res.score}점 (일부 서술형은 선생님이 채점합니다)`
+        : `제출 완료! 점수: ${res.score}점`;
+      if (emptyCount > 0) {
+        msg += `\n(미작성 ${emptyCount}문항은 오답 처리되었습니다)`;
+      }
       document.getElementById("submitModalText").textContent = msg;
       document.getElementById("submitModal").classList.remove("hidden");
     } else {
