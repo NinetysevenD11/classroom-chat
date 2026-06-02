@@ -329,8 +329,8 @@ body.grading-app {
 }
 
 /* 추이·AI */
-.grades-trend-section {
-  border-top-color: var(--meadow-border) !important;
+.view-trend .trend-head h1 {
+  color: var(--meadow-brown) !important;
 }
 
 .trend-section-title {

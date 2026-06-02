@@ -574,7 +574,7 @@ function renderSidebar() {
         state.activeClassId = cls.id;
         scheduleSave();
         renderSidebar();
-        if (currentView === "grades") renderView("grades");
+        if (currentView === "grades" || currentView === "trend") renderView(currentView);
       });
       li.querySelector('[data-action="del-class"]').addEventListener("click", (e) => {
         e.stopPropagation();
@@ -598,7 +598,7 @@ function selectSubject(sub) {
   gradesSubjectId = sub.id;
   scheduleSave();
   renderSidebar();
-  if (currentView === "grades") renderView("grades");
+  if (currentView === "grades" || currentView === "trend") renderView(currentView);
   else setView("exam");
 }
 
@@ -653,11 +653,17 @@ function updateChecklistBadges() {
   CHECKLIST[3].badge = unit?.questions?.some((q) => q.answer) ? "done" : "warn";
 }
 
+function refreshGradesOrTrendView() {
+  if (currentView === "grades") renderGrades();
+  else if (currentView === "trend") renderTrend();
+}
+
 function setView(view) {
   currentView = view;
-  if (view === "grades" && !gradesSubjectId && state.activeSubjectId) {
+  if ((view === "grades" || view === "trend") && !gradesSubjectId && state.activeSubjectId) {
     gradesSubjectId = state.activeSubjectId;
   }
+  if (view !== "trend" && view !== "grades") destroyTrendCharts();
   bindMainNav();
   renderView(view);
 }
@@ -674,6 +680,7 @@ function renderView(view) {
     if (view === "home") renderHome();
     else if (view === "exam") renderExam();
     else if (view === "grades") renderGrades();
+    else if (view === "trend") renderTrend();
   } catch (err) {
     console.error("[채점] 화면 렌더 오류", err);
     if (mainEl) {
@@ -1196,7 +1203,7 @@ async function saveManualGradeModal() {
   showToast(`${data.updated || Object.keys(marks).length}명 채점을 저장했습니다.`);
   closeManualGradeModal();
   updateMainNavBadge();
-  if (currentView === "grades") renderGrades();
+  refreshGradesOrTrendView();
 }
 
 async function postReview(studentKey, unitId, essayMarks, finalize) {
@@ -1292,7 +1299,7 @@ function bindStudentResultModal(studentKey) {
       try {
         await postReview(studentKey, unitId, marks, false);
         openStudentResult(studentKey, modal.dataset.seat, modal.dataset.studentName);
-        if (currentView === "grades") renderGrades();
+        refreshGradesOrTrendView();
         updateMainNavBadge();
         showToast("서술형 채점을 반영했습니다.");
       } catch (err) {
@@ -1307,7 +1314,7 @@ function bindStudentResultModal(studentKey) {
       try {
         await postReview(studentKey, unitId, null, true);
         openStudentResult(studentKey, modal.dataset.seat, modal.dataset.studentName);
-        if (currentView === "grades") renderGrades();
+        refreshGradesOrTrendView();
         updateMainNavBadge();
         showToast("채점을 확정했습니다.");
       } catch (err) {
@@ -1604,13 +1611,16 @@ function bindTrendSection(students) {
     }
   };
 
-  document.getElementById("trendAiAnalyzeBtn")?.addEventListener("click", () => {
-    if (!trendSelectedStudentKey) {
-      showToast("학생을 선택해 주세요.", true);
-      return;
-    }
-    fetchTrendAnalysis(trendSelectedStudentKey);
-  });
+  const analyzeBtn = document.getElementById("trendAiAnalyzeBtn");
+  if (analyzeBtn) {
+    analyzeBtn.onclick = () => {
+      if (!trendSelectedStudentKey) {
+        showToast("학생을 선택해 주세요.", true);
+        return;
+      }
+      fetchTrendAnalysis(trendSelectedStudentKey);
+    };
+  }
 
   renderTrendCharts(trendSelectedStudentKey);
   if (trendSelectedStudentKey && trendAnalysisCache[trendSelectedStudentKey]) {
@@ -1653,14 +1663,7 @@ function renderGrades() {
   else gradesSubjectId = preservedGradesSubject;
 
   const units = gradesSub ? getUnitsForSubject(gradesSub.id) : [];
-  const subjectTabs = examSubjects.length
-    ? examSubjects
-        .map(
-          (s) =>
-            `<button type="button" class="grades-subject-tab ${s.id === gradesSub?.id ? "is-active" : ""}" data-grades-subject="${escapeHtml(s.id)}">${escapeHtml(s.name)}</button>`
-        )
-        .join("")
-    : "";
+  const subjectTabs = renderGradesSubjectTabsHtml(examSubjects, gradesSub);
 
   const unitHeaders = units.map((u) => `<th class="col-unit">${escapeHtml(u.name)}</th>`).join("");
 
@@ -1737,34 +1740,12 @@ function renderGrades() {
           <tbody>${rows}</tbody>
         </table>
       </div>
-
-      <section class="grades-trend-section" aria-label="성적 변화 추이">
-        <h2 class="trend-section-title">📈 성적 변화 추이</h2>
-        <p class="trend-section-desc">${gradesSub ? `「${escapeHtml(gradesSub.name)}」` : "선택한 과목의"} 단원 점수 추이와 AI 학습 분석입니다.</p>
-        <div class="trend-toolbar">
-          <label>
-            학생
-            <select id="trendStudentSelect" aria-label="성적 추이 학생 선택"></select>
-          </label>
-          <button type="button" class="btn btn-ai" id="trendAiAnalyzeBtn">🤖 AI 학습 분석</button>
-        </div>
-        <div id="trendChartsGrid" class="trend-charts-grid"></div>
-        <div id="trendAiPanel" class="trend-ai-panel hidden" aria-live="polite"></div>
-      </section>
     </div>`;
 
   trendSelectedStudentKey = preservedTrendStudent;
   if (preservedGradesSubject) gradesSubjectId = preservedGradesSubject;
 
-  mainEl.querySelectorAll("[data-grades-subject]").forEach((tab) => {
-    tab.addEventListener("click", () => {
-      gradesSubjectId = tab.dataset.gradesSubject;
-      state.activeSubjectId = gradesSubjectId;
-      scheduleSave();
-      renderSidebar();
-      renderGrades();
-    });
-  });
+  bindGradesSubjectTabs();
 
   document.getElementById("togglePublish")?.addEventListener("click", async () => {
     state.resultsPublished = !state.resultsPublished;
@@ -1839,7 +1820,78 @@ function renderGrades() {
       });
     });
   });
+}
 
+function renderGradesSubjectTabsHtml(examSubjects, gradesSub) {
+  if (!examSubjects.length) return "";
+  return examSubjects
+    .map(
+      (s) =>
+        `<button type="button" class="grades-subject-tab ${s.id === gradesSub?.id ? "is-active" : ""}" data-grades-subject="${escapeHtml(s.id)}">${escapeHtml(s.name)}</button>`
+    )
+    .join("");
+}
+
+function bindGradesSubjectTabs() {
+  mainEl.querySelectorAll("[data-grades-subject]").forEach((tab) => {
+    tab.addEventListener("click", () => {
+      gradesSubjectId = tab.dataset.gradesSubject;
+      state.activeSubjectId = gradesSubjectId;
+      scheduleSave();
+      renderSidebar();
+      if (currentView === "trend") renderTrend();
+      else renderGrades();
+    });
+  });
+}
+
+function renderTrend() {
+  if (!state || !mainEl) return;
+  const preservedTrendStudent = trendSelectedStudentKey;
+  const preservedGradesSubject = gradesSubjectId;
+  destroyTrendCharts();
+
+  const cls = activeClass();
+  const students = getStudentsForGrades();
+  const examSubjects = getExamSubjects();
+  const gradesSub = getGradesSubject();
+  if (gradesSub) gradesSubjectId = gradesSub.id;
+  else gradesSubjectId = preservedGradesSubject;
+
+  const units = gradesSub ? getUnitsForSubject(gradesSub.id) : [];
+  const subjectTabs = renderGradesSubjectTabsHtml(examSubjects, gradesSub);
+
+  mainEl.innerHTML = `
+    <div class="view-trend">
+      <div class="trend-head">
+        <h1>📈 성적 변화 추이</h1>
+        <p class="trend-section-desc">${gradesSub ? `「${escapeHtml(gradesSub.name)}」` : "선택한 과목의"} 단원별 점수 그래프와 AI 학습 분석입니다.</p>
+      </div>
+      ${cls ? `<span class="class-badge">${escapeHtml(cls.name)}</span>` : '<span class="class-badge">우리반</span>'}
+      ${
+        examSubjects.length
+          ? `<div class="grades-subject-bar">
+          <span class="grades-subject-label">과목</span>
+          <div class="grades-subject-tabs">${subjectTabs}</div>
+          ${gradesSub ? `<span class="grades-subject-hint">${escapeHtml(gradesSub.name)} · ${units.length}개 단원</span>` : ""}
+        </div>`
+          : `<p class="grades-no-subject">시험 관리에서 과목을 먼저 추가해 주세요.</p>`
+      }
+      <div class="trend-toolbar">
+        <label>
+          학생
+          <select id="trendStudentSelect" aria-label="성적 추이 학생 선택"></select>
+        </label>
+        <button type="button" class="btn btn-ai" id="trendAiAnalyzeBtn">🤖 AI 학습 분석</button>
+      </div>
+      <div id="trendChartsGrid" class="trend-charts-grid"></div>
+      <div id="trendAiPanel" class="trend-ai-panel hidden" aria-live="polite"></div>
+    </div>`;
+
+  trendSelectedStudentKey = preservedTrendStudent;
+  if (preservedGradesSubject) gradesSubjectId = preservedGradesSubject;
+
+  bindGradesSubjectTabs();
   bindTrendSection(students);
 }
 
@@ -1973,6 +2025,7 @@ gradingSocket.on("grading:scoreUpdate", (p) => {
   }
   updateMainNavBadge();
   if (currentView === "grades") renderGrades();
+  else if (currentView === "trend") renderTrendCharts(trendSelectedStudentKey);
   const needsReview = p.submission && p.submission.finalized === false;
   if (needsReview) {
     const prov = p.provisionalScore;
@@ -1981,7 +2034,7 @@ gradingSocket.on("grading:scoreUpdate", (p) => {
   } else {
     showToast(`${p.name || "학생"} 답안 제출 (${p.score}점)`);
   }
-  if (currentView !== "grades") setView("grades");
+  if (currentView !== "grades" && currentView !== "trend") setView("grades");
 });
 
 loadData();
