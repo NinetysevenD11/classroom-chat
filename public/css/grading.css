@@ -189,6 +189,15 @@ body {
   margin: 0;
 }
 
+.sb-qr-panel {
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+
+.sb-qr-panel.is-collapsed {
+  display: none;
+}
+
 .sb-qr-preview {
   display: flex;
   flex-direction: column;
@@ -233,6 +242,19 @@ body {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+}
+
+.sb-qr-actions .btn {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 8px 8px;
+  font-size: 11px;
+}
+
+.sb-qr-actions #qrToggleBtn.is-open {
+  background: rgba(59, 130, 246, 0.25);
+  border: 1px solid rgba(147, 197, 253, 0.45);
+  color: #bfdbfe;
 }
 
 .sb-select {

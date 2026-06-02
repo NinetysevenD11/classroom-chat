@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/grading.css?v=9" />
+  <link rel="stylesheet" href="/css/grading.css?v=10" />
 </head>
 <body class="grading-app">
   <div class="grading-shell">
@@ -20,13 +20,16 @@
 
       <section class="sb-block sb-qr-block">
         <h2 class="sb-title">학생 접속 QR코드</h2>
-        <div class="sb-qr-preview">
-          <img id="qrImageInline" class="sb-qr-img" alt="학생 시험 접속 QR" width="160" height="160" hidden />
-          <p id="qrLoadStatus" class="sb-qr-status">QR 불러오는 중…</p>
+        <div id="qrPreviewPanel" class="sb-qr-panel is-collapsed" aria-hidden="true">
+          <div class="sb-qr-preview">
+            <img id="qrImageInline" class="sb-qr-img" alt="학생 시험 접속 QR" width="160" height="160" hidden />
+            <p id="qrLoadStatus" class="sb-qr-status">QR 불러오는 중…</p>
+          </div>
+          <p id="qrUrlInline" class="sb-qr-url" title=""></p>
         </div>
-        <p id="qrUrlInline" class="sb-qr-url" title=""></p>
         <div class="sb-qr-actions">
           <button type="button" id="qrCopyBtn" class="btn btn-blue">주소복사</button>
+          <button type="button" id="qrToggleBtn" class="btn btn-ghost" aria-expanded="false">QR열기</button>
           <button type="button" id="qrSaveBtn" class="btn btn-ghost">QR저장</button>
         </div>
       </section>
@@ -155,6 +158,6 @@
         "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
     }
   </script>
-  <script src="/js/grading.js?v=11"></script>
+  <script src="/js/grading.js?v=12"></script>
 </body>
 </html>

@@ -364,7 +364,7 @@ async function loadData() {
   renderSidebar();
   bindMainNav();
   renderView(currentView);
-  loadQrInline();
+  loadQrInline(); /* 주소·QR 미리 받아 두기 (화면은 접힌 상태) */
   loadApiKeyPanel();
 }
 
@@ -603,6 +603,9 @@ function updateChecklistBadges() {
 
 function setView(view) {
   currentView = view;
+  if (view === "grades" && !gradesSubjectId && state.activeSubjectId) {
+    gradesSubjectId = state.activeSubjectId;
+  }
   bindMainNav();
   renderView(view);
 }
@@ -1788,6 +1791,23 @@ function renderGrades() {
   bindTrendSection(students);
 }
 
+let qrPanelOpen = false;
+
+function setQrPanelOpen(open) {
+  qrPanelOpen = !!open;
+  const panel = document.getElementById("qrPreviewPanel");
+  const btn = document.getElementById("qrToggleBtn");
+  if (panel) {
+    panel.classList.toggle("is-collapsed", !qrPanelOpen);
+    panel.setAttribute("aria-hidden", qrPanelOpen ? "false" : "true");
+  }
+  if (btn) {
+    btn.textContent = qrPanelOpen ? "QR접기" : "QR열기";
+    btn.setAttribute("aria-expanded", qrPanelOpen ? "true" : "false");
+    btn.classList.toggle("is-open", qrPanelOpen);
+  }
+}
+
 async function loadQrInline() {
   const status = document.getElementById("qrLoadStatus");
   const img = document.getElementById("qrImageInline");
@@ -1798,20 +1818,32 @@ async function loadQrInline() {
     if (!res.ok) throw new Error(data.error || "QR 로드 실패");
     studentUrl = data.examUrl || "";
     qrDataUrl = data.dataUrl || "";
-    urlEl.textContent = studentUrl;
-    urlEl.title = studentUrl;
-    if (qrDataUrl) {
+    if (urlEl) {
+      urlEl.textContent = studentUrl;
+      urlEl.title = studentUrl;
+    }
+    if (qrDataUrl && img) {
       img.src = qrDataUrl;
       img.hidden = false;
-      status.classList.add("hidden");
-    } else {
+      status?.classList.add("hidden");
+    } else if (status) {
       status.textContent = "QR을 만들지 못했습니다.";
+      status.classList.remove("hidden");
     }
   } catch (err) {
-    status.textContent = err.message || "QR 불러오기 실패";
-    showToast(status.textContent, true);
+    if (status) {
+      status.textContent = err.message || "QR 불러오기 실패";
+      status.classList.remove("hidden");
+    }
+    showToast(status?.textContent || "QR 불러오기 실패", true);
   }
 }
+
+document.getElementById("qrToggleBtn")?.addEventListener("click", async () => {
+  const willOpen = !qrPanelOpen;
+  setQrPanelOpen(willOpen);
+  if (willOpen && !qrDataUrl) await loadQrInline();
+});
 
 document.getElementById("qrCopyBtn").addEventListener("click", async () => {
   if (!studentUrl) await loadQrInline();
