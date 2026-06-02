@@ -12,14 +12,24 @@ body {
   justify-content: center;
   padding: 24px 20px;
   -webkit-font-smoothing: antialiased;
-  background-color: #e8f5e4;
+  background-color: #9dc89a;
   background-image:
-    radial-gradient(ellipse 70% 55% at 85% 10%, rgba(255, 234, 168, 0.55) 0%, transparent 55%),
-    radial-gradient(ellipse 50% 45% at 12% 20%, rgba(200, 230, 180, 0.45) 0%, transparent 50%),
-    url("/images/login-bg-doodle-light.png");
-  background-size: cover, cover, cover;
-  background-position: center;
-  background-repeat: no-repeat;
+    radial-gradient(ellipse 70% 45% at 50% 100%, rgba(109, 184, 200, 0.4) 0%, transparent 55%),
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 11px,
+      rgba(255, 255, 255, 0.05) 11px,
+      rgba(255, 255, 255, 0.05) 12px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 11px,
+      rgba(0, 0, 0, 0.03) 11px,
+      rgba(0, 0, 0, 0.03) 12px
+    ),
+    linear-gradient(180deg, #b5dbb2 0%, #9dc89a 50%, #8ec48c 100%);
   background-attachment: fixed;
 }
 
@@ -29,9 +39,7 @@ body::before {
   inset: 0;
   pointer-events: none;
   z-index: 0;
-  background:
-    radial-gradient(ellipse 40% 35% at 45% 75%, rgba(255, 244, 214, 0.35) 0%, transparent 45%),
-    linear-gradient(165deg, rgba(240, 249, 236, 0.75) 0%, rgba(250, 246, 232, 0.82) 100%);
+  background: radial-gradient(ellipse 45% 35% at 12% 18%, rgba(255, 249, 230, 0.45) 0%, transparent 48%);
 }
 
 .login-wrap {
@@ -42,16 +50,12 @@ body::before {
 }
 
 .login-card {
-  background: rgba(255, 253, 248, 0.94);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: linear-gradient(180deg, #fff9ef 0%, #f0e0c0 100%);
   width: 100%;
-  border-radius: 28px;
+  border-radius: 14px;
   padding: 36px 32px 30px;
-  border: 3px solid rgba(122, 159, 114, 0.2);
-  box-shadow:
-    0 16px 48px rgba(90, 120, 70, 0.12),
-    0 6px 20px rgba(232, 149, 92, 0.1);
+  border: 4px solid #5c4033;
+  box-shadow: 6px 6px 0 #5c4033;
 }
 
 .login-card h1 {
@@ -74,31 +78,32 @@ body::before {
 .tabs {
   display: flex;
   margin-bottom: 22px;
-  border-radius: 14px;
-  overflow: hidden;
-  border: 2px solid #d4dce8;
-  background: #eef2f8;
+  border-radius: 10px;
+  border: 3px solid #5c4033;
+  background: #d4a574;
   padding: 4px;
   gap: 4px;
+  box-shadow: 3px 3px 0 #5c4033;
 }
 
 .tab {
   flex: 1;
   padding: 11px 8px;
-  border: none;
-  border-radius: 10px;
+  border: 2px solid transparent;
+  border-radius: 8px;
   background: transparent;
-  color: #6b7a96;
+  color: #4a3f35;
   font-size: 15px;
   font-family: "Jua", sans-serif;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
 }
 
 .tab.active {
-  background: linear-gradient(180deg, #fff 0%, #f5f8fc 100%);
-  color: #1a2744;
-  box-shadow: 0 2px 8px rgba(26, 39, 68, 0.12);
+  background: linear-gradient(180deg, #f9e076 0%, #f5d78e 100%);
+  border-color: #5c4033;
+  color: #4a3f35;
+  box-shadow: 2px 2px 0 #5c4033;
 }
 
 #authForm {
@@ -112,10 +117,10 @@ body::before {
   font-size: 17px;
   font-family: "Gaegu", cursive;
   font-weight: 700;
-  border: 2px solid #d4dce8;
-  border-radius: 14px;
-  background: #fff;
-  color: #1a2744;
+  border: 3px solid #5c4033;
+  border-radius: 10px;
+  background: #fff9ef;
+  color: #4a3f35;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
@@ -125,22 +130,22 @@ body::before {
 
 #authForm input:focus {
   outline: none;
-  border-color: #4a90d9;
-  box-shadow: 0 0 0 3px rgba(74, 144, 217, 0.2);
+  border-color: #7a9f72;
+  box-shadow: 3px 3px 0 #5c4033;
 }
 
 #submitBtn {
   padding: 15px;
   font-size: 17px;
   font-family: "Jua", sans-serif;
-  background: linear-gradient(180deg, #5dade2 0%, #3498db 100%);
-  color: #fff;
-  border: none;
-  border-radius: 14px;
+  background: linear-gradient(180deg, #a8d5ba 0%, #7a9f72 100%);
+  color: #3d4f38;
+  border: 3px solid #5c4033;
+  border-radius: 10px;
   cursor: pointer;
   margin-top: 4px;
-  box-shadow: 0 4px 0 #2471a3, 0 8px 20px rgba(52, 152, 219, 0.35);
-  transition: transform 0.15s, box-shadow 0.15s;
+  box-shadow: 4px 4px 0 #5c4033;
+  transition: transform 0.1s, box-shadow 0.1s;
 }
 
 #submitBtn:hover {
@@ -148,8 +153,8 @@ body::before {
 }
 
 #submitBtn:active {
-  transform: translateY(2px);
-  box-shadow: 0 2px 0 #2471a3, 0 4px 12px rgba(52, 152, 219, 0.3);
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 #5c4033;
 }
 
 #submitBtn:disabled {

@@ -9,11 +9,17 @@ body {
 }
 
 body {
-  background-color: var(--meadow-bg) !important;
+  background-color: #9dc89a !important;
   background-image:
-    radial-gradient(ellipse 70% 50% at 90% 5%, rgba(255, 234, 168, 0.5) 0%, transparent 55%),
-    radial-gradient(ellipse 55% 40% at 8% 15%, rgba(200, 230, 180, 0.4) 0%, transparent 50%),
-    linear-gradient(165deg, #f0f9ec 0%, #faf6e8 50%, #e5f0df 100%) !important;
+    radial-gradient(ellipse 70% 45% at 50% 100%, rgba(109, 184, 200, 0.35) 0%, transparent 55%),
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 11px,
+      rgba(255, 255, 255, 0.05) 11px,
+      rgba(255, 255, 255, 0.05) 12px
+    ),
+    linear-gradient(180deg, #b5dbb2 0%, #9dc89a 55%, #8ec48c 100%) !important;
   background-attachment: fixed;
 }
 
@@ -23,10 +29,10 @@ body {
 .exam-topbar,
 .submit-bar,
 .modal-box {
-  background: var(--meadow-surface) !important;
-  border: 2px solid var(--meadow-border) !important;
-  border-radius: var(--meadow-radius-xl) !important;
-  box-shadow: var(--meadow-shadow) !important;
+  background: linear-gradient(180deg, #fff9ef 0%, #f5ead8 100%) !important;
+  border: 3px solid #5c4033 !important;
+  border-radius: 12px !important;
+  box-shadow: 4px 4px 0 #5c4033 !important;
 }
 
 .join-card h1,

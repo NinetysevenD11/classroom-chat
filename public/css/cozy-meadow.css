@@ -1,45 +1,139 @@
 /**
- * 교실 도구함 — 숲속 햇살(Meadow) 공통 테마
- * 따뜻하고 부드러운 파스텔, 둥근 형태, 햇빛 번짐 느낌
+ * 교실 도구함 — Sprout Lands / 코지 픽셀 농장 테마
+ * 파스텔 잔디·목재 패널·두꺼운 테두리
  */
-@import url("https://fonts.googleapis.com/css2?family=Nunito:wght@500;600;700;800&family=Noto+Sans+KR:wght@500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Noto+Sans+KR:wght@500;600;700;800&display=swap");
 
 :root {
-  --meadow-font: "Nunito", "Noto Sans KR", "Apple SD Gothic Neo", sans-serif;
-  --meadow-bg: #e8f5e4;
-  --meadow-bg-warm: #faf6e8;
-  --meadow-surface: rgba(255, 253, 248, 0.94);
-  --meadow-surface-solid: #fffdf9;
-  --meadow-green: #7cb87a;
-  --meadow-green-deep: #5a9a58;
-  --meadow-moss: #8fad7a;
-  --meadow-sun: #fff4d6;
-  --meadow-sun-glow: #ffeab8;
-  --meadow-pink: #f0a8bc;
-  --meadow-pink-soft: #fdeef3;
-  --meadow-orange: #e8955c;
-  --meadow-orange-deep: #d47a42;
-  --meadow-orange-soft: #fff3e8;
-  --meadow-brown: #5c5348;
-  --meadow-text: #3d4f38;
-  --meadow-text-muted: #7a8f72;
-  --meadow-border: rgba(122, 159, 114, 0.28);
-  --meadow-shadow: 0 8px 28px rgba(90, 120, 70, 0.1);
-  --meadow-shadow-warm: 0 6px 20px rgba(232, 149, 92, 0.18);
-  --meadow-radius-xl: 24px;
-  --meadow-radius-lg: 18px;
-  --meadow-radius-md: 14px;
-  --meadow-radius-pill: 999px;
+  --sprout-font: "Fredoka", "Noto Sans KR", "Apple SD Gothic Neo", sans-serif;
+
+  /* 잔디·하늘·물 */
+  --sprout-grass: #9dc89a;
+  --sprout-grass-light: #b5dbb2;
+  --sprout-grass-deep: #7aad78;
+  --sprout-water: #9dd4e0;
+  --sprout-water-deep: #6bb8c8;
+  --sprout-sky: #d8eef5;
+
+  /* 목재·크림 */
+  --sprout-wood-light: #f0d4a8;
+  --sprout-wood: #d4a574;
+  --sprout-wood-mid: #c29470;
+  --sprout-wood-dark: #6b4f3a;
+  --sprout-wood-border: #5c4033;
+  --sprout-cream: #fff9ef;
+  --sprout-cream-deep: #fff3dc;
+
+  /* 포인트 */
+  --sprout-pink: #f4cfdf;
+  --sprout-pink-deep: #e8a8c0;
+  --sprout-lavender: #c9b8e8;
+  --sprout-yellow: #f9e076;
+  --sprout-honey: #f5d78e;
+  --sprout-leaf: #8bc484;
+
+  --sprout-text: #4a3f35;
+  --sprout-text-muted: #7d6f62;
+  --sprout-shadow: 4px 4px 0 var(--sprout-wood-border);
+  --sprout-shadow-soft: 3px 3px 0 rgba(92, 64, 51, 0.35);
+  --sprout-inset: inset 0 2px 0 rgba(255, 255, 255, 0.45);
+  --sprout-radius: 10px;
+  --sprout-radius-lg: 14px;
+  --sprout-radius-slot: 8px;
+
+  /* 하위 호환 (meadow 변수) */
+  --meadow-font: var(--sprout-font);
+  --meadow-bg: var(--sprout-grass-light);
+  --meadow-bg-warm: var(--sprout-cream-deep);
+  --meadow-surface: rgba(255, 249, 239, 0.96);
+  --meadow-surface-solid: var(--sprout-cream);
+  --meadow-green: var(--sprout-leaf);
+  --meadow-green-deep: var(--sprout-grass-deep);
+  --meadow-moss: var(--sprout-grass-deep);
+  --meadow-sun: var(--sprout-yellow);
+  --meadow-sun-glow: var(--sprout-honey);
+  --meadow-pink: var(--sprout-pink-deep);
+  --meadow-pink-soft: var(--sprout-pink);
+  --meadow-orange: var(--sprout-wood-mid);
+  --meadow-orange-deep: var(--sprout-wood-dark);
+  --meadow-orange-soft: var(--sprout-wood-light);
+  --meadow-brown: var(--sprout-wood-dark);
+  --meadow-text: var(--sprout-text);
+  --meadow-text-muted: var(--sprout-text-muted);
+  --meadow-border: rgba(92, 64, 51, 0.35);
+  --meadow-shadow: var(--sprout-shadow-soft);
+  --meadow-shadow-warm: var(--sprout-shadow);
+  --meadow-radius-xl: 16px;
+  --meadow-radius-lg: var(--sprout-radius-lg);
+  --meadow-radius-md: var(--sprout-radius);
+  --meadow-radius-pill: 10px;
 }
 
-/* 햇살 번짐 배경 */
+/* 잔디 타일 배경 */
+.sprout-grass-bg,
 .meadow-dappled-bg {
-  background-color: var(--meadow-bg);
+  background-color: var(--sprout-grass);
   background-image:
-    radial-gradient(ellipse 70% 55% at 88% 8%, rgba(255, 234, 168, 0.55) 0%, transparent 55%),
-    radial-gradient(ellipse 50% 45% at 12% 18%, rgba(200, 230, 180, 0.45) 0%, transparent 50%),
-    radial-gradient(ellipse 40% 35% at 45% 75%, rgba(255, 244, 214, 0.4) 0%, transparent 45%),
-    radial-gradient(circle at 25% 40%, rgba(245, 184, 200, 0.12) 0%, transparent 30%),
-    linear-gradient(165deg, #f0f9ec 0%, #faf6e8 42%, #e5f0df 100%);
+    radial-gradient(ellipse 80% 40% at 50% 100%, rgba(109, 184, 200, 0.45) 0%, transparent 55%),
+    radial-gradient(ellipse 50% 35% at 15% 20%, rgba(255, 249, 230, 0.5) 0%, transparent 50%),
+    radial-gradient(ellipse 40% 30% at 88% 12%, rgba(201, 184, 232, 0.25) 0%, transparent 45%),
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 11px,
+      rgba(255, 255, 255, 0.04) 11px,
+      rgba(255, 255, 255, 0.04) 12px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 11px,
+      rgba(0, 0, 0, 0.025) 11px,
+      rgba(0, 0, 0, 0.025) 12px
+    ),
+    linear-gradient(180deg, #b5dbb2 0%, #9dc89a 45%, #8ec48c 100%);
   background-attachment: fixed;
+}
+
+/* 목재 패널 */
+.sprout-wood-panel {
+  background: linear-gradient(180deg, var(--sprout-wood-light) 0%, var(--sprout-wood) 55%, var(--sprout-wood-mid) 100%);
+  border: 4px solid var(--sprout-wood-border);
+  border-radius: var(--sprout-radius-lg);
+  box-shadow: var(--sprout-shadow), var(--sprout-inset);
+  color: var(--sprout-text);
+}
+
+/* 크림 내용 패널 (목재 테두리) */
+.sprout-cream-panel {
+  background: var(--sprout-cream);
+  border: 4px solid var(--sprout-wood-border);
+  border-radius: var(--sprout-radius-lg);
+  box-shadow: var(--sprout-shadow-soft);
+  color: var(--sprout-text);
+}
+
+/* 인벤토리 슬롯 버튼 */
+.sprout-slot {
+  background: linear-gradient(180deg, #fff9ef 0%, #f5e6c8 100%);
+  border: 3px solid var(--sprout-wood-border);
+  border-radius: var(--sprout-radius-slot);
+  box-shadow: 3px 3px 0 var(--sprout-wood-border), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  color: var(--sprout-text);
+  font-family: var(--sprout-font);
+  font-weight: 700;
+  transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.15s ease;
+}
+
+.sprout-slot:hover {
+  background: linear-gradient(180deg, #fffef5 0%, var(--sprout-yellow) 100%);
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0 var(--sprout-wood-border), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.sprout-slot:active,
+.sprout-slot.is-active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 var(--sprout-wood-border), inset 0 2px 4px rgba(92, 64, 51, 0.15);
+  background: linear-gradient(180deg, var(--sprout-yellow) 0%, var(--sprout-honey) 100%);
 }
