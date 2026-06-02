@@ -1219,19 +1219,57 @@ function buildDashSubjectsHtml() {
   if (!subjects.length) {
     return `<p class="dash-empty-hint">왼쪽 「+ 새 시험(과목) 추가」로 과목을 등록하세요.</p>`;
   }
-  return `<ul class="dash-subject-list">
-    ${subjects
-      .map((s) => {
-        const units = s.units || [];
-        const openCount = units.filter((u) => u.locked === false).length;
-        const qCount = units.reduce((n, u) => n + (u.questions?.length || 0), 0);
-        return `<li>
-          <span class="dash-subject-name">${escapeHtml(s.name)}</span>
-          <span class="dash-subject-meta">${units.length}단원 · 문항 ${qCount} · 열림 ${openCount}</span>
-        </li>`;
-      })
-      .join("")}
-  </ul>`;
+  return subjects.map((s) => {
+    const units = s.units || [];
+    const qCount = units.reduce((n, u) => n + (u.questions?.length || 0), 0);
+    const openCount = units.filter((u) => !u.locked).length;
+    const unitRows = units.map((u) => {
+      const locked = u.locked !== false; // 기본 잠금
+      return `<li class="dash-unit-row" data-subject-id="${escapeHtml(s.id)}" data-unit-id="${escapeHtml(u.id)}">
+        <span class="dash-unit-dot ${locked ? "locked" : "open"}"></span>
+        <span class="dash-unit-name">${escapeHtml(u.name)}</span>
+        <span class="dash-unit-q">${(u.questions?.length || 0)}문항</span>
+        <div class="dash-unit-lock-btns">
+          <button type="button" class="dash-lock-btn ${locked ? "is-active" : ""}" data-dash-lock="1" title="잠금">🔒</button>
+          <button type="button" class="dash-lock-btn ${!locked ? "is-active" : ""}" data-dash-lock="0" title="학생 공개">📶</button>
+        </div>
+      </li>`;
+    }).join("");
+    return `<div class="dash-subject-block">
+      <div class="dash-subject-header">
+        <span class="dash-subject-name">📚 ${escapeHtml(s.name)}</span>
+        <span class="dash-subject-meta">${units.length}단원 · ${qCount}문항 · 열림 ${openCount}</span>
+      </div>
+      <ul class="dash-unit-list">${unitRows || `<li class="dash-unit-empty">단원 없음</li>`}</ul>
+    </div>`;
+  }).join("");
+}
+
+function bindDashSubjectsLock(scope) {
+  (scope || mainEl).querySelectorAll(".dash-unit-row").forEach((row) => {
+    const subjectId = row.dataset.subjectId;
+    const unitId = row.dataset.unitId;
+    const exam = activeExam();
+    const sub = exam?.subjects?.find((s) => s.id === subjectId);
+    const unit = sub?.units?.find((u) => u.id === unitId);
+    if (!unit) return;
+
+    row.querySelectorAll("[data-dash-lock]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const toLock = btn.dataset.dashLock === "1";
+        unit.locked = toLock;
+        // UI 갱신
+        row.querySelectorAll("[data-dash-lock]").forEach((b) => {
+          b.classList.toggle("is-active", b.dataset.dashLock === (toLock ? "1" : "0"));
+        });
+        const dot = row.querySelector(".dash-unit-dot");
+        if (dot) { dot.className = "dash-unit-dot " + (toLock ? "locked" : "open"); }
+        scheduleSave();
+        renderLockList(); // 사이드바 잠금 목록도 동기화
+        showToast(toLock ? `「${unit.name}」 잠금 — 학생 화면에서 숨깁니다.` : `「${unit.name}」 열림 — 학생이 응시할 수 있습니다.`);
+      });
+    });
+  });
 }
 
 function buildDashRecentSubmitHtml() {
@@ -1395,6 +1433,7 @@ async function renderHome() {
   }
 
   bindDashQuickNav(mainEl);
+  bindDashSubjectsLock(mainEl);
   mainEl.querySelector(".dash-panel-recent [data-action='qr']")?.addEventListener("click", () => navigateToStudentQr());
   mainEl.querySelectorAll(".btn-dash-link[data-view]").forEach((btn) => {
     btn.addEventListener("click", () => setView(btn.dataset.view));
