@@ -35,7 +35,7 @@ import {
   updateUserApiKeys,
   uid,
 } from "./grading-storage.js";
-import { scanExamPaper, questionsToStored } from "./grading-ai.js";
+import { scanExamPaper, questionsToStored, analyzeStudentTrend } from "./grading-ai.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -600,6 +600,110 @@ app.post("/api/grading/review-question", requireAuth, async (req, res) => {
     res.json({ ok: true, updated, questionNum: qKey, unitId });
   } catch (err) {
     res.status(500).json({ ok: false, error: "저장에 실패했습니다." });
+  }
+});
+
+function numericScoreFromRecord(rec, unitId) {
+  if (!rec) return null;
+  const v = rec[unitId];
+  const sub = rec._detail?.[unitId];
+  if (v === "채점중" || v === "대기") {
+    if (sub?.provisionalScore !== null && sub?.provisionalScore !== undefined) {
+      return Number(sub.provisionalScore);
+    }
+    return null;
+  }
+  if (v === undefined || v === null || v === "—") return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
+function buildStudentTrendPayload(grading, studentKey) {
+  const colon = studentKey.indexOf(":");
+  const seat = Number(studentKey.slice(0, colon));
+  const name = studentKey.slice(colon + 1);
+  const rec = grading.studentScores?.[studentKey];
+  const subjectMap = {};
+
+  for (const exam of grading.exams || []) {
+    for (const sub of exam.subjects || []) {
+      if (sub.active === false) continue;
+      if (!subjectMap[sub.name]) subjectMap[sub.name] = { name: sub.name, units: [] };
+      for (const u of sub.units || []) {
+        const score = numericScoreFromRecord(rec, u.id);
+        const submission = rec?._detail?.[u.id];
+        if (score === null && !submission) continue;
+
+        const wrongItems = [];
+        if (submission?.detail) {
+          for (const q of u.questions || []) {
+            const d = submission.detail[String(q.num)];
+            if (!d || d.skipped) continue;
+            if (!d.correct && !d.pending) {
+              wrongItems.push({
+                num: q.num,
+                type: q.type || "mc",
+                given: String(d.given || "").slice(0, 200),
+                points: Number(q.points) || 1,
+              });
+            } else if (d.pending) {
+              wrongItems.push({
+                num: q.num,
+                type: q.type || "essay",
+                given: String(d.given || "").slice(0, 200),
+                pending: true,
+              });
+            }
+          }
+        }
+
+        subjectMap[sub.name].units.push({
+          unit: u.name,
+          score: score ?? null,
+          wrongItems,
+        });
+      }
+    }
+  }
+
+  return {
+    student: { seat, name },
+    subjects: Object.values(subjectMap).filter((s) => s.units.length > 0),
+  };
+}
+
+app.post("/api/grading/trend-analysis", requireAuth, async (req, res) => {
+  const userId = req.session.userId;
+  if (isAdminUserId(userId)) return res.status(403).json({ ok: false, error: "사용할 수 없습니다." });
+
+  const { studentKey } = req.body || {};
+  if (!studentKey) return res.status(400).json({ ok: false, error: "학생을 선택해 주세요." });
+
+  const grading = getGradingState(userId);
+  if (!grading.studentScores?.[studentKey]) {
+    return res.status(404).json({ ok: false, error: "이 학생의 성적 기록이 없습니다." });
+  }
+
+  const trendData = buildStudentTrendPayload(grading, studentKey);
+  if (!trendData.subjects.length) {
+    return res.status(400).json({ ok: false, error: "그래프·분석에 쓸 점수 데이터가 없습니다. 시험 제출 후 다시 시도하세요." });
+  }
+
+  const creds = getAiCredentials(userId);
+  if (!creds.geminiKey && !creds.openaiKey) {
+    return res.status(400).json({ ok: false, error: "AI API 키를 사이드바 하단에 저장해 주세요." });
+  }
+
+  try {
+    const analysis = await analyzeStudentTrend(trendData, {
+      geminiKey: creds.geminiKey,
+      openaiKey: creds.openaiKey,
+      provider: creds.provider,
+    });
+    res.json({ ok: true, analysis, trendData });
+  } catch (err) {
+    console.error("[성적 추이 AI]", err.message);
+    res.status(500).json({ ok: false, error: err.message || "AI 분석 실패" });
   }
 });
 

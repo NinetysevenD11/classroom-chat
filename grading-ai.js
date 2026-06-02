@@ -341,3 +341,140 @@ export function questionsToStored(aiList, uidFn) {
     choices: q.type === "mc" ? q.choices || 5 : undefined,
   }));
 }
+
+const TREND_ANALYSIS_PROMPT = `당신은 초등·중등 학습 코치입니다. 학생의 과목별 시험 점수 추이와 오답 정보를 바탕으로 분석합니다.
+
+반드시 아래 JSON만 출력(마크다운 없음):
+{
+  "trendSummary": "성적 변화에 대한 2~4문장 요약",
+  "strengths": ["강점 1", "강점 2"],
+  "weaknesses": ["약점 1", "약점 2"],
+  "recommendations": ["보완·학습 제안 1", "보완·학습 제안 2", "보완·학습 제안 3"]
+}
+
+규칙:
+- 한국어, 교사가 학부모·학생에게 전달하기 쉬운 톤
+- 데이터에 없는 과목·단원은 언급하지 않음
+- 점수가 1개뿐이면 '추이 판단은 어렵다'고 하고 현재 수준 위주로 분석
+- recommendations는 구체적 행동(복습 단원, 연습 유형 등)`;
+
+async function callGeminiText(apiKey, model, userText) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      contents: [{ role: "user", parts: [{ text: TREND_ANALYSIS_PROMPT }, { text: userText }] }],
+      generationConfig: { temperature: 0.35, maxOutputTokens: 2048 },
+    }),
+  });
+  const json = await res.json();
+  if (!res.ok) {
+    const msg = json?.error?.message || res.statusText;
+    const err = new Error(`Gemini (${model}): ${msg}`);
+    err.retryable = isRetryableModelError(msg);
+    throw err;
+  }
+  return json.candidates?.[0]?.content?.parts?.map((p) => p.text).join("") || "";
+}
+
+async function callOpenAIText(apiKey, model, userText) {
+  const res = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model,
+      temperature: 0.35,
+      max_tokens: 2048,
+      messages: [
+        { role: "system", content: TREND_ANALYSIS_PROMPT },
+        { role: "user", content: userText },
+      ],
+    }),
+  });
+  const json = await res.json();
+  if (!res.ok) {
+    const msg = json?.error?.message || res.statusText;
+    const err = new Error(`OpenAI (${model}): ${msg}`);
+    err.retryable = isRetryableModelError(msg);
+    throw err;
+  }
+  return json.choices?.[0]?.message?.content || "";
+}
+
+function normalizeTrendAnalysis(obj) {
+  const o = obj && typeof obj === "object" ? obj : {};
+  const arr = (v) => (Array.isArray(v) ? v.map((x) => String(x).trim()).filter(Boolean) : []);
+  return {
+    trendSummary: String(o.trendSummary || "").trim() || "분석 결과를 생성하지 못했습니다.",
+    strengths: arr(o.strengths),
+    weaknesses: arr(o.weaknesses),
+    recommendations: arr(o.recommendations),
+  };
+}
+
+async function analyzeWithGeminiText(data, apiKey) {
+  const key = String(apiKey || "").trim();
+  if (!key) throw new Error("Gemini API 키가 없습니다.");
+  const userText = JSON.stringify(data, null, 2);
+  const available = await fetchAvailableGeminiModels(key);
+  const models = orderModels(geminiModelList(), available);
+  const errors = [];
+  for (const model of models) {
+    try {
+      const text = await callGeminiText(key, model, userText);
+      return normalizeTrendAnalysis(parseJsonFromText(text));
+    } catch (err) {
+      errors.push(err.message);
+      if (!err.retryable && !isRetryableModelError(err.message)) break;
+    }
+  }
+  throw new Error(errors[0] || "Gemini 분석 실패");
+}
+
+async function analyzeWithOpenAIText(data, apiKey) {
+  const key = String(apiKey || "").trim();
+  if (!key) throw new Error("OpenAI API 키가 없습니다.");
+  const userText = JSON.stringify(data, null, 2);
+  const models = openaiModelList();
+  const errors = [];
+  for (const model of models) {
+    try {
+      const text = await callOpenAIText(key, model, userText);
+      return normalizeTrendAnalysis(parseJsonFromText(text));
+    } catch (err) {
+      errors.push(err.message);
+      if (!err.retryable && !isRetryableModelError(err.message)) break;
+    }
+  }
+  throw new Error(errors[0] || "OpenAI 분석 실패");
+}
+
+/** @param {object} trendData 학생·과목별 점수·오답 요약 */
+export async function analyzeStudentTrend(trendData, creds = {}) {
+  const provider = creds.provider || "auto";
+  const geminiKey = creds.geminiKey?.trim() || null;
+  const openaiKey = creds.openaiKey?.trim() || null;
+
+  if (provider === "gemini") {
+    if (!geminiKey) throw new Error("Gemini API 키를 사이드바 하단에 저장해 주세요.");
+    return analyzeWithGeminiText(trendData, geminiKey);
+  }
+  if (provider === "openai") {
+    if (!openaiKey) throw new Error("OpenAI API 키를 사이드바 하단에 저장해 주세요.");
+    return analyzeWithOpenAIText(trendData, openaiKey);
+  }
+  if (geminiKey) {
+    try {
+      return await analyzeWithGeminiText(trendData, geminiKey);
+    } catch (err) {
+      if (openaiKey) return analyzeWithOpenAIText(trendData, openaiKey);
+      throw err;
+    }
+  }
+  if (openaiKey) return analyzeWithOpenAIText(trendData, openaiKey);
+  throw new Error("AI API 키가 없습니다. 사이드바 하단에서 키를 저장해 주세요.");
+}

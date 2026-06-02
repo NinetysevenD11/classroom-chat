@@ -1284,6 +1284,251 @@ document.getElementById("studentResultPrint")?.addEventListener("click", () => {
   printStudentReport(modal.dataset.studentKey, modal.dataset.seat, modal.dataset.studentName);
 });
 
+const TREND_CHART_COLORS = ["#2563eb", "#16a34a", "#dc2626", "#7c3aed", "#ea580c", "#0891b2"];
+let trendSelectedStudentKey = null;
+let trendCharts = [];
+const trendAnalysisCache = {};
+
+function getNumericScore(studentKey, unitId) {
+  const rec = state.studentScores?.[studentKey];
+  if (!rec) return null;
+  const v = rec[unitId];
+  const sub = rec._detail?.[unitId];
+  if (v === "채점중" || v === "대기") {
+    if (sub?.provisionalScore !== null && sub?.provisionalScore !== undefined) {
+      const n = Number(sub.provisionalScore);
+      return Number.isFinite(n) ? n : null;
+    }
+    return null;
+  }
+  if (v === undefined || v === null || v === "—") return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
+function buildTrendSeriesBySubject(studentKey) {
+  const bySubject = {};
+  for (const exam of state?.exams || []) {
+    for (const sub of exam.subjects || []) {
+      if (sub.active === false) continue;
+      const subName = sub.name;
+      if (!bySubject[subName]) bySubject[subName] = [];
+      for (const u of sub.units || []) {
+        const score = getNumericScore(studentKey, u.id);
+        if (score !== null) {
+          bySubject[subName].push({ label: u.name, score, unitId: u.id });
+        }
+      }
+    }
+  }
+  return bySubject;
+}
+
+function destroyTrendCharts() {
+  for (const c of trendCharts) {
+    try {
+      c.destroy();
+    } catch (_) {}
+  }
+  trendCharts = [];
+}
+
+function renderTrendCharts(studentKey) {
+  destroyTrendCharts();
+  const grid = document.getElementById("trendChartsGrid");
+  if (!grid) return;
+
+  if (!studentKey) {
+    grid.innerHTML = `<p class="trend-empty">학생을 선택해 주세요.</p>`;
+    return;
+  }
+
+  const series = buildTrendSeriesBySubject(studentKey);
+  const subjects = Object.keys(series);
+  if (!subjects.length) {
+    grid.innerHTML = `<p class="trend-empty">표시할 점수가 없습니다. 학생이 시험을 제출하면 그래프가 나타납니다.</p>`;
+    return;
+  }
+
+  if (!window.Chart) {
+    grid.innerHTML = `<p class="trend-empty">차트를 불러오지 못했습니다. 페이지를 새로고침해 주세요.</p>`;
+    return;
+  }
+
+  grid.innerHTML = subjects
+    .map(
+      (sub, i) => `
+    <div class="trend-chart-card">
+      <h3>${escapeHtml(sub)}</h3>
+      <div class="trend-chart-wrap"><canvas id="trendChart_${i}" aria-label="${escapeHtml(sub)} 성적 추이"></canvas></div>
+    </div>`
+    )
+    .join("");
+
+  subjects.forEach((sub, i) => {
+    const points = series[sub];
+    const canvas = document.getElementById(`trendChart_${i}`);
+    if (!canvas) return;
+    const color = TREND_CHART_COLORS[i % TREND_CHART_COLORS.length];
+    const chart = new Chart(canvas, {
+      type: "line",
+      data: {
+        labels: points.map((p) => p.label),
+        datasets: [
+          {
+            label: "점수",
+            data: points.map((p) => p.score),
+            borderColor: color,
+            backgroundColor: color + "33",
+            borderWidth: 2,
+            tension: 0.3,
+            fill: true,
+            pointRadius: 5,
+            pointHoverRadius: 7,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            min: 0,
+            max: 100,
+            ticks: { stepSize: 20 },
+            title: { display: true, text: "점수" },
+          },
+          x: {
+            ticks: { maxRotation: 45, minRotation: 0, autoSkip: true },
+          },
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => ` ${ctx.parsed.y}점`,
+            },
+          },
+        },
+      },
+    });
+    trendCharts.push(chart);
+  });
+}
+
+function renderTrendAnalysisPanel(analysis) {
+  const panel = document.getElementById("trendAiPanel");
+  if (!panel) return;
+  panel.classList.remove("hidden", "is-loading");
+
+  const listHtml = (items) =>
+    items?.length ? `<ul>${items.map((x) => `<li>${escapeHtml(x)}</li>`).join("")}</ul>` : "<p class=\"muted\">—</p>";
+
+  panel.innerHTML = `
+    <h3>🤖 AI 학습 분석</h3>
+    <div class="trend-ai-summary">${escapeHtml(analysis.trendSummary || "")}</div>
+    <div class="trend-ai-block strengths">
+      <h4>💪 강한 부분</h4>
+      ${listHtml(analysis.strengths)}
+    </div>
+    <div class="trend-ai-block weaknesses">
+      <h4>📌 약한 부분</h4>
+      ${listHtml(analysis.weaknesses)}
+    </div>
+    <div class="trend-ai-block recommendations">
+      <h4>✅ 보완·학습 제안</h4>
+      ${listHtml(analysis.recommendations)}
+    </div>`;
+}
+
+async function fetchTrendAnalysis(studentKey) {
+  const panel = document.getElementById("trendAiPanel");
+  if (!panel) return;
+
+  if (trendAnalysisCache[studentKey]) {
+    renderTrendAnalysisPanel(trendAnalysisCache[studentKey]);
+    return;
+  }
+
+  if (!apiKeyMeta.canScan) {
+    showToast("사이드바 하단에서 AI API 키를 먼저 저장해 주세요.", true);
+    document.querySelector(".sb-api-footer")?.scrollIntoView({ behavior: "smooth" });
+    return;
+  }
+
+  panel.classList.remove("hidden");
+  panel.classList.add("is-loading");
+  panel.innerHTML = `<h3>🤖 AI 학습 분석</h3><p class="muted">분석 중… (10~30초)</p>`;
+
+  try {
+    const res = await fetch("/api/grading/trend-analysis", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ studentKey }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "분석 실패");
+    trendAnalysisCache[studentKey] = data.analysis;
+    renderTrendAnalysisPanel(data.analysis);
+    showToast("AI 학습 분석을 완료했습니다.");
+  } catch (err) {
+    panel.classList.remove("is-loading");
+    panel.innerHTML = `<h3>🤖 AI 학습 분석</h3><p class="error-inline">${escapeHtml(err.message)}</p>`;
+    showToast(err.message || "AI 분석 실패", true);
+  }
+}
+
+function bindTrendSection(students) {
+  const select = document.getElementById("trendStudentSelect");
+  if (!select) return;
+
+  const options = students.length
+    ? students
+        .map((st) => {
+          const key = `${st.seat}:${st.name}`;
+          return `<option value="${escapeHtml(key)}">${st.seat}번 ${escapeHtml(st.name)}</option>`;
+        })
+        .join("")
+    : `<option value="">학생 없음</option>`;
+
+  select.innerHTML = options;
+
+  if (!trendSelectedStudentKey && students[0]) {
+    trendSelectedStudentKey = `${students[0].seat}:${students[0].name}`;
+  }
+  if (trendSelectedStudentKey && [...select.options].some((o) => o.value === trendSelectedStudentKey)) {
+    select.value = trendSelectedStudentKey;
+  } else if (students[0]) {
+    trendSelectedStudentKey = `${students[0].seat}:${students[0].name}`;
+    select.value = trendSelectedStudentKey;
+  }
+
+  select.onchange = () => {
+    trendSelectedStudentKey = select.value || null;
+    renderTrendCharts(trendSelectedStudentKey);
+    const panel = document.getElementById("trendAiPanel");
+    if (panel && trendSelectedStudentKey && trendAnalysisCache[trendSelectedStudentKey]) {
+      renderTrendAnalysisPanel(trendAnalysisCache[trendSelectedStudentKey]);
+    } else if (panel) {
+      panel.classList.add("hidden");
+    }
+  };
+
+  document.getElementById("trendAiAnalyzeBtn")?.addEventListener("click", () => {
+    if (!trendSelectedStudentKey) {
+      showToast("학생을 선택해 주세요.", true);
+      return;
+    }
+    fetchTrendAnalysis(trendSelectedStudentKey);
+  });
+
+  renderTrendCharts(trendSelectedStudentKey);
+  if (trendSelectedStudentKey && trendAnalysisCache[trendSelectedStudentKey]) {
+    renderTrendAnalysisPanel(trendAnalysisCache[trendSelectedStudentKey]);
+  }
+}
+
 function updateMainNavBadge() {
   const pending = countPendingReviews();
   document.querySelectorAll(".sb-nav-btn[data-view='grades']").forEach((btn) => {
@@ -1308,6 +1553,8 @@ function bindMainNav() {
 
 function renderGrades() {
   if (!state || !mainEl) return;
+  const preservedTrendStudent = trendSelectedStudentKey;
+  destroyTrendCharts();
   const cls = activeClass();
   const students = getStudentsForGrades();
   const units = getAllUnits();
@@ -1373,7 +1620,23 @@ function renderGrades() {
           <tbody>${rows}</tbody>
         </table>
       </div>
+
+      <section class="grades-trend-section" aria-label="성적 변화 추이">
+        <h2 class="trend-section-title">📈 성적 변화 추이</h2>
+        <p class="trend-section-desc">과목별 단원 시험 점수를 꺾은선 그래프로 확인하고, AI가 성적 변화·강약점·보완 방안을 분석합니다.</p>
+        <div class="trend-toolbar">
+          <label>
+            학생
+            <select id="trendStudentSelect" aria-label="성적 추이 학생 선택"></select>
+          </label>
+          <button type="button" class="btn btn-ai" id="trendAiAnalyzeBtn">🤖 AI 학습 분석</button>
+        </div>
+        <div id="trendChartsGrid" class="trend-charts-grid"></div>
+        <div id="trendAiPanel" class="trend-ai-panel hidden" aria-live="polite"></div>
+      </section>
     </div>`;
+
+  trendSelectedStudentKey = preservedTrendStudent;
 
   document.getElementById("togglePublish")?.addEventListener("click", async () => {
     state.resultsPublished = !state.resultsPublished;
@@ -1428,6 +1691,7 @@ function renderGrades() {
     btn.addEventListener("click", () => {
       confirmDialog("초기화", "이 학생의 제출·점수를 모두 초기화할까요?", async () => {
         delete state.studentScores[btn.dataset.reset];
+        delete trendAnalysisCache[btn.dataset.reset];
         await saveNow();
         renderGrades();
         showToast("초기화했습니다.");
@@ -1439,12 +1703,15 @@ function renderGrades() {
     btn.addEventListener("click", () => {
       confirmDialog("삭제", "이 학생의 성적 기록을 삭제할까요?", async () => {
         delete state.studentScores[btn.dataset.del];
+        delete trendAnalysisCache[btn.dataset.del];
         await saveNow();
         renderGrades();
         showToast("삭제했습니다.");
       });
     });
   });
+
+  bindTrendSection(students);
 }
 
 async function loadQrInline() {
@@ -1533,6 +1800,7 @@ gradingSocket.on("connect", () => {
 });
 gradingSocket.on("grading:scoreUpdate", (p) => {
   if (!state || !p?.studentKey) return;
+  delete trendAnalysisCache[p.studentKey];
   if (!state.studentScores[p.studentKey]) state.studentScores[p.studentKey] = {};
   const rec = state.studentScores[p.studentKey];
   rec[p.unitId] = p.score;
