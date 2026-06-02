@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/grading.css?v=3" />
+  <link rel="stylesheet" href="/css/grading.css?v=4" />
 </head>
 <body class="grading-app">
   <div class="grading-shell">
@@ -47,9 +47,37 @@
         <button type="button" id="addClassBtn" class="btn btn-wide btn-muted">+ 반 추가</button>
       </section>
 
-      <section class="sb-block sb-block-grow">
+      <section class="sb-block">
         <h2 class="sb-title">🔒 학생화면 과목 잠금</h2>
         <ul id="lockList" class="sb-list lock-list"></ul>
+      </section>
+
+      <section class="sb-block sb-api-footer">
+        <h2 class="sb-title">🔑 내 AI API 키</h2>
+        <p class="sb-hint">로그인한 계정에만 저장됩니다. <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" class="sb-link">Gemini 키 발급</a></p>
+        <label class="sb-api-label">
+          <span>Gemini API 키 (권장)</span>
+          <input type="password" id="geminiKeyInput" class="sb-api-input" placeholder="AIza..." autocomplete="off" spellcheck="false" />
+        </label>
+        <p id="geminiKeyStatus" class="sb-key-status"></p>
+        <label class="sb-api-label">
+          <span>OpenAI API 키 (선택)</span>
+          <input type="password" id="openaiKeyInput" class="sb-api-input" placeholder="sk-..." autocomplete="off" spellcheck="false" />
+        </label>
+        <p id="openaiKeyStatus" class="sb-key-status"></p>
+        <label class="sb-api-label">
+          <span>우선 사용</span>
+          <select id="aiProviderSelect" class="sb-select">
+            <option value="gemini">Gemini (PDF·이미지)</option>
+            <option value="openai">OpenAI (이미지)</option>
+            <option value="auto">자동</option>
+          </select>
+        </label>
+        <div class="sb-api-actions">
+          <button type="button" id="saveApiKeysBtn" class="btn btn-blue btn-wide">API 키 저장</button>
+          <button type="button" id="clearApiKeysBtn" class="btn btn-ghost btn-wide">내 키 삭제</button>
+        </div>
+        <p id="apiKeyHint" class="sb-key-hint"></p>
       </section>
     </aside>
 
@@ -87,6 +115,6 @@
         "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
     }
   </script>
-  <script src="/js/grading.js?v=3"></script>
+  <script src="/js/grading.js?v=4"></script>
 </body>
 </html>

@@ -63,6 +63,9 @@ function normalizeState(raw) {
   }
   if (!Array.isArray(s.classes)) s.classes = [];
   if (!s.studentScores || typeof s.studentScores !== "object") s.studentScores = {};
+  if (!s.settings || typeof s.settings !== "object") {
+    s.settings = { aiProvider: "gemini", hasGemini: false, hasOpenai: false };
+  }
   for (const exam of s.exams) {
     if (!Array.isArray(exam.subjects)) exam.subjects = [];
     for (const sub of exam.subjects) {
@@ -153,6 +156,11 @@ async function fileToScanPayload(file) {
 }
 
 async function runAiScan(unit) {
+  if (!apiKeyMeta.canScan) {
+    showToast("사이드바 하단에서 AI API 키를 먼저 저장해 주세요.", true);
+    document.querySelector(".sb-api-footer")?.scrollIntoView({ behavior: "smooth" });
+    return;
+  }
   const files = (unit.images || []).map((dataUrl, i) => ({ dataUrl, name: `page-${i + 1}` }));
   if (!files.length) {
     showToast("먼저 시험지 이미지 또는 PDF를 올려 주세요.", true);
@@ -318,6 +326,96 @@ async function loadData() {
   renderSidebar();
   renderView(currentView);
   loadQrInline();
+  loadApiKeyPanel();
+}
+
+let apiKeyMeta = { canScan: false, envGemini: false, envOpenai: false };
+
+async function loadApiKeyPanel() {
+  try {
+    const res = await fetch("/api/grading/api-key", { credentials: "include" });
+    const data = await res.json();
+    if (!res.ok) return;
+    apiKeyMeta = data;
+    const s = data.settings || {};
+    const providerEl = document.getElementById("aiProviderSelect");
+    if (providerEl && s.aiProvider) providerEl.value = s.aiProvider;
+    updateApiKeyStatusUI(s);
+    const hint = document.getElementById("apiKeyHint");
+    if (hint) {
+      if (data.canScan) {
+        hint.textContent = s.hasGemini
+          ? "저장된 Gemini 키로 시험지 AI 분석이 가능합니다."
+          : s.hasOpenai
+            ? "저장된 OpenAI 키로 분석합니다."
+            : "서버 기본 키로 분석합니다.";
+      } else {
+        hint.textContent = "키를 저장해야 시험지 AI 정답 생성을 사용할 수 있습니다.";
+      }
+    }
+  } catch (_) {}
+}
+
+function updateApiKeyStatusUI(s) {
+  const g = document.getElementById("geminiKeyStatus");
+  const o = document.getElementById("openaiKeyStatus");
+  if (g) {
+    g.textContent = s.hasGemini ? `저장됨: ${s.geminiHint}` : "미등록";
+    g.classList.toggle("is-on", !!s.hasGemini);
+  }
+  if (o) {
+    o.textContent = s.hasOpenai ? `저장됨: ${s.openaiHint}` : "미등록";
+    o.classList.toggle("is-on", !!s.hasOpenai);
+  }
+}
+
+async function saveApiKeys() {
+  const gemini = document.getElementById("geminiKeyInput")?.value?.trim() || "";
+  const openai = document.getElementById("openaiKeyInput")?.value?.trim() || "";
+  const aiProvider = document.getElementById("aiProviderSelect")?.value || "gemini";
+  if (!gemini && !openai) {
+    showToast("Gemini 또는 OpenAI 키를 입력하세요.", true);
+    return;
+  }
+  const res = await fetch("/api/grading/api-key", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ geminiApiKey: gemini, openaiApiKey: openai, aiProvider }),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    showToast(data.error || "저장 실패", true);
+    return;
+  }
+  document.getElementById("geminiKeyInput").value = "";
+  document.getElementById("openaiKeyInput").value = "";
+  if (state) state.settings = data.settings;
+  apiKeyMeta.canScan = data.canScan;
+  updateApiKeyStatusUI(data.settings);
+  loadApiKeyPanel();
+  showToast("API 키가 저장되었습니다.");
+}
+
+function clearApiKeys() {
+  confirmDialog("API 키 삭제", "저장된 내 Gemini·OpenAI 키를 모두 삭제할까요?", async () => {
+    const res = await fetch("/api/grading/api-key", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ clearGemini: true, clearOpenai: true }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      showToast(data.error || "삭제 실패", true);
+      return;
+    }
+    if (state) state.settings = data.settings;
+    apiKeyMeta.canScan = data.canScan;
+    updateApiKeyStatusUI(data.settings);
+    loadApiKeyPanel();
+    showToast("내 API 키를 삭제했습니다.");
+  });
 }
 
 function renderSidebar() {
@@ -598,7 +696,7 @@ function renderExam() {
             <span class="paper-status">${(unit.images || []).length}장</span>
           </div>
         </div>
-        <p class="paper-hint">시험지를 올린 뒤 「AI 정답 자동 생성」을 누르세요. Render에 <code>GEMINI_API_KEY</code>가 필요합니다.</p>
+        <p class="paper-hint">시험지를 올리면 AI가 정답을 채웁니다. 키는 왼쪽 하단 「내 AI API 키」에 저장하세요.</p>
         <div class="paper-thumbs" id="paperThumbs">${thumbs || '<span class="muted">이미지 없음</span>'}</div>
       </section>
       <section class="answers-section">
@@ -913,6 +1011,8 @@ document.getElementById("qrSaveBtn").addEventListener("click", async () => {
 });
 
 document.getElementById("addSubjectBtn").addEventListener("click", addSubjectFlow);
+document.getElementById("saveApiKeysBtn")?.addEventListener("click", saveApiKeys);
+document.getElementById("clearApiKeysBtn")?.addEventListener("click", clearApiKeys);
 
 document.getElementById("addClassBtn").addEventListener("click", () => {
   openDialog({

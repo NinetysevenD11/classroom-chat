@@ -30,6 +30,9 @@ import {
   initGradingStorage,
   getGradingState,
   saveGradingState,
+  sanitizeGradingForClient,
+  getAiCredentials,
+  updateUserApiKeys,
   uid,
 } from "./grading-storage.js";
 import { scanExamPaper, questionsToStored } from "./grading-ai.js";
@@ -442,7 +445,41 @@ function studentBaseUrl(req) {
 app.get("/api/grading", requireAuth, (req, res) => {
   const userId = req.session.userId;
   if (isAdminUserId(userId)) return res.status(403).json({ error: "관리자는 사용할 수 없습니다." });
-  res.json(getGradingState(userId));
+  res.json(sanitizeGradingForClient(getGradingState(userId)));
+});
+
+app.get("/api/grading/api-key", requireAuth, (req, res) => {
+  const userId = req.session.userId;
+  if (isAdminUserId(userId)) return res.status(403).json({ ok: false, error: "사용할 수 없습니다." });
+  const state = getGradingState(userId);
+  const settings = sanitizeGradingForClient(state).settings;
+  const creds = getAiCredentials(userId);
+  res.json({
+    ok: true,
+    settings,
+    canScan: !!(creds.geminiKey || creds.openaiKey),
+    envGemini: !!process.env.GEMINI_API_KEY?.trim(),
+    envOpenai: !!process.env.OPENAI_API_KEY?.trim(),
+  });
+});
+
+app.put("/api/grading/api-key", requireAuth, async (req, res) => {
+  const userId = req.session.userId;
+  if (isAdminUserId(userId)) return res.status(403).json({ ok: false, error: "사용할 수 없습니다." });
+  try {
+    const { geminiApiKey, openaiApiKey, aiProvider, clearGemini, clearOpenai } = req.body || {};
+    const settings = await updateUserApiKeys(userId, {
+      geminiApiKey,
+      openaiApiKey,
+      aiProvider,
+      clearGemini: !!clearGemini,
+      clearOpenai: !!clearOpenai,
+    });
+    const creds = getAiCredentials(userId);
+    res.json({ ok: true, settings, canScan: !!(creds.geminiKey || creds.openaiKey) });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
 });
 
 app.put("/api/grading", requireAuth, async (req, res) => {
@@ -563,7 +600,12 @@ app.post("/api/grading/scan", requireAuth, async (req, res) => {
     const found = findUnitInGrading(state, unitId);
     if (!found) return res.status(404).json({ ok: false, error: "단원을 찾을 수 없습니다." });
 
-    const aiQuestions = await scanExamPaper(files);
+    const creds = getAiCredentials(userId);
+    const aiQuestions = await scanExamPaper(files, {
+      geminiKey: creds.geminiKey,
+      openaiKey: creds.openaiKey,
+      provider: creds.provider,
+    });
     const stored = questionsToStored(aiQuestions, uid);
     found.unit.questions = stored;
 

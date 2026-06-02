@@ -1,6 +1,6 @@
 /**
  * 시험지 이미지/PDF → 문항·정답 JSON (Gemini 또는 OpenAI Vision)
- * Render 환경 변수: GEMINI_API_KEY 또는 OPENAI_API_KEY
+ * 키 우선순위: 교사 개인 키 → 서버 환경 변수
  */
 
 const SCAN_PROMPT = `당신은 초등·중등 시험지 분석 전문가입니다.
@@ -54,9 +54,9 @@ function dataUrlParts(dataUrl) {
   return { mimeType: m[1], data: m[2] };
 }
 
-async function scanWithGemini(files) {
-  const key = process.env.GEMINI_API_KEY?.trim();
-  if (!key) throw new Error("GEMINI_API_KEY가 설정되지 않았습니다. Render 환경 변수에 추가해 주세요.");
+async function scanWithGemini(files, apiKey) {
+  const key = String(apiKey || "").trim();
+  if (!key) throw new Error("Gemini API 키가 없습니다. 왼쪽 하단에서 본인 키를 입력하세요.");
 
   const parts = [{ text: SCAN_PROMPT }];
   for (const f of files) {
@@ -89,16 +89,16 @@ async function scanWithGemini(files) {
   return normalizeQuestions(parsed.questions);
 }
 
-async function scanWithOpenAI(files) {
-  const key = process.env.OPENAI_API_KEY?.trim();
-  if (!key) throw new Error("OPENAI_API_KEY가 설정되지 않았습니다.");
+async function scanWithOpenAI(files, apiKey) {
+  const key = String(apiKey || "").trim();
+  if (!key) throw new Error("OpenAI API 키가 없습니다.");
 
   const imageParts = [];
   for (const f of files) {
     const parsed = dataUrlParts(f.dataUrl);
     if (!parsed) continue;
     if (parsed.mimeType === "application/pdf") {
-      throw new Error("OpenAI 모드에서는 PDF 대신 이미지(JPG/PNG)를 사용하거나 GEMINI_API_KEY를 설정하세요.");
+      throw new Error("PDF는 Gemini 키를 사용하세요. (OpenAI는 이미지만 지원)");
     }
     if (!parsed.mimeType.startsWith("image/")) continue;
     imageParts.push({
@@ -131,19 +131,41 @@ async function scanWithOpenAI(files) {
   return normalizeQuestions(parsed.questions);
 }
 
-/** @param {{ dataUrl: string, name?: string }[]} files */
-export async function scanExamPaper(files) {
+/**
+ * @param {{ dataUrl: string, name?: string }[]} files
+ * @param {{ geminiKey?: string|null, openaiKey?: string|null, provider?: string }} creds
+ */
+export async function scanExamPaper(files, creds = {}) {
   const list = (files || []).filter((f) => f?.dataUrl && f.dataUrl.length < 12_000_000);
   if (!list.length) throw new Error("업로드된 파일이 없습니다.");
 
-  if (process.env.GEMINI_API_KEY?.trim()) {
-    return scanWithGemini(list);
+  const provider = creds.provider || "gemini";
+  const geminiKey = creds.geminiKey?.trim() || null;
+  const openaiKey = creds.openaiKey?.trim() || null;
+
+  const tryGemini = provider === "gemini" || provider === "auto";
+  const tryOpenai = provider === "openai" || provider === "auto";
+
+  if (tryGemini && geminiKey) {
+    try {
+      return await scanWithGemini(list, geminiKey);
+    } catch (err) {
+      if (provider !== "auto" || !openaiKey) throw err;
+    }
   }
-  if (process.env.OPENAI_API_KEY?.trim()) {
-    return scanWithOpenAI(list);
+
+  if (tryOpenai && openaiKey) {
+    return scanWithOpenAI(list, openaiKey);
   }
+
+  if (tryGemini && !geminiKey && provider === "gemini") {
+    throw new Error(
+      "Gemini API 키가 없습니다. 사이드바 하단 「내 AI API 키」에 Google AI Studio 키를 입력해 주세요."
+    );
+  }
+
   throw new Error(
-    "AI API 키가 없습니다. Render에 GEMINI_API_KEY(권장) 또는 OPENAI_API_KEY를 설정해 주세요."
+    "AI API 키가 없습니다. 사이드바 하단에서 Gemini(권장) 또는 OpenAI 키를 저장해 주세요."
   );
 }
 
