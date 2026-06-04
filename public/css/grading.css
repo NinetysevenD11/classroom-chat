@@ -1814,6 +1814,49 @@ body {
   background: #f5f3ff;
 }
 
+.unit-tab-label {
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.unit-tab-del {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1;
+  color: #94a3b8;
+  background: rgba(0, 0, 0, 0.04);
+  flex-shrink: 0;
+}
+
+.unit-tab-del:hover {
+  color: #fff;
+  background: #dc2626;
+}
+
+.dash-unit-del {
+  width: 32px;
+  height: 32px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.dash-unit-del:hover {
+  background: #fee2e2;
+  border-color: #fca5a5;
+}
+
 .paper-section,
 .answers-section {
   background: #fff;

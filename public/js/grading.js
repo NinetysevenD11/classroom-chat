@@ -636,6 +636,44 @@ function activeClass() {
   return state?.classes?.find((c) => c.id === state.activeClassId) || null;
 }
 
+function purgeStudentScoresForUnit(unitId) {
+  for (const key of Object.keys(state.studentScores || {})) {
+    if (key.startsWith("_")) continue;
+    const rec = state.studentScores[key];
+    if (!rec || typeof rec !== "object") continue;
+    delete rec[unitId];
+    if (rec._detail && typeof rec._detail === "object") delete rec._detail[unitId];
+  }
+}
+
+function purgeStudentScoresForSubject(subject) {
+  for (const u of subject?.units || []) purgeStudentScoresForUnit(u.id);
+}
+
+function deleteUnitFlow(sub, unitId) {
+  if (!sub) return;
+  const unit = sub.units?.find((u) => u.id === unitId);
+  if (!unit) return;
+  const lastUnit = (sub.units || []).length <= 1;
+  confirmDialog(
+    "단원(시험) 삭제",
+    `「${unit.name}」 단원의 시험지·정답·학생 제출·채점 기록을 모두 삭제할까요?` +
+      (lastUnit ? "\n\n이 과목의 마지막 단원입니다." : ""),
+    async () => {
+      sub.units = (sub.units || []).filter((u) => u.id !== unitId);
+      purgeStudentScoresForUnit(unitId);
+      if (state.activeUnitId === unitId) {
+        state.activeUnitId = sub.units[0]?.id || null;
+      }
+      await saveNow();
+      renderSidebar();
+      renderLockList();
+      renderView(currentView);
+      showToast(`「${unit.name}」 단원을 삭제했습니다.`);
+    }
+  );
+}
+
 /** 서술형 수동채점 모달 세션 */
 let manualGradeSession = null;
 
@@ -942,16 +980,22 @@ function renderSidebar() {
       });
       li.querySelector('[data-action="del-sub"]').addEventListener("click", (e) => {
         e.stopPropagation();
-        confirmDialog("과목 삭제", `"${sub.name}" 과목과 단원·정답을 모두 삭제할까요?`, async () => {
-          exam.subjects = exam.subjects.filter((s) => s.id !== sub.id);
-          if (state.activeSubjectId === sub.id) {
-            state.activeSubjectId = exam.subjects[0]?.id || null;
-            state.activeUnitId = exam.subjects[0]?.units?.[0]?.id || null;
+        confirmDialog(
+          "과목 삭제",
+          `「${sub.name}」 과목과 모든 단원·정답·학생 제출·채점 기록을 삭제할까요?`,
+          async () => {
+            purgeStudentScoresForSubject(sub);
+            exam.subjects = exam.subjects.filter((s) => s.id !== sub.id);
+            if (state.activeSubjectId === sub.id) {
+              state.activeSubjectId = exam.subjects[0]?.id || null;
+              state.activeUnitId = exam.subjects[0]?.units?.[0]?.id || null;
+            }
+            await saveNow();
+            renderSidebar();
+            renderView(currentView);
+            showToast(`「${sub.name}」 과목을 삭제했습니다.`);
           }
-          await saveNow();
-          renderSidebar();
-          renderView(currentView);
-        });
+        );
       });
       subjectList.appendChild(li);
     }
@@ -1232,6 +1276,7 @@ function buildDashSubjectsHtml() {
         <div class="dash-unit-lock-btns">
           <button type="button" class="dash-lock-btn ${locked ? "is-active" : ""}" data-dash-lock="1" title="잠금">🔒</button>
           <button type="button" class="dash-lock-btn ${!locked ? "is-active" : ""}" data-dash-lock="0" title="학생 공개">📶</button>
+          <button type="button" class="dash-unit-del" data-dash-del-unit title="단원 삭제" aria-label="단원 삭제">🗑</button>
         </div>
       </li>`;
     }).join("");
@@ -1254,8 +1299,14 @@ function bindDashSubjectsLock(scope) {
     const unit = sub?.units?.find((u) => u.id === unitId);
     if (!unit) return;
 
+    row.querySelector("[data-dash-del-unit]")?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      deleteUnitFlow(sub, unitId);
+    });
+
     row.querySelectorAll("[data-dash-lock]").forEach((btn) => {
-      btn.addEventListener("click", () => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
         const toLock = btn.dataset.dashLock === "1";
         unit.locked = toLock;
         // UI 갱신
@@ -1472,7 +1523,10 @@ function renderExam() {
   const tabs = (sub.units || [])
     .map(
       (u) =>
-        `<button type="button" class="unit-tab ${u.id === unit.id ? "is-active" : ""}" data-unit="${u.id}">${escapeHtml(u.name)}</button>`
+        `<button type="button" class="unit-tab ${u.id === unit.id ? "is-active" : ""}" data-unit="${u.id}">
+          <span class="unit-tab-label">${escapeHtml(u.name)}</span>
+          <span class="unit-tab-del" data-del-unit="${u.id}" title="이 단원(시험) 삭제" aria-label="단원 삭제">✕</span>
+        </button>`
     )
     .join("");
 
@@ -1573,7 +1627,12 @@ function renderExam() {
   });
 
   mainEl.querySelectorAll(".unit-tab[data-unit]").forEach((tab) => {
-    tab.addEventListener("click", () => {
+    tab.addEventListener("click", (e) => {
+      if (e.target.closest("[data-del-unit]")) {
+        e.stopPropagation();
+        deleteUnitFlow(sub, tab.dataset.unit);
+        return;
+      }
       state.activeUnitId = tab.dataset.unit;
       scheduleSave();
       renderExam();

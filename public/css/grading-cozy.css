@@ -145,10 +145,20 @@ body.grading-app {
 .paper-card,
 .g-dialog-box,
 .toast {
-  background: var(--acnh-card) !important;
-  border: 1px solid var(--acnh-border) !important;
+  z-index: 1200 !important;
+  bottom: max(28px, calc(28px + env(safe-area-inset-bottom, 0px))) !important;
+  background: #2d4a3e !important;
+  color: #fff !important;
+  border: 2px solid rgba(255, 255, 255, 0.2) !important;
   border-radius: var(--acnh-radius-lg) !important;
-  box-shadow: var(--acnh-shadow-sm) !important;
+  box-shadow: 0 8px 28px rgba(45, 74, 62, 0.35) !important;
+  font-weight: 700 !important;
+}
+
+.toast.is-error {
+  background: #b84a4a !important;
+  color: #fff !important;
+  border-color: rgba(255, 255, 255, 0.25) !important;
 }
 
 .dash-hero {
