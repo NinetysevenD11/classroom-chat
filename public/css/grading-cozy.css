@@ -19,6 +19,23 @@ body.grading-app {
   padding: 20px 24px 48px !important;
 }
 
+.grading-main:has(.dash-home) {
+  background-color: #f9f7f1 !important;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='128' height='128'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.14'/%3E%3C/svg%3E"),
+    repeating-linear-gradient(
+      0deg,
+      transparent 0,
+      transparent 39px,
+      rgba(72, 58, 42, 0.018) 39px,
+      rgba(72, 58, 42, 0.018) 40px
+    ),
+    radial-gradient(ellipse 130% 85% at 8% -5%, rgba(255, 255, 255, 0.7), transparent 55%),
+    radial-gradient(ellipse 90% 65% at 95% 105%, rgba(110, 90, 60, 0.05), transparent 50%),
+    linear-gradient(168deg, #fcfaf6 0%, #f3efe6 42%, #f9f7f1 100%) !important;
+  background-size: 160px 160px, auto, auto, auto, auto !important;
+}
+
 /* ── 사이드바 ── */
 .grading-sidebar {
   background: var(--acnh-card) !important;
