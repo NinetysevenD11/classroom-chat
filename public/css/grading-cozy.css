@@ -5,24 +5,17 @@
 body.grading-app {
   font-family: var(--acnh-font);
   color: var(--acnh-text);
-  background-color: var(--acnh-sage) !important;
-  background-image:
-    linear-gradient(135deg, transparent 75%, rgba(255, 255, 255, 0.12) 75%),
-    linear-gradient(225deg, transparent 75%, rgba(0, 0, 0, 0.04) 75%),
-    linear-gradient(45deg, transparent 75%, rgba(255, 255, 255, 0.08) 75%),
-    linear-gradient(315deg, var(--acnh-sage-pattern) 25%, transparent 25%),
-    linear-gradient(135deg, var(--acnh-sage) 25%, transparent 25%) !important;
-  background-size: 24px 24px !important;
-  background-attachment: fixed;
+  background: #f8fafc !important;
+  background-image: none !important;
 }
 
 .grading-app,
-.grading-main,
 .grading-shell {
-  background: transparent !important;
+  background: #f8fafc !important;
 }
 
 .grading-main {
+  background: #f8fafc !important;
   padding: 20px 24px 48px !important;
 }
 
@@ -143,8 +136,18 @@ body.grading-app {
 .grades-table-wrap,
 .exam-panel,
 .paper-card,
-.g-dialog-box,
+.g-dialog-box {
+  background: #fff !important;
+  color: #1e293b !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: var(--acnh-radius-lg) !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06) !important;
+}
+
 .toast {
+  position: fixed !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
   z-index: 1200 !important;
   bottom: max(28px, calc(28px + env(safe-area-inset-bottom, 0px))) !important;
   background: #2d4a3e !important;
@@ -191,8 +194,9 @@ body.grading-app {
 }
 
 .view-trend .trend-charts-grid {
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr)) !important;
+  grid-template-columns: 1fr !important;
   width: 100%;
+  min-width: 0;
 }
 
 .view-trend .trend-chart-card,
@@ -320,4 +324,45 @@ body.grading-app {
 
 body.manual-grade-open {
   overflow: hidden;
+}
+
+/* 홈 대시보드 — 칠판 녹색(#2d4a3e) 금지, grading.css 밝은 톤 유지 */
+.view-home .dash-stat-card,
+.view-home .dash-quick-btn,
+.view-home .dash-panel {
+  position: static !important;
+  z-index: auto !important;
+  bottom: auto !important;
+  background: #fff !important;
+  color: #1e293b !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06) !important;
+}
+
+.view-home .dash-stat-card strong {
+  color: #0f172a !important;
+}
+
+.view-home .dash-stat-card span {
+  color: #64748b !important;
+}
+
+.view-home .dash-stat-card.highlight {
+  background: #fff7ed !important;
+  border-color: #fdba74 !important;
+}
+
+.view-home .dash-quick-btn em {
+  color: #0f172a !important;
+}
+
+.view-home .dash-log-placeholder {
+  background: #f8fafc !important;
+  color: #64748b !important;
+}
+
+.view-home .dash-unit-row,
+.view-home .dash-submit-list li {
+  background: #f8fafc !important;
+  color: #1e293b !important;
 }

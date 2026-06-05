@@ -2198,6 +2198,35 @@ document.getElementById("studentResultPrint")?.addEventListener("click", () => {
 const TREND_CHART_COLORS = ["#e8955c", "#7cb87a", "#f0a8bc", "#8fad7a", "#c9a87c", "#5a9a58"];
 let trendSelectedStudentKey = null;
 let trendCharts = [];
+let trendChartResizeObs = null;
+
+function resizeTrendCharts() {
+  for (const c of trendCharts) {
+    try {
+      c.resize();
+    } catch (_) {}
+  }
+}
+
+function teardownTrendChartResize() {
+  if (trendChartResizeObs) {
+    trendChartResizeObs.disconnect();
+    trendChartResizeObs = null;
+  }
+  window.removeEventListener("resize", resizeTrendCharts);
+}
+
+function bindTrendChartResize() {
+  teardownTrendChartResize();
+  const grid = document.getElementById("trendChartsGrid");
+  if (!grid || !trendCharts.length) return;
+  if (typeof ResizeObserver !== "undefined") {
+    trendChartResizeObs = new ResizeObserver(() => resizeTrendCharts());
+    trendChartResizeObs.observe(grid);
+  }
+  window.addEventListener("resize", resizeTrendCharts);
+}
+
 const trendAnalysisCache = {};
 
 function getNumericScore(studentKey, unitId) {
@@ -2237,6 +2266,7 @@ function buildTrendSeriesBySubject(studentKey, subjectIdFilter) {
 }
 
 function destroyTrendCharts() {
+  teardownTrendChartResize();
   for (const c of trendCharts) {
     try {
       c.destroy();
@@ -2326,6 +2356,9 @@ function renderTrendCharts(studentKey) {
     });
     trendCharts.push(chart);
   });
+
+  bindTrendChartResize();
+  requestAnimationFrame(() => resizeTrendCharts());
 }
 
 function renderTrendAnalysisPanel(analysis) {

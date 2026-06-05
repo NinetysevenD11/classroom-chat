@@ -2092,10 +2092,11 @@ body {
 
 .trend-charts-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+  grid-template-columns: 1fr;
   gap: 16px;
   margin-bottom: 20px;
   width: 100%;
+  min-width: 0;
 }
 
 .trend-log-section {
@@ -2103,6 +2104,8 @@ body {
 }
 
 .trend-chart-card {
+  width: 100%;
+  min-width: 0;
   background: #fff;
   border: 1px solid #e2e8f0;
   border-radius: 14px;
@@ -2119,7 +2122,14 @@ body {
 
 .trend-chart-wrap {
   position: relative;
+  width: 100%;
+  min-width: 0;
   height: 220px;
+}
+
+.trend-chart-wrap canvas {
+  display: block;
+  max-width: 100%;
 }
 
 .trend-empty {
