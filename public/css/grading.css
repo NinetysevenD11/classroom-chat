@@ -775,10 +775,10 @@ body {
   justify-content: space-between;
   gap: 12px 20px;
   padding: 18px 20px;
-  background: linear-gradient(125deg, #fff 0%, #ecfdf5 45%, #fef9c3 100%);
-  border: 1px solid #e2e8f0;
+  background: linear-gradient(125deg, #f7f5f0 0%, #e8f5ef 45%, #f5f0d8 100%);
+  border: 1px solid #d6d1c8;
   border-radius: 14px;
-  box-shadow: 0 2px 12px rgba(15, 23, 42, 0.05);
+  box-shadow: 0 2px 10px rgba(45, 40, 32, 0.07);
 }
 
 .dash-hero-main {
@@ -915,15 +915,16 @@ body {
   justify-content: center;
   gap: 2px;
   padding: 8px 6px;
-  background: #fff;
-  border: 1px solid #e2e8f0;
+  background: #f6f4ef;
+  border: 1px solid #d6d1c8;
   border-radius: 10px;
   text-align: center;
+  box-shadow: 0 1px 3px rgba(45, 40, 32, 0.06);
 }
 
 .dash-stat-card.highlight {
-  border-color: #fdba74;
-  background: #fff7ed;
+  border-color: #e8b88a;
+  background: #f8efe4;
 }
 
 .dash-stat-card strong {
@@ -962,9 +963,10 @@ body {
   width: 100%;
   min-width: 0;
   padding: 12px 10px;
-  background: #fff;
-  border: 1px solid #e2e8f0;
+  background: #f6f4ef;
+  border: 1px solid #d6d1c8;
   border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(45, 40, 32, 0.06);
   cursor: pointer;
   font-family: inherit;
   transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
@@ -996,11 +998,11 @@ body {
 }
 
 .dash-panel {
-  background: #fff;
-  border: 1px solid #e2e8f0;
+  background: #f6f4ef;
+  border: 1px solid #d6d1c8;
   border-radius: 14px;
   padding: 14px 16px;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+  box-shadow: 0 1px 4px rgba(45, 40, 32, 0.07);
   min-height: 0;
 }
 

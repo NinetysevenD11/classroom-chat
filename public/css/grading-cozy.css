@@ -134,7 +134,14 @@ body.grading-app {
 .dash-hero,
 .dash-stat-card,
 .dash-quick-btn,
-.dash-panel,
+.dash-panel {
+  background: #f6f4ef !important;
+  color: #1e293b !important;
+  border: 1px solid #d6d1c8 !important;
+  border-radius: var(--acnh-radius-lg) !important;
+  box-shadow: 0 1px 4px rgba(45, 40, 32, 0.08) !important;
+}
+
 .trend-chart-card,
 .trend-ai-panel,
 .trend-log-item,
@@ -170,11 +177,12 @@ body.grading-app {
 }
 
 .dash-hero {
-  background: linear-gradient(135deg, #fff 0%, var(--acnh-mint) 55%, var(--acnh-yellow) 100%) !important;
+  background: linear-gradient(135deg, #f7f5f0 0%, var(--acnh-mint) 55%, var(--acnh-yellow) 100%) !important;
 }
 
 .dash-stat-card.highlight {
-  background: linear-gradient(180deg, var(--acnh-yellow) 0%, var(--acnh-peach) 100%) !important;
+  background: linear-gradient(180deg, #f3e8c8 0%, #f0ddd0 100%) !important;
+  border-color: #e8b88a !important;
 }
 
 .dash-quick-btn {
@@ -338,10 +346,10 @@ body.manual-grade-open {
   position: static !important;
   z-index: auto !important;
   bottom: auto !important;
-  background: #fff !important;
+  background: #f6f4ef !important;
   color: #1e293b !important;
-  border: 1px solid #e2e8f0 !important;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06) !important;
+  border: 1px solid #d6d1c8 !important;
+  box-shadow: 0 1px 4px rgba(45, 40, 32, 0.08) !important;
 }
 
 .view-home .dash-stat-card strong {
@@ -353,8 +361,8 @@ body.manual-grade-open {
 }
 
 .view-home .dash-stat-card.highlight {
-  background: #fff7ed !important;
-  border-color: #fdba74 !important;
+  background: #f8efe4 !important;
+  border-color: #e8b88a !important;
 }
 
 .view-home .dash-quick-btn em {
@@ -362,12 +370,14 @@ body.manual-grade-open {
 }
 
 .view-home .dash-log-placeholder {
-  background: #f8fafc !important;
+  background: #efede8 !important;
+  border-color: #d0cbc2 !important;
   color: #64748b !important;
 }
 
 .view-home .dash-unit-row,
 .view-home .dash-submit-list li {
-  background: #f8fafc !important;
+  background: #efede8 !important;
+  border-color: #d6d1c8 !important;
   color: #1e293b !important;
 }
