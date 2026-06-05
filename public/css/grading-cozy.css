@@ -19,8 +19,11 @@ body.grading-app {
   padding: 20px 24px 48px !important;
 }
 
-.grading-main:has(.dash-home) {
-  background-color: var(--dash-paper-fallback, #d4cdc2) !important;
+.grading-main:has(.view-home),
+.grading-main:has(.view-exam),
+.grading-main:has(.view-grades),
+.grading-main:has(.view-trend) {
+  background-color: var(--grade-paper-fallback, #d4cdc2) !important;
   background-image: none !important;
 }
 
@@ -134,21 +137,26 @@ body.grading-app {
 .dash-hero,
 .dash-stat-card,
 .dash-quick-btn,
-.dash-panel {
-  background: var(--dash-card-bg, #f2ece3) !important;
-  color: var(--dash-text-strong, #2c2924) !important;
-  border: 1px solid var(--dash-card-border, #c2b8a9) !important;
-  border-radius: var(--acnh-radius-lg) !important;
-  box-shadow: var(--dash-card-shadow, 0 2px 12px rgba(52, 42, 32, 0.11)) !important;
-}
-
+.dash-panel,
+.guide-box,
+.paper-section,
+.answers-section,
+.check-card,
+.grades-subject-bar,
+.grades-table-wrap,
 .trend-chart-card,
 .trend-ai-panel,
-.trend-log-item,
-.grades-table-wrap,
+.trend-log-item {
+  background: var(--grade-card-bg, #f2ece3) !important;
+  color: var(--grade-text-strong, #2c2924) !important;
+  border: 1px solid var(--grade-card-border, #c2b8a9) !important;
+  border-radius: var(--acnh-radius-lg) !important;
+  box-shadow: var(--grade-card-shadow, 0 2px 12px rgba(52, 42, 32, 0.11)) !important;
+}
+
+.g-dialog-box,
 .exam-panel,
-.paper-card,
-.g-dialog-box {
+.paper-card {
   background: #fff !important;
   color: #1e293b !important;
   border: 1px solid #e2e8f0 !important;
@@ -177,12 +185,12 @@ body.grading-app {
 }
 
 .dash-hero {
-  background: var(--dash-hero-gradient) !important;
+  background: var(--grade-hero-gradient) !important;
 }
 
 .dash-stat-card.highlight {
-  background: var(--dash-highlight-bg, #f5e8d6) !important;
-  border-color: var(--dash-highlight-border, #d4a574) !important;
+  background: var(--grade-highlight-bg, #f5e8d6) !important;
+  border-color: var(--grade-highlight-border, #d4a574) !important;
 }
 
 .dash-quick-btn {
@@ -194,7 +202,7 @@ body.grading-app {
   background: #e5ebe0 !important;
   border-color: #9ab89a !important;
   transform: translateY(-2px) !important;
-  box-shadow: var(--dash-card-shadow, 0 2px 12px rgba(52, 42, 32, 0.11)) !important;
+  box-shadow: var(--grade-card-shadow, 0 2px 12px rgba(52, 42, 32, 0.11)) !important;
 }
 
 .dash-quick-btn em {
@@ -225,30 +233,45 @@ body.grading-app {
 
 .grades-subject-tab,
 .unit-tab {
-  background: var(--acnh-card) !important;
-  border: 1px solid var(--acnh-border) !important;
+  background: var(--grade-inner-bg, #e8e2d8) !important;
+  border: 2px solid var(--grade-inner-border, #c9c0b3) !important;
   border-radius: var(--acnh-radius-sm) !important;
   box-shadow: none !important;
+  color: var(--grade-text-muted, #5c574f) !important;
 }
 
-.grades-subject-tab.is-active,
+.grades-subject-tab.is-active {
+  background: #5b7fa8 !important;
+  border-color: #4a6d92 !important;
+  color: #fff !important;
+  transform: none !important;
+}
+
 .unit-tab.is-active {
-  background: var(--acnh-yellow) !important;
-  border-color: var(--acnh-yellow-deep) !important;
+  background: #ede8f5 !important;
+  border-color: #9a7bc8 !important;
+  color: #5b4580 !important;
   transform: none !important;
 }
 
 .grades-table thead th {
-  background: var(--acnh-card-muted) !important;
-  color: var(--acnh-text) !important;
+  background: var(--grade-inner-bg, #e8e2d8) !important;
+  color: var(--grade-text-strong, #2c2924) !important;
 }
 
-.grades-table tbody tr:nth-child(even) {
-  background: var(--acnh-card-muted) !important;
+.grades-table tbody tr:nth-child(even) td {
+  background: var(--grade-inner-bg, #e8e2d8) !important;
 }
 
-.grades-table tbody tr:hover {
-  background: var(--acnh-blue) !important;
+.grades-table tbody tr:hover td {
+  background: #e5ebe0 !important;
+}
+
+.guide-toggle,
+.guide-step,
+.trend-ai-summary {
+  background: var(--grade-inner-bg, #e8e2d8) !important;
+  border-color: var(--grade-inner-border, #c9c0b3) !important;
 }
 
 .btn,
@@ -351,20 +374,25 @@ body.manual-grade-open {
 }
 
 .view-home .dash-stat-card strong,
-.view-home .dash-quick-btn em {
-  color: var(--dash-text-strong, #2c2924) !important;
+.view-home .dash-quick-btn em,
+.view-exam h1,
+.view-grades h1,
+.view-trend .trend-head h1 {
+  color: var(--grade-text-strong, #2c2924) !important;
 }
 
 .view-home .dash-stat-card span,
 .view-home .dash-greeting,
-.view-home .dash-guide-once {
-  color: var(--dash-text-muted, #5c574f) !important;
+.view-home .dash-guide-once,
+.view-grades .legend-block,
+.view-trend .trend-section-desc {
+  color: var(--grade-text-muted, #5c574f) !important;
 }
 
 .view-home .dash-log-placeholder,
 .view-home .dash-unit-row,
 .view-home .dash-submit-list li {
-  background: var(--dash-inner-bg, #e8e2d8) !important;
-  border-color: var(--dash-inner-border, #c9c0b3) !important;
-  color: var(--dash-text-strong, #2c2924) !important;
+  background: var(--grade-inner-bg, #e8e2d8) !important;
+  border-color: var(--grade-inner-border, #c9c0b3) !important;
+  color: var(--grade-text-strong, #2c2924) !important;
 }

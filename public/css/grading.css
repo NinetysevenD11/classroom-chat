@@ -658,7 +658,6 @@ body {
   min-width: 0;
   overflow-y: auto;
   padding: 24px 28px 40px;
-  background: #f8fafc;
 }
 
 .view-home .hero {
@@ -679,25 +678,31 @@ body {
   max-width: 720px;
 }
 
-/* ── 홈 대시보드 (벤토 그리드) — 종이 배경·카드 톤 통일 ── */
-.grading-main:has(.dash-home) {
-  --dash-paper-fallback: #d4cdc2;
-  --dash-card-bg: #f2ece3;
-  --dash-card-border: #c2b8a9;
-  --dash-card-shadow: 0 2px 12px rgba(52, 42, 32, 0.11), 0 1px 0 rgba(255, 255, 255, 0.45) inset;
-  --dash-inner-bg: #e8e2d8;
-  --dash-inner-border: #c9c0b3;
-  --dash-hero-gradient: linear-gradient(125deg, #f4efe4 0%, #e5ebe0 42%, #ebe4d4 100%);
-  --dash-highlight-bg: #f5e8d6;
-  --dash-highlight-border: #d4a574;
-  --dash-text-muted: #5c574f;
-  --dash-text-strong: #2c2924;
+/* ── 종이 배경·카드 톤 (홈·시험·성적·추이 공통) ── */
+.grading-main:has(.view-home),
+.grading-main:has(.view-exam),
+.grading-main:has(.view-grades),
+.grading-main:has(.view-trend) {
+  --grade-paper-fallback: #d4cdc2;
+  --grade-card-bg: #f2ece3;
+  --grade-card-border: #c2b8a9;
+  --grade-card-shadow: 0 2px 12px rgba(52, 42, 32, 0.11), 0 1px 0 rgba(255, 255, 255, 0.45) inset;
+  --grade-inner-bg: #e8e2d8;
+  --grade-inner-border: #c9c0b3;
+  --grade-hero-gradient: linear-gradient(125deg, #f4efe4 0%, #e5ebe0 42%, #ebe4d4 100%);
+  --grade-highlight-bg: #f5e8d6;
+  --grade-highlight-border: #d4a574;
+  --grade-text-muted: #5c574f;
+  --grade-text-strong: #2c2924;
   position: relative;
   isolation: isolate;
-  background-color: var(--dash-paper-fallback);
+  background-color: var(--grade-paper-fallback);
 }
 
-.grading-main:has(.dash-home)::before {
+.grading-main:has(.view-home)::before,
+.grading-main:has(.view-exam)::before,
+.grading-main:has(.view-grades)::before,
+.grading-main:has(.view-trend)::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -707,7 +712,10 @@ body {
   pointer-events: none;
 }
 
-.grading-main:has(.dash-home)::after {
+.grading-main:has(.view-home)::after,
+.grading-main:has(.view-exam)::after,
+.grading-main:has(.view-grades)::after,
+.grading-main:has(.view-trend)::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -718,9 +726,126 @@ body {
   pointer-events: none;
 }
 
-.grading-main:has(.dash-home) > * {
+.grading-main:has(.view-home) > *,
+.grading-main:has(.view-exam) > *,
+.grading-main:has(.view-grades) > *,
+.grading-main:has(.view-trend) > * {
   position: relative;
   z-index: 1;
+}
+
+/* 시험·성적·추이 — 카드형 패널 */
+.view-exam h1,
+.view-grades h1,
+.view-trend .trend-head h1,
+.view-trend .trend-section-title {
+  color: var(--grade-text-strong);
+}
+
+.view-exam .muted,
+.view-grades .legend-block,
+.view-trend .trend-section-desc,
+.trend-toolbar label {
+  color: var(--grade-text-muted);
+}
+
+.view-grades .legend-block strong {
+  color: var(--grade-text-strong);
+}
+
+.guide-box,
+.paper-section,
+.answers-section,
+.check-card,
+.grades-subject-bar,
+.grades-table-wrap,
+.trend-chart-card,
+.trend-ai-panel,
+.trend-log-item {
+  background: var(--grade-card-bg);
+  border: 1px solid var(--grade-card-border);
+  box-shadow: var(--grade-card-shadow);
+}
+
+.guide-toggle {
+  background: var(--grade-inner-bg);
+  border-bottom: 1px solid var(--grade-inner-border);
+}
+
+.guide-step {
+  background: var(--grade-inner-bg);
+}
+
+.unit-tab {
+  background: var(--grade-inner-bg);
+  border: 2px solid var(--grade-inner-border);
+  color: var(--grade-text-strong);
+}
+
+.unit-tab.is-active {
+  border-color: #9a7bc8;
+  background: #ede8f5;
+  color: #5b4580;
+}
+
+.grades-subject-tab {
+  background: var(--grade-inner-bg);
+  border: 2px solid var(--grade-inner-border);
+  color: var(--grade-text-muted);
+}
+
+.grades-subject-tab.is-active {
+  background: #5b7fa8;
+  border-color: #4a6d92;
+  color: #fff;
+}
+
+.grades-subject-tab:hover {
+  border-color: #8aa3be;
+  color: #3d5568;
+}
+
+.grades-table th,
+.grades-table td {
+  border-bottom-color: var(--grade-inner-border);
+}
+
+.grades-table th {
+  background: var(--grade-inner-bg);
+  color: var(--grade-text-strong);
+}
+
+.grades-table tbody tr:nth-child(even) td {
+  background: var(--grade-inner-bg);
+}
+
+.class-badge {
+  background: #e0e8ef;
+  color: #3d5568;
+  border: 1px solid #c5d0dc;
+}
+
+.trend-ai-summary {
+  background: var(--grade-inner-bg);
+  border: 1px solid var(--grade-inner-border);
+  color: var(--grade-text-strong);
+}
+
+.head-actions select,
+.trend-toolbar select {
+  background: var(--grade-card-bg);
+  border-color: var(--grade-card-border);
+  color: var(--grade-text-strong);
+}
+
+.check-card .btn-goto {
+  background: var(--grade-inner-bg);
+  border-color: var(--grade-inner-border);
+  color: var(--grade-text-strong);
+}
+
+.check-card .btn-goto:hover {
+  background: var(--grade-card-bg);
 }
 
 .dash-home {
@@ -798,10 +923,10 @@ body {
   justify-content: space-between;
   gap: 12px 20px;
   padding: 18px 20px;
-  background: var(--dash-hero-gradient);
-  border: 1px solid var(--dash-card-border);
+  background: var(--grade-hero-gradient);
+  border: 1px solid var(--grade-card-border);
   border-radius: 14px;
-  box-shadow: var(--dash-card-shadow);
+  box-shadow: var(--grade-card-shadow);
 }
 
 .dash-hero-main {
@@ -820,11 +945,11 @@ body {
 .dash-greeting {
   margin: 0 0 4px;
   font-size: 13px;
-  color: var(--dash-text-muted);
+  color: var(--grade-text-muted);
 }
 
 .dash-greeting strong {
-  color: var(--dash-text-strong);
+  color: var(--grade-text-strong);
 }
 
 .dash-home .dash-hero h1 {
@@ -848,9 +973,9 @@ body {
   padding: 4px 10px;
   font-size: 11px;
   font-weight: 600;
-  color: var(--dash-text-muted);
-  background: var(--dash-inner-bg);
-  border: 1px solid var(--dash-inner-border);
+  color: var(--grade-text-muted);
+  background: var(--grade-inner-bg);
+  border: 1px solid var(--grade-inner-border);
   border-radius: 999px;
 }
 
@@ -867,9 +992,9 @@ body {
   border-radius: 999px;
   font-size: 11px;
   font-weight: 600;
-  background: var(--dash-inner-bg);
-  border: 1px solid var(--dash-inner-border);
-  color: var(--dash-text-muted);
+  background: var(--grade-inner-bg);
+  border: 1px solid var(--grade-inner-border);
+  color: var(--grade-text-muted);
 }
 
 .dash-tag.is-on {
@@ -939,28 +1064,28 @@ body {
   justify-content: center;
   gap: 2px;
   padding: 8px 6px;
-  background: var(--dash-card-bg);
-  border: 1px solid var(--dash-card-border);
+  background: var(--grade-card-bg);
+  border: 1px solid var(--grade-card-border);
   border-radius: 10px;
   text-align: center;
-  box-shadow: var(--dash-card-shadow);
+  box-shadow: var(--grade-card-shadow);
 }
 
 .dash-stat-card.highlight {
-  border-color: var(--dash-highlight-border);
-  background: var(--dash-highlight-bg);
+  border-color: var(--grade-highlight-border);
+  background: var(--grade-highlight-bg);
 }
 
 .dash-stat-card strong {
   font-size: 20px;
   font-weight: 800;
-  color: var(--dash-text-strong);
+  color: var(--grade-text-strong);
   line-height: 1;
 }
 
 .dash-stat-card span {
   font-size: 10px;
-  color: var(--dash-text-muted);
+  color: var(--grade-text-muted);
   font-weight: 600;
   white-space: nowrap;
 }
@@ -987,10 +1112,10 @@ body {
   width: 100%;
   min-width: 0;
   padding: 12px 10px;
-  background: var(--dash-card-bg);
-  border: 1px solid var(--dash-card-border);
+  background: var(--grade-card-bg);
+  border: 1px solid var(--grade-card-border);
   border-radius: 12px;
-  box-shadow: var(--dash-card-shadow);
+  box-shadow: var(--grade-card-shadow);
   cursor: pointer;
   font-family: inherit;
   transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
@@ -1006,7 +1131,7 @@ body {
   font-style: normal;
   font-size: 13px;
   font-weight: 700;
-  color: var(--dash-text-strong);
+  color: var(--grade-text-strong);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1022,11 +1147,11 @@ body {
 }
 
 .dash-panel {
-  background: var(--dash-card-bg);
-  border: 1px solid var(--dash-card-border);
+  background: var(--grade-card-bg);
+  border: 1px solid var(--grade-card-border);
   border-radius: 14px;
   padding: 14px 16px;
-  box-shadow: var(--dash-card-shadow);
+  box-shadow: var(--grade-card-shadow);
   min-height: 0;
 }
 
@@ -1149,9 +1274,9 @@ body {
   justify-content: space-between;
   gap: 10px;
   padding: 10px 12px;
-  background: var(--dash-inner-bg);
+  background: var(--grade-inner-bg);
   border-radius: 10px;
-  border: 1px solid var(--dash-inner-border);
+  border: 1px solid var(--grade-inner-border);
 }
 
 /* 과목·단원 현황 — 리스트형 잠금 */
@@ -1198,8 +1323,8 @@ body {
   align-items: center;
   gap: 8px;
   padding: 7px 10px;
-  background: var(--dash-inner-bg);
-  border: 1px solid var(--dash-inner-border);
+  background: var(--grade-inner-bg);
+  border: 1px solid var(--grade-inner-border);
   border-radius: 9px;
 }
 
@@ -1419,20 +1544,20 @@ body {
 .dash-log-placeholder {
   text-align: center;
   padding: 16px 12px;
-  background: var(--dash-inner-bg);
+  background: var(--grade-inner-bg);
   border-radius: 10px;
-  border: 1px dashed var(--dash-inner-border);
+  border: 1px dashed var(--grade-inner-border);
 }
 
 .dash-log-placeholder p {
   margin: 0 0 6px;
   font-size: 12px;
-  color: var(--dash-text-muted);
+  color: var(--grade-text-muted);
   line-height: 1.45;
 }
 
 .dash-log-placeholder strong {
-  color: var(--dash-text-strong);
+  color: var(--grade-text-strong);
   font-size: 13px;
 }
 
@@ -1598,8 +1723,6 @@ body {
 
 .trend-log-item {
   padding: 14px 16px;
-  background: #fff;
-  border: 1px solid #e2e8f0;
   border-radius: 12px;
 }
 
@@ -1674,14 +1797,11 @@ body {
 }
 
 .check-card {
-  background: #fff;
-  border: 1px solid #e2e8f0;
   border-radius: 14px;
   padding: 16px;
   display: flex;
   flex-direction: column;
   min-height: 200px;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
 }
 
 .check-badge {
@@ -1753,6 +1873,7 @@ body {
   margin: 0;
   font-size: 22px;
   font-weight: 800;
+  color: var(--grade-text-strong);
 }
 
 .head-actions {
@@ -1791,8 +1912,6 @@ body {
 }
 
 .guide-box {
-  background: #fff;
-  border: 1px solid #e2e8f0;
   border-radius: 12px;
   margin-bottom: 20px;
   overflow: hidden;
@@ -1802,7 +1921,6 @@ body {
   width: 100%;
   padding: 12px 16px;
   border: none;
-  background: #f8fafc;
   text-align: left;
   font-weight: 700;
   cursor: pointer;
@@ -1821,7 +1939,6 @@ body {
 }
 
 .guide-step {
-  background: #f1f5f9;
   border-radius: 10px;
   padding: 12px;
   font-size: 12px;
@@ -1845,19 +1962,11 @@ body {
   align-items: center;
   gap: 6px;
   padding: 8px 14px;
-  border: 2px solid #e2e8f0;
   border-radius: 10px;
-  background: #fff;
   cursor: pointer;
   font-weight: 600;
   font-size: 13px;
   font-family: inherit;
-}
-
-.unit-tab.is-active {
-  border-color: #7c3aed;
-  color: #6d28d9;
-  background: #f5f3ff;
 }
 
 .unit-tab-label {
@@ -1905,8 +2014,6 @@ body {
 
 .paper-section,
 .answers-section {
-  background: #fff;
-  border: 1px solid #e2e8f0;
   border-radius: 14px;
   padding: 18px 20px;
   margin-bottom: 20px;
@@ -2093,7 +2200,6 @@ body {
   margin: 0 0 8px;
   font-size: 24px;
   font-weight: 800;
-  color: #0f172a;
 }
 
 .trend-section-title {
@@ -2152,11 +2258,8 @@ body {
 .trend-chart-card {
   width: 100%;
   min-width: 0;
-  background: #fff;
-  border: 1px solid #e2e8f0;
   border-radius: 14px;
   padding: 16px;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
 }
 
 .trend-chart-card h3 {
@@ -2186,11 +2289,8 @@ body {
 }
 
 .trend-ai-panel {
-  background: #fff;
-  border: 1px solid #e2e8f0;
   border-radius: 14px;
   padding: 20px 22px;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
 }
 
 .trend-ai-panel.is-loading {
@@ -2206,12 +2306,10 @@ body {
 }
 
 .trend-ai-summary {
-  background: #f5f3ff;
   border-radius: 10px;
   padding: 14px 16px;
   margin-bottom: 18px;
   line-height: 1.65;
-  color: #334155;
   font-size: 14px;
 }
 
@@ -2256,15 +2354,13 @@ body {
   gap: 10px 14px;
   margin: 14px 0 16px;
   padding: 12px 14px;
-  background: #fff;
-  border: 1px solid #e2e8f0;
   border-radius: 12px;
 }
 
 .grades-subject-label {
   font-size: 13px;
   font-weight: 800;
-  color: #64748b;
+  color: var(--grade-text-muted);
   flex-shrink: 0;
 }
 
@@ -2277,26 +2373,12 @@ body {
 
 .grades-subject-tab {
   padding: 8px 16px;
-  border: 2px solid #e2e8f0;
   border-radius: 10px;
-  background: #f8fafc;
   font-size: 14px;
   font-weight: 700;
-  color: #475569;
   cursor: pointer;
   font-family: inherit;
   transition: background 0.15s, border-color 0.15s, color 0.15s;
-}
-
-.grades-subject-tab:hover {
-  border-color: #93c5fd;
-  color: #1d4ed8;
-}
-
-.grades-subject-tab.is-active {
-  background: #2563eb;
-  border-color: #2563eb;
-  color: #fff;
 }
 
 .grades-subject-hint {
@@ -2330,21 +2412,15 @@ body {
   margin: 0 0 10px;
   font-size: 22px;
   font-weight: 800;
-  color: #0f172a;
 }
 
 .legend-block {
   font-size: 12px;
-  color: #64748b;
   line-height: 1.6;
 }
 
 .legend-block p {
   margin: 0 0 4px;
-}
-
-.legend-block strong {
-  color: #334155;
 }
 
 .grades-actions {
@@ -2389,8 +2465,6 @@ body {
   display: inline-block;
   padding: 6px 14px;
   border-radius: 8px;
-  background: #dbeafe;
-  color: #1d4ed8;
   font-size: 13px;
   font-weight: 700;
   margin-bottom: 14px;
@@ -2398,10 +2472,7 @@ body {
 
 .grades-table-wrap {
   overflow-x: auto;
-  background: #fff;
-  border: 1px solid #e2e8f0;
   border-radius: 14px;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
 }
 
 .grades-table {
@@ -2414,15 +2485,12 @@ body {
 .grades-table th,
 .grades-table td {
   padding: 12px 10px;
-  border-bottom: 1px solid #e2e8f0;
   text-align: center;
   vertical-align: middle;
 }
 
 .grades-table th {
-  background: #f8fafc;
   font-weight: 700;
-  color: #334155;
   font-size: 13px;
 }
 
