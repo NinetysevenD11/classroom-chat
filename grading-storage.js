@@ -24,6 +24,7 @@ export function defaultGradingState() {
     classes: [],
     resultsPublished: false,
     studentScores: {},
+    purgedStudentKeys: [],
     activeExamId: examId,
     activeSubjectId: null,
     activeUnitId: null,
@@ -240,9 +241,18 @@ export async function saveGradingState(userId, state, opts = {}) {
   const prev = gradingData[userId];
   const prevSettings = prev?.settings ? migrateLegacySettings({ ...prev.settings }) : null;
 
+  const purgedSet = new Set(
+    (Array.isArray(state.purgedStudentKeys) ? state.purgedStudentKeys : []).map(String)
+  );
+
   if (prev?.studentScores && state.studentScores) {
-    state.studentScores = mergeStudentScores(prev.studentScores, state.studentScores);
+    state.studentScores = mergeStudentScores(prev.studentScores, state.studentScores, purgedSet);
   }
+
+  for (const key of purgedSet) {
+    if (state.studentScores) delete state.studentScores[key];
+  }
+  state.purgedStudentKeys = [];
 
   ensureSettings(state);
   const incoming = migrateLegacySettings(state.settings);
@@ -274,11 +284,12 @@ export async function saveGradingState(userId, state, opts = {}) {
 }
 
 /** 클라이언트 저장 시 서버에만 있는 제출·채점 상세가 지워지지 않도록 병합 */
-function mergeStudentScores(prevScores, incomingScores) {
+function mergeStudentScores(prevScores, incomingScores, purgedKeys = new Set()) {
   if (!prevScores || typeof prevScores !== "object") return incomingScores;
   if (!incomingScores || typeof incomingScores !== "object") return prevScores;
   const merged = { ...incomingScores };
   for (const key of Object.keys(prevScores)) {
+    if (purgedKeys.has(key)) continue;
     const prevRec = prevScores[key];
     const incRec = merged[key];
     if (!incRec) {

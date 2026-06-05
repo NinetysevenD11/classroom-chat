@@ -681,23 +681,23 @@ body {
 
 /* ── 홈 대시보드 (벤토 그리드) ── */
 .grading-main:has(.dash-home) {
-  --paper-base: #f9f7f1;
-  --paper-warm: #f3efe6;
-  --paper-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='128' height='128'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.14'/%3E%3C/svg%3E");
-  background-color: var(--paper-base);
-  background-image:
-    var(--paper-grain),
-    repeating-linear-gradient(
-      0deg,
-      transparent 0,
-      transparent 39px,
-      rgba(72, 58, 42, 0.018) 39px,
-      rgba(72, 58, 42, 0.018) 40px
-    ),
-    radial-gradient(ellipse 130% 85% at 8% -5%, rgba(255, 255, 255, 0.7), transparent 55%),
-    radial-gradient(ellipse 90% 65% at 95% 105%, rgba(110, 90, 60, 0.05), transparent 50%),
-    linear-gradient(168deg, #fcfaf6 0%, var(--paper-warm) 42%, var(--paper-base) 100%);
-  background-size: 160px 160px, auto, auto, auto, auto;
+  position: relative;
+  isolation: isolate;
+  background-color: #ebe8e2;
+}
+
+.grading-main:has(.dash-home)::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: url("/images/grading-home-paper-landscape.png") center center / cover no-repeat;
+  pointer-events: none;
+}
+
+.grading-main:has(.dash-home) > * {
+  position: relative;
+  z-index: 1;
 }
 
 .dash-home {
@@ -2401,14 +2401,12 @@ body {
 }
 
 .grades-table td.name {
-  text-align: left;
+  text-align: center;
   font-weight: 600;
-  padding-left: 16px;
 }
 
 .grades-table .col-no {
-  text-align: left;
-  padding-left: 16px;
+  text-align: center;
   white-space: nowrap;
 }
 

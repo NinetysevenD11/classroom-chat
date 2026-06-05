@@ -456,6 +456,7 @@ function normalizeState(raw) {
   }
   if (!Array.isArray(s.classes)) s.classes = [];
   if (!s.studentScores || typeof s.studentScores !== "object") s.studentScores = {};
+  if (!Array.isArray(s.purgedStudentKeys)) s.purgedStudentKeys = [];
   if (!s.settings || typeof s.settings !== "object") {
     s.settings = { aiProvider: "gemini", hasApiKey: false };
   }
@@ -634,6 +635,16 @@ function activeUnit() {
 
 function activeClass() {
   return state?.classes?.find((c) => c.id === state.activeClassId) || null;
+}
+
+function markStudentScorePurged(studentKey) {
+  if (!studentKey) return;
+  if (!Array.isArray(state.purgedStudentKeys)) state.purgedStudentKeys = [];
+  if (!state.purgedStudentKeys.includes(studentKey)) {
+    state.purgedStudentKeys.push(studentKey);
+  }
+  delete state.studentScores[studentKey];
+  delete trendAnalysisCache[studentKey];
 }
 
 function purgeStudentScoresForUnit(unitId) {
@@ -2650,9 +2661,8 @@ function renderGrades() {
   mainEl.querySelectorAll("[data-reset]").forEach((btn) => {
     btn.addEventListener("click", () => {
       confirmDialog("초기화", "이 학생의 제출·점수를 모두 초기화할까요?", async () => {
-        delete state.studentScores[btn.dataset.reset];
-        delete trendAnalysisCache[btn.dataset.reset];
-        await saveNow();
+        markStudentScorePurged(btn.dataset.reset);
+        if (!(await saveNow())) return;
         renderGrades();
         showToast("초기화했습니다.");
       });
@@ -2662,9 +2672,8 @@ function renderGrades() {
   mainEl.querySelectorAll("[data-del]").forEach((btn) => {
     btn.addEventListener("click", () => {
       confirmDialog("삭제", "이 학생의 성적 기록을 삭제할까요?", async () => {
-        delete state.studentScores[btn.dataset.del];
-        delete trendAnalysisCache[btn.dataset.del];
-        await saveNow();
+        markStudentScorePurged(btn.dataset.del);
+        if (!(await saveNow())) return;
         renderGrades();
         showToast("삭제했습니다.");
       });
