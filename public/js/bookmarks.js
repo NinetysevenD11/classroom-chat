@@ -288,23 +288,25 @@ function renderGrid() {
       const siteEmoji = emojiForBookmark(item.title, item.url);
       return `
       <article class="bookmark-card${pinned ? " is-pinned" : ""}" data-id="${escapeHtml(item.id)}">
-        <button
-          type="button"
-          class="bm-pin${pinned ? " is-on" : ""}"
-          data-id="${escapeHtml(item.id)}"
-          title="${pinned ? "고정 해제" : "상단에 고정"}"
-          aria-label="${pinned ? "고정 해제" : "상단에 고정"}"
-          aria-pressed="${pinned ? "true" : "false"}"
-        >📌</button>
+        <div class="bookmark-card-rail" aria-label="카드 메뉴">
+          <button
+            type="button"
+            class="bm-pin${pinned ? " is-on" : ""}"
+            data-id="${escapeHtml(item.id)}"
+            title="${pinned ? "고정 해제" : "상단에 고정"}"
+            aria-label="${pinned ? "고정 해제" : "상단에 고정"}"
+            aria-pressed="${pinned ? "true" : "false"}"
+          >📌</button>
+          <div class="bookmark-card-actions">
+            <button type="button" class="bm-edit" data-id="${escapeHtml(item.id)}" title="수정" aria-label="수정">✏️</button>
+            <button type="button" class="bm-del" data-id="${escapeHtml(item.id)}" title="삭제" aria-label="삭제">🗑</button>
+          </div>
+        </div>
         <div class="bookmark-card-head">
           <h3 class="bookmark-card-title">
             <span class="bm-site-emoji" aria-hidden="true">${siteEmoji}</span>
             <span class="bm-site-name">${escapeHtml(item.title)}</span>
           </h3>
-          <div class="bookmark-card-actions">
-            <button type="button" class="bm-edit" data-id="${escapeHtml(item.id)}" title="수정" aria-label="수정">✏️</button>
-            <button type="button" class="bm-del" data-id="${escapeHtml(item.id)}" title="삭제" aria-label="삭제">🗑</button>
-          </div>
         </div>
         ${
           activeFilter === FILTER_ALL

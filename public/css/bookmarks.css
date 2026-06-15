@@ -353,8 +353,7 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 140px;
-  padding: 14px;
-  padding-top: 12px;
+  padding: 12px 46px 14px 14px;
   background: var(--bm-card-bg);
   border: 1px solid var(--bm-card-border);
   border-radius: 12px;
@@ -378,11 +377,18 @@ body {
   box-shadow: 0 4px 18px rgba(180, 130, 60, 0.16), 0 0 0 1px rgba(212, 165, 116, 0.45);
 }
 
-.bm-pin {
+.bookmark-card-rail {
   position: absolute;
   top: 8px;
   right: 8px;
   z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.bm-pin {
   width: 30px;
   height: 30px;
   border: 1px solid #e2e8f0;
@@ -418,12 +424,7 @@ body {
 }
 
 .bookmark-card-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 6px;
   margin-bottom: 6px;
-  padding-right: 34px;
 }
 
 .bookmark-card-title {
@@ -435,7 +436,8 @@ body {
   font-weight: 800;
   color: #1e293b;
   line-height: 1.35;
-  word-break: break-word;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 
 .bm-site-emoji {
@@ -446,7 +448,8 @@ body {
 
 .bm-site-name {
   min-width: 0;
-  word-break: break-word;
+  overflow-wrap: anywhere;
+  word-break: keep-all;
 }
 
 .bookmark-card-cat {
@@ -466,7 +469,8 @@ body {
 
 .bookmark-card-actions {
   display: flex;
-  gap: 3px;
+  flex-direction: column;
+  gap: 4px;
   flex-shrink: 0;
 }
 
@@ -480,6 +484,12 @@ body {
   font-size: 12px;
   line-height: 1;
   padding: 0;
+  opacity: 0.72;
+  transition: opacity 0.15s, background 0.15s;
+}
+
+.bookmark-card:hover .bookmark-card-actions button {
+  opacity: 1;
 }
 
 .bookmark-card-actions button:hover {
