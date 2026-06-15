@@ -42,7 +42,19 @@ function normalizeItem(item) {
     description: String(item.description || "").trim().slice(0, 200),
     url: url.slice(0, 500),
     createdAt: Number(item.createdAt) || Date.now(),
+    pinned: !!item.pinned,
   };
+}
+
+/** 고정 → 이름 가나다순 */
+export function sortBookmarkItems(items) {
+  const collator = new Intl.Collator("ko-KR", { sensitivity: "base" });
+  return [...items].sort((a, b) => {
+    if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+    const byTitle = collator.compare(a.title, b.title);
+    if (byTitle !== 0) return byTitle;
+    return a.createdAt - b.createdAt;
+  });
 }
 
 function loadFromFile() {
@@ -96,6 +108,9 @@ export function getBookmarksState(userId) {
   if (!Array.isArray(bookmarksData[userId].items)) {
     bookmarksData[userId].items = [];
   }
+  bookmarksData[userId].items = sortBookmarkItems(
+    bookmarksData[userId].items.map(normalizeItem).filter(Boolean)
+  );
   return bookmarksData[userId];
 }
 
@@ -103,8 +118,7 @@ export async function saveBookmarksState(userId, incoming) {
   const prev = getBookmarksState(userId);
   const items = Array.isArray(incoming?.items) ? incoming.items : [];
   const normalized = items.map(normalizeItem).filter(Boolean);
-  normalized.sort((a, b) => a.createdAt - b.createdAt);
-  bookmarksData[userId] = { items: normalized };
+  bookmarksData[userId] = { items: sortBookmarkItems(normalized) };
   await saveAllBookmarksData();
   return bookmarksData[userId];
 }

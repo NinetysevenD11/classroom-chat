@@ -13,6 +13,8 @@ const descInput = document.getElementById("bmDesc");
 const dialogTitleEl = document.getElementById("bookmarkDialogTitle");
 const toastEl = document.getElementById("bookmarkToast");
 
+const titleCollator = new Intl.Collator("ko-KR", { sensitivity: "base" });
+
 function escapeHtml(s) {
   return String(s)
     .replace(/&/g, "&amp;")
@@ -45,6 +47,15 @@ function hostLabel(url) {
   }
 }
 
+function sortItems(list) {
+  return [...list].sort((a, b) => {
+    if (!!a.pinned !== !!b.pinned) return a.pinned ? -1 : 1;
+    const byTitle = titleCollator.compare(a.title || "", b.title || "");
+    if (byTitle !== 0) return byTitle;
+    return (a.createdAt || 0) - (b.createdAt || 0);
+  });
+}
+
 function openDialog(item) {
   editingId = item?.id || null;
   dialogTitleEl.textContent = editingId ? "사이트 수정" : "사이트 추가";
@@ -63,17 +74,27 @@ function closeDialog() {
 
 function render() {
   if (!gridEl) return;
-  if (!items.length) {
+  const sorted = sortItems(items);
+  if (!sorted.length) {
     gridEl.innerHTML = "";
     emptyEl?.classList.remove("hidden");
     return;
   }
   emptyEl?.classList.add("hidden");
-  gridEl.innerHTML = items
+  gridEl.innerHTML = sorted
     .map((item) => {
       const desc = item.description?.trim();
+      const pinned = !!item.pinned;
       return `
-      <article class="bookmark-card" data-id="${escapeHtml(item.id)}">
+      <article class="bookmark-card${pinned ? " is-pinned" : ""}" data-id="${escapeHtml(item.id)}">
+        <button
+          type="button"
+          class="bm-pin${pinned ? " is-on" : ""}"
+          data-id="${escapeHtml(item.id)}"
+          title="${pinned ? "고정 해제" : "상단에 고정"}"
+          aria-label="${pinned ? "고정 해제" : "상단에 고정"}"
+          aria-pressed="${pinned ? "true" : "false"}"
+        >📌</button>
         <div class="bookmark-card-head">
           <h3 class="bookmark-card-title">${escapeHtml(item.title)}</h3>
           <div class="bookmark-card-actions">
@@ -89,6 +110,23 @@ function render() {
     })
     .join("");
 
+  gridEl.querySelectorAll(".bm-pin").forEach((btn) => {
+    btn.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      const id = btn.dataset.id;
+      items = items.map((x) => (x.id === id ? { ...x, pinned: !x.pinned } : x));
+      try {
+        await saveNow();
+        render();
+        const pinned = items.find((x) => x.id === id)?.pinned;
+        showToast(pinned ? "상단에 고정했습니다." : "고정을 해제했습니다.");
+      } catch (err) {
+        showToast(err.message || "저장하지 못했습니다.", true);
+      }
+    });
+  });
+
   gridEl.querySelectorAll(".bm-edit").forEach((btn) => {
     btn.addEventListener("click", (e) => {
       e.stopPropagation();
@@ -103,9 +141,13 @@ function render() {
       const id = btn.dataset.id;
       if (!confirm("이 사이트 카드를 삭제할까요?")) return;
       items = items.filter((x) => x.id !== id);
-      await saveNow();
-      render();
-      showToast("삭제했습니다.");
+      try {
+        await saveNow();
+        render();
+        showToast("삭제했습니다.");
+      } catch (err) {
+        showToast(err.message || "저장하지 못했습니다.", true);
+      }
     });
   });
 }
@@ -179,6 +221,7 @@ formEl?.addEventListener("submit", async (e) => {
       title,
       url,
       description,
+      pinned: false,
       createdAt: Date.now(),
     });
   }
