@@ -1,6 +1,11 @@
 /** 자주 가는 사이트 — 링크 카드 + 카테고리 */
 
 const UNCATEGORIZED_ID = "uncategorized";
+const DEFAULT_MAJOR_ID = "major-default";
+const DEFAULT_MID_ID = "mid-default";
+const LEVEL_MAJOR = 1;
+const LEVEL_MID = 2;
+const LEVEL_MINOR = 3;
 const FILTER_ALL = "__all__";
 const FILTER_KEY = "bmActiveCategory";
 
@@ -28,6 +33,9 @@ const categorySelect = document.getElementById("bmCategory");
 const dialogTitleEl = document.getElementById("bookmarkDialogTitle");
 const categoryDialogTitleEl = document.getElementById("categoryDialogTitle");
 const catNameInput = document.getElementById("catName");
+const catLevelSelect = document.getElementById("catLevel");
+const catParentSelect = document.getElementById("catParent");
+const catParentField = document.getElementById("catParentField");
 const toastEl = document.getElementById("bookmarkToast");
 
 const titleCollator = new Intl.Collator("ko-KR", { sensitivity: "base" });
@@ -140,9 +148,72 @@ function itemMatchesSearch(item, q) {
   return title.includes(q) || url.includes(q) || host.includes(q);
 }
 
+function levelLabel(level) {
+  if (level === LEVEL_MAJOR) return "대분류";
+  if (level === LEVEL_MID) return "중분류";
+  return "소분류";
+}
+
+function levelShort(level) {
+  if (level === LEVEL_MAJOR) return "대";
+  if (level === LEVEL_MID) return "중";
+  return "소";
+}
+
+function getCategory(id) {
+  return categories.find((c) => c.id === id);
+}
+
+function childrenOf(parentId, level) {
+  return categories.filter((c) => c.parentId === parentId && c.level === level);
+}
+
+function collectDescendantIds(id) {
+  const cat = getCategory(id);
+  if (!cat) return [id];
+  const ids = [id];
+  for (const child of categories.filter((c) => c.parentId === id)) {
+    ids.push(...collectDescendantIds(child.id));
+  }
+  return ids;
+}
+
+function descendantLeafIds(catId) {
+  const cat = getCategory(catId);
+  if (!cat) return catId === UNCATEGORIZED_ID ? [UNCATEGORIZED_ID] : [];
+  if (cat.level === LEVEL_MINOR) return [cat.id];
+  if (cat.level === LEVEL_MID) {
+    return categories.filter((c) => c.level === LEVEL_MINOR && c.parentId === cat.id).map((c) => c.id);
+  }
+  if (cat.level === LEVEL_MAJOR) {
+    const midIds = categories.filter((c) => c.level === LEVEL_MID && c.parentId === cat.id).map((c) => c.id);
+    return categories
+      .filter((c) => c.level === LEVEL_MINOR && midIds.includes(c.parentId))
+      .map((c) => c.id);
+  }
+  return [];
+}
+
+function categoryPath(catId, separator = " › ") {
+  if (catId === FILTER_ALL) return "전체";
+  const cat = getCategory(catId);
+  if (!cat) return "미분류";
+  const parts = [cat.name];
+  let parentId = cat.parentId;
+  while (parentId) {
+    const parent = getCategory(parentId);
+    if (!parent) break;
+    parts.unshift(parent.name);
+    parentId = parent.parentId;
+  }
+  return parts.join(separator);
+}
+
 function itemsInCategory(catId) {
   if (catId === FILTER_ALL) return items;
-  return items.filter((x) => (x.categoryId || UNCATEGORIZED_ID) === catId);
+  const leafIds = new Set(descendantLeafIds(catId));
+  if (!leafIds.size) return [];
+  return items.filter((x) => leafIds.has(x.categoryId || UNCATEGORIZED_ID));
 }
 
 function countInCategory(catId) {
@@ -153,8 +224,7 @@ function countInCategory(catId) {
 }
 
 function categoryName(catId) {
-  if (catId === FILTER_ALL) return "전체";
-  return categories.find((c) => c.id === catId)?.name || "미분류";
+  return categoryPath(catId);
 }
 
 function setActiveFilter(catId) {
@@ -195,17 +265,50 @@ function updateSubText() {
   subEl.textContent =
     activeFilter === FILTER_ALL
       ? "전체 사이트를 가나다순으로 보여 줍니다. 고정한 카드는 맨 위에 표시됩니다."
-      : `「${label}」 카테고리 · ${count}개`;
+      : `「${label}」 · ${count}개`;
 }
 
 function fillCategorySelect(selectedId) {
   if (!categorySelect) return;
-  categorySelect.innerHTML = categories
+  const leaves = categories
+    .filter((c) => c.level === LEVEL_MINOR)
+    .sort((a, b) => titleCollator.compare(categoryPath(a.id), categoryPath(b.id)));
+  categorySelect.innerHTML = leaves
+    .map(
+      (c) =>
+        `<option value="${escapeHtml(c.id)}"${c.id === selectedId ? " selected" : ""}>${escapeHtml(categoryPath(c.id))}</option>`
+    )
+    .join("");
+}
+
+function fillParentSelect(level, selectedId) {
+  if (!catParentSelect) return;
+  let parents = [];
+  if (level === LEVEL_MID) {
+    parents = categories.filter((c) => c.level === LEVEL_MAJOR);
+  } else if (level === LEVEL_MINOR) {
+    parents = categories.filter((c) => c.level === LEVEL_MID);
+  }
+  catParentSelect.innerHTML = parents
     .map(
       (c) =>
         `<option value="${escapeHtml(c.id)}"${c.id === selectedId ? " selected" : ""}>${escapeHtml(c.name)}</option>`
     )
     .join("");
+}
+
+function syncCategoryFormFields() {
+  const level = Number(catLevelSelect?.value || LEVEL_MINOR);
+  if (catParentField) {
+    catParentField.classList.toggle("hidden", level === LEVEL_MAJOR);
+  }
+  if (level !== LEVEL_MAJOR) {
+    const currentParent = catParentSelect?.value;
+    fillParentSelect(level, currentParent);
+    if (!catParentSelect?.value && catParentSelect?.options.length) {
+      catParentSelect.selectedIndex = 0;
+    }
+  }
 }
 
 function openDialog(item) {
@@ -216,7 +319,9 @@ function openDialog(item) {
   descInput.value = item?.description || "";
   const cat =
     item?.categoryId ||
-    (activeFilter !== FILTER_ALL ? activeFilter : UNCATEGORIZED_ID);
+    (activeFilter !== FILTER_ALL && getCategory(activeFilter)?.level === LEVEL_MINOR
+      ? activeFilter
+      : UNCATEGORIZED_ID);
   fillCategorySelect(cat);
   dialogEl.classList.remove("hidden");
   titleInput.focus();
@@ -228,11 +333,24 @@ function closeDialog() {
   formEl.reset();
 }
 
-function openCategoryDialog(cat) {
+function openCategoryDialog(cat, defaults = {}) {
   editingCategoryId = cat?.id || null;
   if (cat?.builtin) return;
-  categoryDialogTitleEl.textContent = editingCategoryId ? "카테고리 수정" : "카테고리 추가";
+
+  const level = cat?.level || defaults.level || LEVEL_MINOR;
+  categoryDialogTitleEl.textContent = editingCategoryId
+    ? `${levelLabel(level)} 수정`
+    : `${levelLabel(level)} 추가`;
   catNameInput.value = cat?.name || "";
+  if (catLevelSelect) {
+    catLevelSelect.value = String(level);
+    catLevelSelect.disabled = !!editingCategoryId;
+  }
+  fillParentSelect(
+    level,
+    cat?.parentId || defaults.parentId || (level === LEVEL_MID ? DEFAULT_MAJOR_ID : DEFAULT_MID_ID)
+  );
+  syncCategoryFormFields();
   categoryDialogEl.classList.remove("hidden");
   catNameInput.focus();
 }
@@ -241,46 +359,96 @@ function closeCategoryDialog() {
   categoryDialogEl.classList.add("hidden");
   editingCategoryId = null;
   categoryFormEl.reset();
+  if (catLevelSelect) catLevelSelect.disabled = false;
+}
+
+function renderCategoryRow(cat) {
+  const active = activeFilter === cat.id;
+  const count = countInCategory(cat.id);
+  const canEdit = !cat.builtin;
+  const indent =
+    cat.level === LEVEL_MAJOR ? 0 : cat.level === LEVEL_MID ? 1 : 2;
+  return `
+    <div class="bm-cat-row bm-cat-level-${cat.level}${active ? " is-active" : ""}" data-cat-id="${escapeHtml(cat.id)}" style="--bm-cat-depth:${indent}">
+      <button type="button" class="bm-cat-btn" data-cat-id="${escapeHtml(cat.id)}">
+        <span class="bm-cat-level">${levelShort(cat.level)}</span>
+        <span class="bm-cat-name">${escapeHtml(cat.name)}</span>
+        <span class="bm-cat-count">${count}</span>
+      </button>
+      ${
+        canEdit
+          ? `<div class="bm-cat-actions">
+          ${
+            cat.level === LEVEL_MAJOR
+              ? `<button type="button" class="bm-cat-add-child" data-level="${LEVEL_MID}" data-parent-id="${escapeHtml(cat.id)}" title="중분류 추가" aria-label="중분류 추가">＋</button>`
+              : cat.level === LEVEL_MID
+                ? `<button type="button" class="bm-cat-add-child" data-level="${LEVEL_MINOR}" data-parent-id="${escapeHtml(cat.id)}" title="소분류 추가" aria-label="소분류 추가">＋</button>`
+                : ""
+          }
+          <button type="button" class="bm-cat-edit" data-cat-id="${escapeHtml(cat.id)}" title="이름 수정" aria-label="이름 수정">✏️</button>
+          <button type="button" class="bm-cat-del" data-cat-id="${escapeHtml(cat.id)}" title="삭제" aria-label="삭제">🗑</button>
+        </div>`
+          : `<div class="bm-cat-actions bm-cat-actions-static">
+          ${
+            cat.level === LEVEL_MAJOR
+              ? `<button type="button" class="bm-cat-add-child" data-level="${LEVEL_MID}" data-parent-id="${escapeHtml(cat.id)}" title="중분류 추가" aria-label="중분류 추가">＋</button>`
+              : cat.level === LEVEL_MID
+                ? `<button type="button" class="bm-cat-add-child" data-level="${LEVEL_MINOR}" data-parent-id="${escapeHtml(cat.id)}" title="소분류 추가" aria-label="소분류 추가">＋</button>`
+                : ""
+          }
+        </div>`
+      }
+    </div>`;
 }
 
 function renderSidebar() {
   if (!categoryListEl) return;
-  const rows = [
-    { id: FILTER_ALL, name: "전체", builtin: true },
-    ...categories,
-  ];
 
-  categoryListEl.innerHTML = rows
-    .map((cat) => {
-      const active = activeFilter === cat.id;
-      const count = countInCategory(cat.id);
-      const canEdit = !cat.builtin && cat.id !== FILTER_ALL;
-      return `
-      <div class="bm-cat-row${active ? " is-active" : ""}" data-cat-id="${escapeHtml(cat.id)}">
-        <button type="button" class="bm-cat-btn" data-cat-id="${escapeHtml(cat.id)}">
-          <span class="bm-cat-name">${escapeHtml(cat.name)}</span>
-          <span class="bm-cat-count">${count}</span>
-        </button>
-        ${
-          canEdit
-            ? `<div class="bm-cat-actions">
-            <button type="button" class="bm-cat-edit" data-cat-id="${escapeHtml(cat.id)}" title="이름 수정" aria-label="이름 수정">✏️</button>
-            <button type="button" class="bm-cat-del" data-cat-id="${escapeHtml(cat.id)}" title="삭제" aria-label="삭제">🗑</button>
-          </div>`
-            : ""
-        }
-      </div>`;
-    })
-    .join("");
+  const majors = categories.filter((c) => c.level === LEVEL_MAJOR);
+  let html = `
+    <div class="bm-cat-row bm-cat-all${activeFilter === FILTER_ALL ? " is-active" : ""}" data-cat-id="${FILTER_ALL}">
+      <button type="button" class="bm-cat-btn" data-cat-id="${FILTER_ALL}">
+        <span class="bm-cat-level bm-cat-level-all">전</span>
+        <span class="bm-cat-name">전체 보기</span>
+        <span class="bm-cat-count">${countInCategory(FILTER_ALL)}</span>
+      </button>
+    </div>
+    <div class="bm-cat-legend">
+      <span>대분류</span><span>중분류</span><span>소분류</span>
+    </div>`;
+
+  for (const major of majors) {
+    html += renderCategoryRow(major);
+    const mids = categories.filter((c) => c.level === LEVEL_MID && c.parentId === major.id);
+    for (const mid of mids) {
+      html += renderCategoryRow(mid);
+      const minors = categories.filter((c) => c.level === LEVEL_MINOR && c.parentId === mid.id);
+      for (const minor of minors) {
+        html += renderCategoryRow(minor);
+      }
+    }
+  }
+
+  categoryListEl.innerHTML = html;
 
   categoryListEl.querySelectorAll(".bm-cat-btn").forEach((btn) => {
     btn.addEventListener("click", () => setActiveFilter(btn.dataset.catId));
   });
 
+  categoryListEl.querySelectorAll(".bm-cat-add-child").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      openCategoryDialog(null, {
+        level: Number(btn.dataset.level),
+        parentId: btn.dataset.parentId,
+      });
+    });
+  });
+
   categoryListEl.querySelectorAll(".bm-cat-edit").forEach((btn) => {
     btn.addEventListener("click", (e) => {
       e.stopPropagation();
-      const cat = categories.find((c) => c.id === btn.dataset.catId);
+      const cat = getCategory(btn.dataset.catId);
       if (cat) openCategoryDialog(cat);
     });
   });
@@ -289,26 +457,31 @@ function renderSidebar() {
     btn.addEventListener("click", async (e) => {
       e.stopPropagation();
       const id = btn.dataset.catId;
-      if (!confirm("이 카테고리를 삭제할까요? 사이트는 「미분류」로 이동합니다.")) return;
-      categories = categories.filter((c) => c.id !== id);
-      items = items.map((x) =>
-        x.categoryId === id ? { ...x, categoryId: UNCATEGORIZED_ID } : x
+      const cat = getCategory(id);
+      if (!cat || cat.builtin) return;
+      const label = levelLabel(cat.level);
+      if (!confirm(`이 ${label}를 삭제할까요?\n하위 분류와 사이트는 「미분류」로 이동합니다.`)) return;
+      const removeIds = new Set(collectDescendantIds(id));
+      const removedLeafIds = [...removeIds].filter(
+        (rid) => getCategory(rid)?.level === LEVEL_MINOR
       );
-      if (activeFilter === id) setActiveFilter(FILTER_ALL);
+      categories = categories.filter((c) => !removeIds.has(c.id));
+      items = items.map((x) =>
+        removedLeafIds.includes(x.categoryId) ? { ...x, categoryId: UNCATEGORIZED_ID } : x
+      );
+      if (removeIds.has(activeFilter)) setActiveFilter(FILTER_ALL);
       try {
         await saveNow();
         renderSidebar();
         renderGrid();
-        showToast("카테고리를 삭제했습니다.");
+        showToast(`${label}를 삭제했습니다.`);
       } catch (err) {
         showToast(err.message || "저장하지 못했습니다.", true);
       }
     });
   });
 
-  if (subEl) {
-    updateSubText();
-  }
+  updateSubText();
 }
 
 function renderGrid() {
@@ -336,7 +509,7 @@ function renderGrid() {
     .map((item) => {
       const desc = item.description?.trim();
       const pinned = !!item.pinned;
-      const catLabel = categoryName(item.categoryId || UNCATEGORIZED_ID);
+      const catLabel = categoryPath(item.categoryId || UNCATEGORIZED_ID);
       const siteEmoji = emojiForBookmark(item.title, item.url);
       return `
       <article class="bookmark-card${pinned ? " is-pinned" : ""}" data-id="${escapeHtml(item.id)}">
@@ -548,9 +721,19 @@ async function saveNow() {
 }
 
 document.getElementById("addBookmarkBtn")?.addEventListener("click", () => openDialog(null));
-document.getElementById("addCategoryBtn")?.addEventListener("click", () => openCategoryDialog(null));
+document.getElementById("addMajorBtn")?.addEventListener("click", () =>
+  openCategoryDialog(null, { level: LEVEL_MAJOR })
+);
+document.getElementById("addMidBtn")?.addEventListener("click", () =>
+  openCategoryDialog(null, { level: LEVEL_MID, parentId: DEFAULT_MAJOR_ID })
+);
+document.getElementById("addMinorBtn")?.addEventListener("click", () =>
+  openCategoryDialog(null, { level: LEVEL_MINOR, parentId: DEFAULT_MID_ID })
+);
 document.getElementById("bmCancelBtn")?.addEventListener("click", closeDialog);
 document.getElementById("catCancelBtn")?.addEventListener("click", closeCategoryDialog);
+
+catLevelSelect?.addEventListener("change", syncCategoryFormFields);
 
 searchInput?.addEventListener("input", () => setSearchQuery(searchInput.value));
 searchInput?.addEventListener("search", () => setSearchQuery(searchInput.value));
@@ -625,10 +808,18 @@ formEl?.addEventListener("submit", async (e) => {
 categoryFormEl?.addEventListener("submit", async (e) => {
   e.preventDefault();
   const name = catNameInput.value.trim();
+  const level = Number(catLevelSelect?.value || LEVEL_MINOR);
+  const parentId =
+    level === LEVEL_MAJOR ? null : catParentSelect?.value || null;
   if (!name) {
-    showToast("카테고리 이름을 입력해 주세요.", true);
+    showToast("분류 이름을 입력해 주세요.", true);
     return;
   }
+  if (level !== LEVEL_MAJOR && !parentId) {
+    showToast("상위 분류를 선택해 주세요.", true);
+    return;
+  }
+
   if (editingCategoryId) {
     categories = categories.map((c) =>
       c.id === editingCategoryId ? { ...c, name } : c
@@ -638,18 +829,20 @@ categoryFormEl?.addEventListener("submit", async (e) => {
     categories.push({
       id,
       name,
-      order: categories.length,
+      level,
+      parentId,
+      order: categories.filter((c) => c.level === level && c.parentId === parentId).length,
       builtin: false,
       createdAt: Date.now(),
     });
-    setActiveFilter(id);
+    if (level === LEVEL_MINOR) setActiveFilter(id);
   }
 
   try {
     await saveNow();
     render();
     closeCategoryDialog();
-    showToast(editingCategoryId ? "카테고리를 수정했습니다." : "카테고리를 추가했습니다.");
+    showToast(editingCategoryId ? "분류를 수정했습니다." : "분류를 추가했습니다.");
   } catch (err) {
     showToast(err.message || "저장하지 못했습니다.", true);
   }

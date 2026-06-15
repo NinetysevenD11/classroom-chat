@@ -9,6 +9,11 @@ const DATA_DIR = process.env.DATA_DIR || __dirname;
 const BOOKMARKS_FILE = path.join(DATA_DIR, "bookmarks_data.json");
 
 export const UNCATEGORIZED_ID = "uncategorized";
+export const DEFAULT_MAJOR_ID = "major-default";
+export const DEFAULT_MID_ID = "mid-default";
+export const LEVEL_MAJOR = 1;
+export const LEVEL_MID = 2;
+export const LEVEL_MINOR = 3;
 
 export let bookmarksData = {};
 
@@ -18,11 +23,42 @@ export function uid() {
 
 function defaultBookmarksState() {
   return {
-    categories: [
-      { id: UNCATEGORIZED_ID, name: "미분류", order: 0, builtin: true, createdAt: Date.now() },
-    ],
+    categories: defaultCategoryTree(),
     items: [],
   };
+}
+
+function defaultCategoryTree() {
+  const now = Date.now();
+  return [
+    {
+      id: DEFAULT_MAJOR_ID,
+      name: "일반",
+      level: LEVEL_MAJOR,
+      parentId: null,
+      order: 0,
+      builtin: true,
+      createdAt: now,
+    },
+    {
+      id: DEFAULT_MID_ID,
+      name: "기본",
+      level: LEVEL_MID,
+      parentId: DEFAULT_MAJOR_ID,
+      order: 0,
+      builtin: true,
+      createdAt: now,
+    },
+    {
+      id: UNCATEGORIZED_ID,
+      name: "미분류",
+      level: LEVEL_MINOR,
+      parentId: DEFAULT_MID_ID,
+      order: 0,
+      builtin: true,
+      createdAt: now,
+    },
+  ];
 }
 
 function normalizeUrl(raw) {
@@ -37,25 +73,146 @@ function normalizeCategory(cat) {
   const id = String(cat.id || uid());
   const name = String(cat.name || "").trim();
   if (!name) return null;
+
   if (id === UNCATEGORIZED_ID) {
     return {
       id: UNCATEGORIZED_ID,
       name: "미분류",
+      level: LEVEL_MINOR,
+      parentId: DEFAULT_MID_ID,
       order: 0,
       builtin: true,
       createdAt: Number(cat.createdAt) || Date.now(),
     };
   }
+
+  if (id === DEFAULT_MAJOR_ID) {
+    return {
+      id: DEFAULT_MAJOR_ID,
+      name: "일반",
+      level: LEVEL_MAJOR,
+      parentId: null,
+      order: 0,
+      builtin: true,
+      createdAt: Number(cat.createdAt) || Date.now(),
+    };
+  }
+
+  if (id === DEFAULT_MID_ID) {
+    return {
+      id: DEFAULT_MID_ID,
+      name: "기본",
+      level: LEVEL_MID,
+      parentId: DEFAULT_MAJOR_ID,
+      order: 0,
+      builtin: true,
+      createdAt: Number(cat.createdAt) || Date.now(),
+    };
+  }
+
+  let level = Number(cat.level);
+  if (![LEVEL_MAJOR, LEVEL_MID, LEVEL_MINOR].includes(level)) level = LEVEL_MINOR;
+
+  let parentId = cat.parentId != null && cat.parentId !== "" ? String(cat.parentId) : null;
+  if (level === LEVEL_MAJOR) parentId = null;
+
   return {
     id,
     name: name.slice(0, 40),
+    level,
+    parentId,
     order: Number(cat.order) || 0,
     builtin: false,
     createdAt: Number(cat.createdAt) || Date.now(),
   };
 }
 
-function normalizeItem(item, validCategoryIds) {
+function migrateFlatCategories(categories) {
+  return categories.map((cat) => {
+    if (!cat || cat.builtin) return cat;
+    if (!cat.level) {
+      return { ...cat, level: LEVEL_MINOR, parentId: cat.parentId || DEFAULT_MID_ID };
+    }
+    if (cat.level === LEVEL_MID && !cat.parentId) {
+      return { ...cat, parentId: DEFAULT_MAJOR_ID };
+    }
+    if (cat.level === LEVEL_MINOR && !cat.parentId) {
+      return { ...cat, parentId: DEFAULT_MID_ID };
+    }
+    return cat;
+  });
+}
+
+function ensureDefaultHierarchy(categories) {
+  const map = new Map();
+  for (const raw of categories) {
+    const cat = normalizeCategory(raw);
+    if (cat) map.set(cat.id, cat);
+  }
+
+  for (const def of defaultCategoryTree()) {
+    if (!map.has(def.id)) map.set(def.id, def);
+  }
+
+  let cats = [...map.values()];
+  cats = migrateFlatCategories(cats);
+
+  const byId = new Map(cats.map((c) => [c.id, c]));
+
+  for (const cat of cats) {
+    if (cat.level === LEVEL_MAJOR) cat.parentId = null;
+    if (cat.level === LEVEL_MID) {
+      const parent = cat.parentId && byId.get(cat.parentId);
+      if (!parent || parent.level !== LEVEL_MAJOR) cat.parentId = DEFAULT_MAJOR_ID;
+    }
+    if (cat.level === LEVEL_MINOR) {
+      const parent = cat.parentId && byId.get(cat.parentId);
+      if (!parent || parent.level !== LEVEL_MID) cat.parentId = DEFAULT_MID_ID;
+    }
+  }
+
+  return cats;
+}
+
+export function sortBookmarkCategories(categories) {
+  const collator = new Intl.Collator("ko-KR", { sensitivity: "base" });
+  const majors = categories
+    .filter((c) => c.level === LEVEL_MAJOR)
+    .sort((a, b) => (a.order || 0) - (b.order || 0) || collator.compare(a.name, b.name));
+
+  const result = [];
+  for (const major of majors) {
+    result.push(major);
+    const mids = categories
+      .filter((c) => c.level === LEVEL_MID && c.parentId === major.id)
+      .sort((a, b) => (a.order || 0) - (b.order || 0) || collator.compare(a.name, b.name));
+    for (const mid of mids) {
+      result.push(mid);
+      const minors = categories
+        .filter((c) => c.level === LEVEL_MINOR && c.parentId === mid.id)
+        .sort((a, b) => {
+          if (a.id === UNCATEGORIZED_ID) return -1;
+          if (b.id === UNCATEGORIZED_ID) return 1;
+          return (a.order || 0) - (b.order || 0) || collator.compare(a.name, b.name);
+        });
+      result.push(...minors);
+    }
+  }
+
+  const included = new Set(result.map((c) => c.id));
+  for (const cat of categories) {
+    if (!included.has(cat.id)) result.push(cat);
+  }
+  return result;
+}
+
+function leafCategoryIds(categories) {
+  return new Set(
+    categories.filter((c) => c.level === LEVEL_MINOR).map((c) => c.id)
+  );
+}
+
+function normalizeItem(item, leafIds) {
   if (!item || typeof item !== "object") return null;
   const title = String(item.title || "").trim();
   const url = normalizeUrl(item.url);
@@ -67,7 +224,7 @@ function normalizeItem(item, validCategoryIds) {
     return null;
   }
   let categoryId = String(item.categoryId || UNCATEGORIZED_ID);
-  if (!validCategoryIds.has(categoryId)) categoryId = UNCATEGORIZED_ID;
+  if (!leafIds.has(categoryId)) categoryId = UNCATEGORIZED_ID;
   const out = {
     id: String(item.id || uid()),
     title: title.slice(0, 80),
@@ -89,17 +246,6 @@ function normalizeItem(item, validCategoryIds) {
   return out;
 }
 
-export function sortBookmarkCategories(categories) {
-  const collator = new Intl.Collator("ko-KR", { sensitivity: "base" });
-  return [...categories].sort((a, b) => {
-    if (a.id === UNCATEGORIZED_ID) return -1;
-    if (b.id === UNCATEGORIZED_ID) return 1;
-    const byOrder = (a.order || 0) - (b.order || 0);
-    if (byOrder !== 0) return byOrder;
-    return collator.compare(a.name, b.name);
-  });
-}
-
 /** 고정 → 이름 가나다순 */
 export function sortBookmarkItems(items) {
   const collator = new Intl.Collator("ko-KR", { sensitivity: "base" });
@@ -112,24 +258,20 @@ export function sortBookmarkItems(items) {
 }
 
 function normalizeState(raw) {
-  const base = defaultBookmarksState();
   const incoming = raw && typeof raw === "object" ? raw : {};
-
   let categories = Array.isArray(incoming.categories)
     ? incoming.categories.map(normalizeCategory).filter(Boolean)
     : [];
+  categories = ensureDefaultHierarchy(categories);
+  categories = sortBookmarkCategories(categories);
 
-  if (!categories.some((c) => c.id === UNCATEGORIZED_ID)) {
-    categories.unshift(base.categories[0]);
-  }
-
-  const validCategoryIds = new Set(categories.map((c) => c.id));
+  const leafIds = leafCategoryIds(categories);
   const items = (Array.isArray(incoming.items) ? incoming.items : [])
-    .map((item) => normalizeItem(item, validCategoryIds))
+    .map((item) => normalizeItem(item, leafIds))
     .filter(Boolean);
 
   return {
-    categories: sortBookmarkCategories(categories),
+    categories,
     items: sortBookmarkItems(items),
   };
 }
