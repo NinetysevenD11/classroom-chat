@@ -61,6 +61,61 @@ function hostLabel(url) {
   }
 }
 
+/** 사이트 이름·주소를 보고 카드 앞에 붙일 이모지 하나 선택 */
+const SITE_EMOJI_RULES = [
+  { emoji: "▶️", keys: ["유튜브", "youtube", "youtu.be"] },
+  { emoji: "🔍", keys: ["네이버", "naver", "구글", "google", "bing", "검색"] },
+  { emoji: "💬", keys: ["카카오", "kakao", "다음", "daum", "디스코드", "discord", "슬랙", "slack", "줌", "zoom", "채팅", "메신저", "teams", "밴드", "band"] },
+  { emoji: "🏫", keys: ["클래스룸", "classroom", "에듀", "학교", "교실", "나이스", "neis", "에듀넷", "교육청", "weeclass", "위클래스"] },
+  { emoji: "📝", keys: ["노션", "notion", "메모", "시험", "평가", "성적", "채점", "과제", "숙제"] },
+  { emoji: "📋", keys: ["구글폼", "google form", "설문", "forms.google", "typeform", "서베이"] },
+  { emoji: "🎨", keys: ["캔바", "canva", "미리캔버스", "디자인", "figma", "피그마", "일러스트"] },
+  { emoji: "📁", keys: ["드라이브", "drive", "구글문서", "docs.google", "원드라이브", "onedrive", "dropbox", "자료", "파일"] },
+  { emoji: "📌", keys: ["padlet", "패들렛", "핀터레스트", "pinterest"] },
+  { emoji: "📚", keys: ["위키", "wikipedia", "도서", "도서관", "책", "리디", "교과서", "ebs", "티스토리", "blog", "블로그"] },
+  { emoji: "💻", keys: ["깃허", "github", "코딩", "프로그래밍", "코드", "scratch", "스크래치", "repl.it", "replit"] },
+  { emoji: "🎮", keys: ["게임", "roblox", "로블록스", "minecraft", "마인크래프트", "steam"] },
+  { emoji: "🎵", keys: ["음악", "멜론", "melon", "지니", "genie", "spotify", "스포티파이", "사운드클라우드"] },
+  { emoji: "🎬", keys: ["넷플릭스", "netflix", "영상", "동영상", "티빙", "tving", "웨이브", "wavve", "쿠팡플레이", "disney"] },
+  { emoji: "📷", keys: ["인스타", "instagram", "사진", "이미지", "unsplash", "픽사베이"] },
+  { emoji: "🐦", keys: ["트위터", "twitter", "x.com"] },
+  { emoji: "📰", keys: ["뉴스", "news", "연합", "조선", "중앙", "한겨레"] },
+  { emoji: "🗺️", keys: ["지도", "map", "maps.google", "카카오맵", "kakaomap"] },
+  { emoji: "🌤️", keys: ["날씨", "weather", "기상"] },
+  { emoji: "✉️", keys: ["메일", "mail", "gmail", "이메일", "outlook"] },
+  { emoji: "🛒", keys: ["쿠팡", "coupang", "쇼핑", "11번가", "gmarket", "지마켓", "옥션", "스마트스토어"] },
+  { emoji: "💰", keys: ["은행", "bank", "금융", "카카오페이", "토스", "toss"] },
+  { emoji: "🔬", keys: ["과학", "실험", "simulation", "시뮬레이션"] },
+  { emoji: "➕", keys: ["수학", "math", "연산", "계산"] },
+  { emoji: "🔤", keys: ["영어", "english", "단어", "voca", "어학"] },
+  { emoji: "📅", keys: ["캘린더", "calendar", "일정", "스케줄"] },
+  { emoji: "❓", keys: ["퀴즈", "quiz", "kahoot", "카훗", "wordwall", "워드월"] },
+  { emoji: "🍳", keys: ["요리", "레시피", "음식", "맛집"] },
+  { emoji: "✈️", keys: ["여행", "항공", "trip", "booking"] },
+  { emoji: "💪", keys: ["운동", "건강", "fitness"] },
+  { emoji: "🌐", keys: ["번역", "translate", "papago", "파파고", "deepl"] },
+  { emoji: "🎓", keys: ["대학", "univ", "학습", "강의", "수업", "mooc", "coursera"] },
+  { emoji: "🖼️", keys: ["갤러리", "gallery", "박물관", "museum"] },
+  { emoji: "🐋", keys: ["웨일", "whale", "naver whale"] },
+  { emoji: "📺", keys: ["방송", "tv", "아프리카", "afreeca", "치지직", "chzzk"] },
+];
+
+function emojiForBookmark(title, url) {
+  const titleLower = String(title || "").toLowerCase();
+  const host = hostLabel(url).toLowerCase();
+  const haystack = `${titleLower} ${host}`;
+
+  for (const rule of SITE_EMOJI_RULES) {
+    if (rule.keys.some((k) => haystack.includes(k.toLowerCase()))) {
+      return rule.emoji;
+    }
+  }
+
+  if (/\.(go\.kr|edu|ac\.kr)/.test(host)) return "🏛️";
+  if (/\.(shop|store)/.test(host)) return "🛍️";
+  return "🔗";
+}
+
 function sortItems(list) {
   return [...list].sort((a, b) => {
     if (!!a.pinned !== !!b.pinned) return a.pinned ? -1 : 1;
@@ -230,6 +285,7 @@ function renderGrid() {
       const desc = item.description?.trim();
       const pinned = !!item.pinned;
       const catLabel = categoryName(item.categoryId || UNCATEGORIZED_ID);
+      const siteEmoji = emojiForBookmark(item.title, item.url);
       return `
       <article class="bookmark-card${pinned ? " is-pinned" : ""}" data-id="${escapeHtml(item.id)}">
         <button
@@ -241,7 +297,10 @@ function renderGrid() {
           aria-pressed="${pinned ? "true" : "false"}"
         >📌</button>
         <div class="bookmark-card-head">
-          <h3 class="bookmark-card-title">${escapeHtml(item.title)}</h3>
+          <h3 class="bookmark-card-title">
+            <span class="bm-site-emoji" aria-hidden="true">${siteEmoji}</span>
+            <span class="bm-site-name">${escapeHtml(item.title)}</span>
+          </h3>
           <div class="bookmark-card-actions">
             <button type="button" class="bm-edit" data-id="${escapeHtml(item.id)}" title="수정" aria-label="수정">✏️</button>
             <button type="button" class="bm-del" data-id="${escapeHtml(item.id)}" title="삭제" aria-label="삭제">🗑</button>
