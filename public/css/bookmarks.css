@@ -182,7 +182,7 @@ body {
   min-height: 100%;
   padding: 24px 28px 48px;
   padding-right: calc(28px + var(--hub-fab-reserve, 0px));
-  --bm-paper-fallback: #d4cdc2;
+  --bm-paper-fallback: #8ec5e8;
   --bm-card-bg: #ffffff;
   --bm-card-border: #e2e8f0;
   --bm-card-shadow: 0 1px 3px rgba(15, 23, 42, 0.06), 0 4px 12px rgba(15, 23, 42, 0.04);
@@ -195,8 +195,7 @@ body {
   position: absolute;
   inset: 0;
   z-index: 0;
-  background: url("/images/grading-home-paper-landscape.png") center center / cover no-repeat;
-  filter: sepia(0.14) saturate(0.88) brightness(0.88) contrast(0.96);
+  background: url("/images/bookmarks-sky-bg.png") center center / cover no-repeat;
   pointer-events: none;
 }
 
@@ -206,8 +205,8 @@ body {
   inset: 0;
   z-index: 0;
   background:
-    radial-gradient(ellipse 95% 75% at 50% 12%, rgba(255, 250, 242, 0.28), transparent 58%),
-    linear-gradient(168deg, rgba(205, 195, 180, 0.38) 0%, rgba(178, 168, 155, 0.48) 100%);
+    radial-gradient(ellipse 90% 70% at 50% 20%, rgba(255, 255, 255, 0.12), transparent 62%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0%, rgba(240, 248, 255, 0.22) 100%);
   pointer-events: none;
 }
 
