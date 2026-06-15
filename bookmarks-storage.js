@@ -8,6 +8,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = process.env.DATA_DIR || __dirname;
 const BOOKMARKS_FILE = path.join(DATA_DIR, "bookmarks_data.json");
 
+export const UNCATEGORIZED_ID = "uncategorized";
+
 export let bookmarksData = {};
 
 export function uid() {
@@ -15,7 +17,12 @@ export function uid() {
 }
 
 function defaultBookmarksState() {
-  return { items: [] };
+  return {
+    categories: [
+      { id: UNCATEGORIZED_ID, name: "미분류", order: 0, builtin: true, createdAt: Date.now() },
+    ],
+    items: [],
+  };
 }
 
 function normalizeUrl(raw) {
@@ -25,7 +32,30 @@ function normalizeUrl(raw) {
   return `https://${s}`;
 }
 
-function normalizeItem(item) {
+function normalizeCategory(cat) {
+  if (!cat || typeof cat !== "object") return null;
+  const id = String(cat.id || uid());
+  const name = String(cat.name || "").trim();
+  if (!name) return null;
+  if (id === UNCATEGORIZED_ID) {
+    return {
+      id: UNCATEGORIZED_ID,
+      name: "미분류",
+      order: 0,
+      builtin: true,
+      createdAt: Number(cat.createdAt) || Date.now(),
+    };
+  }
+  return {
+    id,
+    name: name.slice(0, 40),
+    order: Number(cat.order) || 0,
+    builtin: false,
+    createdAt: Number(cat.createdAt) || Date.now(),
+  };
+}
+
+function normalizeItem(item, validCategoryIds) {
   if (!item || typeof item !== "object") return null;
   const title = String(item.title || "").trim();
   const url = normalizeUrl(item.url);
@@ -36,6 +66,8 @@ function normalizeItem(item) {
   } catch {
     return null;
   }
+  let categoryId = String(item.categoryId || UNCATEGORIZED_ID);
+  if (!validCategoryIds.has(categoryId)) categoryId = UNCATEGORIZED_ID;
   return {
     id: String(item.id || uid()),
     title: title.slice(0, 80),
@@ -43,7 +75,19 @@ function normalizeItem(item) {
     url: url.slice(0, 500),
     createdAt: Number(item.createdAt) || Date.now(),
     pinned: !!item.pinned,
+    categoryId,
   };
+}
+
+export function sortBookmarkCategories(categories) {
+  const collator = new Intl.Collator("ko-KR", { sensitivity: "base" });
+  return [...categories].sort((a, b) => {
+    if (a.id === UNCATEGORIZED_ID) return -1;
+    if (b.id === UNCATEGORIZED_ID) return 1;
+    const byOrder = (a.order || 0) - (b.order || 0);
+    if (byOrder !== 0) return byOrder;
+    return collator.compare(a.name, b.name);
+  });
 }
 
 /** 고정 → 이름 가나다순 */
@@ -55,6 +99,29 @@ export function sortBookmarkItems(items) {
     if (byTitle !== 0) return byTitle;
     return a.createdAt - b.createdAt;
   });
+}
+
+function normalizeState(raw) {
+  const base = defaultBookmarksState();
+  const incoming = raw && typeof raw === "object" ? raw : {};
+
+  let categories = Array.isArray(incoming.categories)
+    ? incoming.categories.map(normalizeCategory).filter(Boolean)
+    : [];
+
+  if (!categories.some((c) => c.id === UNCATEGORIZED_ID)) {
+    categories.unshift(base.categories[0]);
+  }
+
+  const validCategoryIds = new Set(categories.map((c) => c.id));
+  const items = (Array.isArray(incoming.items) ? incoming.items : [])
+    .map((item) => normalizeItem(item, validCategoryIds))
+    .filter(Boolean);
+
+  return {
+    categories: sortBookmarkCategories(categories),
+    items: sortBookmarkItems(items),
+  };
 }
 
 function loadFromFile() {
@@ -105,20 +172,13 @@ export function getBookmarksState(userId) {
   if (!bookmarksData[userId]) {
     bookmarksData[userId] = defaultBookmarksState();
   }
-  if (!Array.isArray(bookmarksData[userId].items)) {
-    bookmarksData[userId].items = [];
-  }
-  bookmarksData[userId].items = sortBookmarkItems(
-    bookmarksData[userId].items.map(normalizeItem).filter(Boolean)
-  );
+  bookmarksData[userId] = normalizeState(bookmarksData[userId]);
   return bookmarksData[userId];
 }
 
 export async function saveBookmarksState(userId, incoming) {
-  const prev = getBookmarksState(userId);
-  const items = Array.isArray(incoming?.items) ? incoming.items : [];
-  const normalized = items.map(normalizeItem).filter(Boolean);
-  bookmarksData[userId] = { items: sortBookmarkItems(normalized) };
+  getBookmarksState(userId);
+  bookmarksData[userId] = normalizeState(incoming);
   await saveAllBookmarksData();
   return bookmarksData[userId];
 }
