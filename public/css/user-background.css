@@ -1,0 +1,73 @@
+/**
+ * 사용자 업로드 배경 — 모든 페이지 공통
+ */
+
+html.has-user-bg {
+  min-height: 100%;
+}
+
+html.has-user-bg::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  background-image: var(--user-bg-image);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  pointer-events: none;
+}
+
+html.has-user-bg::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: rgba(255, 255, 255, 0.1);
+  pointer-events: none;
+}
+
+html[data-theme="dark"].has-user-bg::after {
+  background: rgba(8, 12, 20, 0.28);
+}
+
+/* 페이지 기본 배경 숨김 */
+html.has-user-bg body.hub-layout,
+html.has-user-bg body.grading-app,
+html.has-user-bg body.bookmarks-app {
+  background: transparent !important;
+  background-image: none !important;
+}
+
+html.has-user-bg .bookmarks-main::before,
+html.has-user-bg .bookmarks-main::after,
+html.has-user-bg .grading-main:has(.view-home)::before,
+html.has-user-bg .grading-main:has(.view-exam)::before,
+html.has-user-bg .grading-main:has(.view-grades)::before,
+html.has-user-bg .grading-main:has(.view-trend)::before,
+html.has-user-bg .grading-main:has(.view-home)::after,
+html.has-user-bg .grading-main:has(.view-exam)::after,
+html.has-user-bg .grading-main:has(.view-grades)::after,
+html.has-user-bg .grading-main:has(.view-trend)::after {
+  display: none !important;
+}
+
+html.has-user-bg .bookmarks-main,
+html.has-user-bg .grading-main:has(.view-home),
+html.has-user-bg .grading-main:has(.view-exam),
+html.has-user-bg .grading-main:has(.view-grades),
+html.has-user-bg .grading-main:has(.view-trend) {
+  background-color: transparent !important;
+}
+
+html.has-user-bg body {
+  background: transparent !important;
+}
+
+html.has-user-bg .app-shell {
+  background: transparent !important;
+}
+
+html.has-user-bg .login-wrap {
+  background: transparent !important;
+}

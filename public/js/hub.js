@@ -90,6 +90,21 @@ function renderFabMenu(activeId) {
     `</div>`;
   hubAppMenu.appendChild(profile);
 
+  const bgChip = document.createElement("div");
+  bgChip.className = "hub-float-chip hub-bg-chip";
+  bgChip.innerHTML =
+    `<span class="hub-float-icon" aria-hidden="true">🖼️</span>` +
+    `<div class="hub-bg-panel">` +
+    `<span class="hub-bg-title">배경 사진</span>` +
+    `<div class="hub-bg-actions">` +
+    `<button type="button" class="hub-bg-btn" id="hubBgUploadBtn">올리기</button>` +
+    `<button type="button" class="hub-bg-btn hub-bg-btn-ghost" id="hubBgResetBtn">기본</button>` +
+    `</div>` +
+    `<input type="file" id="hubBgFile" accept="image/*" hidden />` +
+    `</div>`;
+  hubAppMenu.appendChild(bgChip);
+  mountBackgroundControls();
+
   const logout = document.createElement("button");
   logout.type = "button";
   logout.className = "hub-float-chip hub-logout-chip";
@@ -163,6 +178,7 @@ async function onLogout() {
   try {
     await fetch("/api/logout", { method: "POST", credentials: "include" });
   } catch (_) {}
+  window.UserBackground?.clear?.();
   window.location.href = "/login";
 }
 
@@ -183,6 +199,53 @@ async function loadHubProfile() {
     hubProfile = { email: "—", name: "선생님", school: "—" };
   }
   updateProfileChip();
+}
+
+function mountBackgroundControls() {
+  const uploadBtn = document.getElementById("hubBgUploadBtn");
+  const resetBtn = document.getElementById("hubBgResetBtn");
+  const fileInput = document.getElementById("hubBgFile");
+  if (!uploadBtn || !resetBtn || !fileInput || uploadBtn.dataset.bound) return;
+  uploadBtn.dataset.bound = "1";
+
+  uploadBtn.addEventListener("click", () => fileInput.click());
+
+  fileInput.addEventListener("change", async () => {
+    const file = fileInput.files?.[0];
+    fileInput.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      alert("이미지 파일만 올릴 수 있습니다.");
+      return;
+    }
+    try {
+      uploadBtn.disabled = true;
+      uploadBtn.textContent = "처리 중…";
+      const dataUrl = await window.UserBackground.resizeImageFile(file);
+      await window.UserBackground.saveBackground(dataUrl);
+      uploadBtn.textContent = "완료!";
+      setTimeout(() => {
+        uploadBtn.textContent = "올리기";
+      }, 1200);
+    } catch (err) {
+      alert(err.message || "배경을 저장하지 못했습니다.");
+      uploadBtn.textContent = "올리기";
+    } finally {
+      uploadBtn.disabled = false;
+    }
+  });
+
+  resetBtn.addEventListener("click", async () => {
+    if (!confirm("배경 사진을 기본으로 되돌릴까요?")) return;
+    try {
+      resetBtn.disabled = true;
+      await window.UserBackground.saveBackground(null);
+    } catch (err) {
+      alert(err.message || "기본 배경으로 되돌리지 못했습니다.");
+    } finally {
+      resetBtn.disabled = false;
+    }
+  });
 }
 
 hubMenuFab?.addEventListener("click", () => {

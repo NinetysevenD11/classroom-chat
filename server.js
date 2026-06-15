@@ -42,6 +42,11 @@ import {
   getBookmarksState,
   saveBookmarksState,
 } from "./bookmarks-storage.js";
+import {
+  initPreferencesStorage,
+  getUserPreferences,
+  saveUserPreferences,
+} from "./preferences-storage.js";
 import { fetchBookmarkPreview } from "./bookmark-preview.js";
 import { scanExamPaper, questionsToStored, analyzeStudentTrend } from "./grading-ai.js";
 
@@ -251,6 +256,7 @@ const isProd = process.env.NODE_ENV === "production";
 await initStorage();
 await initGradingStorage();
 await initBookmarksStorage();
+await initPreferencesStorage();
 await ensureAdminAccount(makeUser);
 
 const sessionStore = await createSessionStore(session);
@@ -475,6 +481,19 @@ app.get("/api/bookmarks/preview", requireAuth, async (req, res) => {
     res.json(preview);
   } catch (err) {
     res.status(400).json({ error: err.message || "미리보기를 만들 수 없습니다." });
+  }
+});
+
+app.get("/api/preferences", requireAuth, (req, res) => {
+  res.json(getUserPreferences(req.session.userId));
+});
+
+app.put("/api/preferences", requireAuth, async (req, res) => {
+  try {
+    const prefs = await saveUserPreferences(req.session.userId, req.body);
+    res.json(prefs);
+  } catch (err) {
+    res.status(400).json({ error: err.message || "저장 실패" });
   }
 });
 

@@ -417,6 +417,7 @@ document.getElementById("logoutBtn").addEventListener("click", async () => {
   try {
     await fetch("/api/logout", { method: "POST" });
   } catch (_) {}
+  window.UserBackground?.clear?.();
   window.location.href = "/login";
 });
 
