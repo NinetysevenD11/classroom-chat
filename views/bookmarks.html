@@ -6,7 +6,7 @@
   <title>자주 가는 사이트</title>
   <script src="/js/hub-embed.js?v=1"></script>
   <link rel="stylesheet" href="/css/cozy-meadow.css?v=3" />
-  <link rel="stylesheet" href="/css/bookmarks.css?v=6" />
+  <link rel="stylesheet" href="/css/bookmarks.css?v=7" />
 </head>
 <body class="bookmarks-app">
   <div class="bookmarks-shell">
@@ -24,7 +24,21 @@
           <h1>⭐ 자주 가는 사이트</h1>
           <p class="bookmarks-sub" id="bookmarksSub">자주 쓰는 링크를 카드로 모아 두세요.</p>
         </div>
-        <button type="button" class="btn btn-add" id="addBookmarkBtn">+ 사이트 추가</button>
+        <div class="bookmarks-head-tools">
+          <label class="bm-search" for="bmSearch">
+            <span class="bm-search-icon" aria-hidden="true">🔍</span>
+            <input
+              type="search"
+              id="bmSearch"
+              placeholder="이름·URL 검색"
+              autocomplete="off"
+              enterkeyhint="search"
+              aria-label="이름 또는 URL로 검색"
+            />
+            <button type="button" class="bm-search-clear hidden" id="bmSearchClear" aria-label="검색 지우기">✕</button>
+          </label>
+          <button type="button" class="btn btn-add" id="addBookmarkBtn">+ 사이트 추가</button>
+        </div>
       </header>
 
       <div id="bookmarkGrid" class="bookmark-grid" aria-live="polite"></div>
@@ -78,6 +92,6 @@
 
   <div id="bookmarkToast" class="bm-toast hidden" role="status"></div>
 
-  <script src="/js/bookmarks.js?v=6"></script>
+  <script src="/js/bookmarks.js?v=7"></script>
 </body>
 </html>

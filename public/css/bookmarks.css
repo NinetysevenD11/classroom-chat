@@ -227,6 +227,77 @@ body {
   margin-bottom: 24px;
 }
 
+.bookmarks-head-tools {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.bm-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: min(280px, 100%);
+  padding: 8px 10px 8px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.bm-search:focus-within {
+  border-color: #8aa3be;
+  box-shadow: 0 0 0 2px rgba(138, 163, 190, 0.25);
+}
+
+.bm-search-icon {
+  flex-shrink: 0;
+  font-size: 14px;
+  line-height: 1;
+  opacity: 0.7;
+}
+
+.bm-search input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  font-family: inherit;
+  color: #2c2924;
+  outline: none;
+}
+
+.bm-search input::placeholder {
+  color: #94a3b8;
+}
+
+.bm-search input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.bm-search-clear {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 6px;
+  background: #f1f5f9;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+}
+
+.bm-search-clear:hover {
+  background: #e2e8f0;
+  color: #334155;
+}
+
 .bookmarks-head h1 {
   margin: 0 0 8px;
   font-size: 26px;
@@ -333,6 +404,15 @@ body {
 @media (max-width: 640px) {
   .bookmark-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .bookmarks-head-tools {
+    width: 100%;
+    align-items: stretch;
+  }
+
+  .bm-search {
+    width: 100%;
   }
 
   .bookmarks-main {

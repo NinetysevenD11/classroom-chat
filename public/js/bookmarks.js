@@ -9,11 +9,14 @@ let items = [];
 let editingId = null;
 let editingCategoryId = null;
 let activeFilter = localStorage.getItem(FILTER_KEY) || FILTER_ALL;
+let searchQuery = "";
 
 const gridEl = document.getElementById("bookmarkGrid");
 const emptyEl = document.getElementById("bookmarkEmpty");
 const categoryListEl = document.getElementById("categoryList");
 const subEl = document.getElementById("bookmarksSub");
+const searchInput = document.getElementById("bmSearch");
+const searchClearBtn = document.getElementById("bmSearchClear");
 const dialogEl = document.getElementById("bookmarkDialog");
 const categoryDialogEl = document.getElementById("categoryDialog");
 const formEl = document.getElementById("bookmarkForm");
@@ -125,9 +128,28 @@ function sortItems(list) {
   });
 }
 
+function normalizedSearchQuery() {
+  return searchQuery.trim().toLowerCase();
+}
+
+function itemMatchesSearch(item, q) {
+  if (!q) return true;
+  const title = String(item.title || "").toLowerCase();
+  const url = String(item.url || "").toLowerCase();
+  const host = hostLabel(item.url).toLowerCase();
+  return title.includes(q) || url.includes(q) || host.includes(q);
+}
+
+function itemsInCategory(catId) {
+  if (catId === FILTER_ALL) return items;
+  return items.filter((x) => (x.categoryId || UNCATEGORIZED_ID) === catId);
+}
+
 function countInCategory(catId) {
-  if (catId === FILTER_ALL) return items.length;
-  return items.filter((x) => (x.categoryId || UNCATEGORIZED_ID) === catId).length;
+  const q = normalizedSearchQuery();
+  const list = itemsInCategory(catId);
+  if (!q) return list.length;
+  return list.filter((x) => itemMatchesSearch(x, q)).length;
 }
 
 function categoryName(catId) {
@@ -142,12 +164,38 @@ function setActiveFilter(catId) {
   renderGrid();
 }
 
+function setSearchQuery(value) {
+  searchQuery = String(value || "");
+  if (searchInput && searchInput.value !== searchQuery) searchInput.value = searchQuery;
+  searchClearBtn?.classList.toggle("hidden", !searchQuery.trim());
+  renderSidebar();
+  renderGrid();
+}
+
 function filteredItems() {
-  const list =
-    activeFilter === FILTER_ALL
-      ? items
-      : items.filter((x) => (x.categoryId || UNCATEGORIZED_ID) === activeFilter);
+  const q = normalizedSearchQuery();
+  const list = itemsInCategory(activeFilter).filter((x) => itemMatchesSearch(x, q));
   return sortItems(list);
+}
+
+function updateSubText() {
+  if (!subEl) return;
+  const q = normalizedSearchQuery();
+  const label = categoryName(activeFilter);
+  const count = countInCategory(activeFilter);
+
+  if (q) {
+    subEl.textContent =
+      activeFilter === FILTER_ALL
+        ? `「${searchQuery.trim()}」 검색 · ${count}개`
+        : `「${label}」에서 「${searchQuery.trim()}」 검색 · ${count}개`;
+    return;
+  }
+
+  subEl.textContent =
+    activeFilter === FILTER_ALL
+      ? "전체 사이트를 가나다순으로 보여 줍니다. 고정한 카드는 맨 위에 표시됩니다."
+      : `「${label}」 카테고리 · ${count}개`;
 }
 
 function fillCategorySelect(selectedId) {
@@ -259,24 +307,28 @@ function renderSidebar() {
   });
 
   if (subEl) {
-    const label = categoryName(activeFilter);
-    subEl.textContent =
-      activeFilter === FILTER_ALL
-        ? "전체 사이트를 가나다순으로 보여 줍니다. 고정한 카드는 맨 위에 표시됩니다."
-        : `「${label}」 카테고리 · ${countInCategory(activeFilter)}개`;
+    updateSubText();
   }
 }
 
 function renderGrid() {
   if (!gridEl) return;
   const sorted = filteredItems();
+  const q = normalizedSearchQuery();
   if (!sorted.length) {
     gridEl.innerHTML = "";
     emptyEl?.classList.remove("hidden");
-    emptyEl.textContent =
-      activeFilter === FILTER_ALL
-        ? "아직 등록된 사이트가 없습니다. 「+ 사이트 추가」로 링크를 넣어 보세요."
-        : `「${categoryName(activeFilter)}」에 사이트가 없습니다.`;
+    if (q) {
+      emptyEl.textContent =
+        activeFilter === FILTER_ALL
+          ? `「${searchQuery.trim()}」에 맞는 사이트가 없습니다.`
+          : `「${categoryName(activeFilter)}」에서 「${searchQuery.trim()}」에 맞는 사이트가 없습니다.`;
+    } else if (activeFilter === FILTER_ALL) {
+      emptyEl.textContent =
+        "아직 등록된 사이트가 없습니다. 「+ 사이트 추가」로 링크를 넣어 보세요.";
+    } else {
+      emptyEl.textContent = `「${categoryName(activeFilter)}」에 사이트가 없습니다.`;
+    }
     return;
   }
   emptyEl?.classList.add("hidden");
@@ -414,6 +466,13 @@ document.getElementById("addBookmarkBtn")?.addEventListener("click", () => openD
 document.getElementById("addCategoryBtn")?.addEventListener("click", () => openCategoryDialog(null));
 document.getElementById("bmCancelBtn")?.addEventListener("click", closeDialog);
 document.getElementById("catCancelBtn")?.addEventListener("click", closeCategoryDialog);
+
+searchInput?.addEventListener("input", () => setSearchQuery(searchInput.value));
+searchInput?.addEventListener("search", () => setSearchQuery(searchInput.value));
+searchClearBtn?.addEventListener("click", () => {
+  setSearchQuery("");
+  searchInput?.focus();
+});
 
 dialogEl?.addEventListener("click", (e) => {
   if (e.target === dialogEl) closeDialog();
