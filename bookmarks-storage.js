@@ -68,7 +68,7 @@ function normalizeItem(item, validCategoryIds) {
   }
   let categoryId = String(item.categoryId || UNCATEGORIZED_ID);
   if (!validCategoryIds.has(categoryId)) categoryId = UNCATEGORIZED_ID;
-  return {
+  const out = {
     id: String(item.id || uid()),
     title: title.slice(0, 80),
     description: String(item.description || "").trim().slice(0, 200),
@@ -77,6 +77,16 @@ function normalizeItem(item, validCategoryIds) {
     pinned: !!item.pinned,
     categoryId,
   };
+  const previewUrl = String(item.previewUrl || "").trim();
+  if (previewUrl) {
+    try {
+      const u = new URL(previewUrl);
+      if (["http:", "https:"].includes(u.protocol)) {
+        out.previewUrl = previewUrl.slice(0, 500);
+      }
+    } catch (_) {}
+  }
+  return out;
 }
 
 export function sortBookmarkCategories(categories) {

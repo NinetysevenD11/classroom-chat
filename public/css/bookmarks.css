@@ -439,6 +439,45 @@ body {
   border-radius: 12px;
   box-shadow: var(--bm-card-shadow);
   transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.bookmark-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-image: var(--bm-preview-image);
+  background-size: cover;
+  background-position: top center;
+  background-repeat: no-repeat;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s ease;
+}
+
+.bookmark-card.has-preview::before {
+  opacity: 0.18;
+}
+
+.bookmark-card.has-preview::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.55) 0%,
+    rgba(255, 255, 255, 0.78) 45%,
+    rgba(255, 255, 255, 0.9) 100%
+  );
+  pointer-events: none;
+}
+
+.bookmark-card > * {
+  position: relative;
+  z-index: 1;
 }
 
 .bookmark-card.is-pinned {

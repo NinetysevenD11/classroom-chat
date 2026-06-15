@@ -374,6 +374,91 @@ function renderGrid() {
     .join("");
 
   bindCardActions();
+  loadVisiblePreviews(sorted);
+}
+
+const previewPending = new Set();
+let previewSaveTimer = null;
+const previewWaiters = [];
+let previewActive = 0;
+const PREVIEW_CONCURRENCY = 2;
+
+function cssUrlValue(url) {
+  return `url("${String(url).replace(/\\/g, "\\\\").replace(/"/g, '\\"')}")`;
+}
+
+function applyPreviewToCard(item) {
+  if (!item?.previewUrl || !gridEl) return;
+  const card = gridEl.querySelector(`.bookmark-card[data-id="${CSS.escape(item.id)}"]`);
+  if (!card) return;
+
+  const probe = new Image();
+  probe.onload = () => {
+    if (!gridEl.contains(card)) return;
+    card.classList.add("has-preview");
+    card.style.setProperty("--bm-preview-image", cssUrlValue(item.previewUrl));
+  };
+  probe.onerror = () => {
+    card.classList.remove("has-preview");
+    card.style.removeProperty("--bm-preview-image");
+  };
+  probe.src = item.previewUrl;
+}
+
+function schedulePreviewSave() {
+  clearTimeout(previewSaveTimer);
+  previewSaveTimer = setTimeout(async () => {
+    try {
+      await saveNow();
+    } catch (_) {}
+  }, 2500);
+}
+
+async function fetchPreviewUrl(pageUrl) {
+  const res = await fetch(`/api/bookmarks/preview?url=${encodeURIComponent(pageUrl)}`, {
+    credentials: "include",
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "미리보기 실패");
+  return data.previewUrl || null;
+}
+
+function pumpPreviewQueue() {
+  while (previewActive < PREVIEW_CONCURRENCY && previewWaiters.length) {
+    const job = previewWaiters.shift();
+    previewActive += 1;
+    job().finally(() => {
+      previewActive -= 1;
+      pumpPreviewQueue();
+    });
+  }
+}
+
+function queuePreviewLoad(item) {
+  if (!item?.url || item.previewUrl || previewPending.has(item.id)) return;
+  previewPending.add(item.id);
+  previewWaiters.push(async () => {
+    try {
+      const previewUrl = await fetchPreviewUrl(item.url);
+      if (!previewUrl) return;
+      const idx = items.findIndex((x) => x.id === item.id);
+      if (idx === -1) return;
+      items[idx] = { ...items[idx], previewUrl };
+      applyPreviewToCard(items[idx]);
+      schedulePreviewSave();
+    } catch (_) {
+    } finally {
+      previewPending.delete(item.id);
+    }
+  });
+  pumpPreviewQueue();
+}
+
+function loadVisiblePreviews(list) {
+  list.forEach((item) => {
+    if (item.previewUrl) applyPreviewToCard(item);
+    else queuePreviewLoad(item);
+  });
 }
 
 function bindCardActions() {
@@ -509,9 +594,12 @@ formEl?.addEventListener("submit", async (e) => {
   }
 
   if (editingId) {
-    items = items.map((x) =>
-      x.id === editingId ? { ...x, title, url, description, categoryId } : x
-    );
+    items = items.map((x) => {
+      if (x.id !== editingId) return x;
+      const next = { ...x, title, url, description, categoryId };
+      if (x.url !== url) delete next.previewUrl;
+      return next;
+    });
   } else {
     items.push({
       id: crypto.randomUUID?.() || String(Date.now()) + Math.random().toString(16).slice(2),

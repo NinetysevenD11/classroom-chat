@@ -42,6 +42,7 @@ import {
   getBookmarksState,
   saveBookmarksState,
 } from "./bookmarks-storage.js";
+import { fetchBookmarkPreview } from "./bookmark-preview.js";
 import { scanExamPaper, questionsToStored, analyzeStudentTrend } from "./grading-ai.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -462,6 +463,18 @@ app.put("/api/bookmarks", requireAuth, async (req, res) => {
     res.json(state);
   } catch (err) {
     res.status(400).json({ error: err.message || "저장 실패" });
+  }
+});
+
+app.get("/api/bookmarks/preview", requireAuth, async (req, res) => {
+  if (isAdminUserId(req.session.userId)) {
+    return res.status(403).json({ error: "사용할 수 없습니다." });
+  }
+  try {
+    const preview = await fetchBookmarkPreview(req.query.url);
+    res.json(preview);
+  } catch (err) {
+    res.status(400).json({ error: err.message || "미리보기를 만들 수 없습니다." });
   }
 });
 
