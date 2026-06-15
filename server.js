@@ -37,6 +37,11 @@ import {
   getTrendAnalysisLogs,
   uid,
 } from "./grading-storage.js";
+import {
+  initBookmarksStorage,
+  getBookmarksState,
+  saveBookmarksState,
+} from "./bookmarks-storage.js";
 import { scanExamPaper, questionsToStored, analyzeStudentTrend } from "./grading-ai.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -244,6 +249,7 @@ const isProd = process.env.NODE_ENV === "production";
 
 await initStorage();
 await initGradingStorage();
+await initBookmarksStorage();
 await ensureAdminAccount(makeUser);
 
 const sessionStore = await createSessionStore(session);
@@ -432,6 +438,31 @@ app.get("/app/grading", requireAuth, (req, res) => {
     return res.redirect("/admin");
   }
   res.sendFile(path.join(__dirname, "views", "grading.html"));
+});
+
+// 자주 가는 사이트
+app.get("/app/bookmarks", requireAuth, (req, res) => {
+  if (isAdminUserId(req.session.userId)) {
+    return res.redirect("/admin");
+  }
+  res.sendFile(path.join(__dirname, "views", "bookmarks.html"));
+});
+
+app.get("/api/bookmarks", requireAuth, (req, res) => {
+  const userId = req.session.userId;
+  if (isAdminUserId(userId)) return res.status(403).json({ error: "관리자는 사용할 수 없습니다." });
+  res.json(getBookmarksState(userId));
+});
+
+app.put("/api/bookmarks", requireAuth, async (req, res) => {
+  const userId = req.session.userId;
+  if (isAdminUserId(userId)) return res.status(403).json({ error: "사용할 수 없습니다." });
+  try {
+    const state = await saveBookmarksState(userId, req.body);
+    res.json(state);
+  } catch (err) {
+    res.status(400).json({ error: err.message || "저장 실패" });
+  }
 });
 
 app.get("/exam", (req, res) => {

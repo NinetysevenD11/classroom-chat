@@ -2,6 +2,12 @@
 
 const APPS = [
   {
+    id: "bookmarks",
+    label: "자주 가는 사이트",
+    icon: "⭐",
+    path: "/app/bookmarks",
+  },
+  {
     id: "chalkboard",
     label: "우리반 칠판",
     icon: "📋",
@@ -138,7 +144,10 @@ function initAppFromUrl() {
   const path = window.location.pathname;
   const match = APPS.find((a) => path === a.path || path.startsWith(a.path + "/"));
   const saved = localStorage.getItem(APP_KEY);
-  const id = match?.id || (APPS.some((a) => a.id === saved) ? saved : APPS[0].id);
+  const defaultAppId = "chalkboard";
+  const id =
+    match?.id ||
+    (APPS.some((a) => a.id === saved) ? saved : defaultAppId);
   const app = APPS.find((a) => a.id === id) || APPS[0];
   localStorage.setItem(APP_KEY, app.id);
   renderFabMenu(app.id);

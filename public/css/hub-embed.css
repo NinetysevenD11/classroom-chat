@@ -16,3 +16,7 @@ html.hub-embedded .submit-bar {
 html.hub-embedded .grading-app .grading-main {
   padding-right: var(--hub-fab-reserve);
 }
+
+html.hub-embedded .bookmarks-main {
+  padding-right: calc(28px + var(--hub-fab-reserve));
+}

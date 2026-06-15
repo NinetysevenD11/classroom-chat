@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>자주 가는 사이트</title>
+  <script src="/js/hub-embed.js?v=1"></script>
+  <link rel="stylesheet" href="/css/cozy-meadow.css?v=3" />
+  <link rel="stylesheet" href="/css/bookmarks.css?v=1" />
+</head>
+<body class="bookmarks-app">
+  <main class="bookmarks-main">
+    <header class="bookmarks-head">
+      <div class="bookmarks-head-text">
+        <h1>⭐ 자주 가는 사이트</h1>
+        <p class="bookmarks-sub">자주 쓰는 링크를 카드로 모아 두세요. 카드를 누르면 새 탭에서 열립니다.</p>
+      </div>
+      <button type="button" class="btn btn-add" id="addBookmarkBtn">+ 사이트 추가</button>
+    </header>
+
+    <div id="bookmarkGrid" class="bookmark-grid" aria-live="polite"></div>
+    <p id="bookmarkEmpty" class="bookmark-empty hidden">아직 등록된 사이트가 없습니다. 「+ 사이트 추가」로 링크를 넣어 보세요.</p>
+  </main>
+
+  <div id="bookmarkDialog" class="bm-dialog hidden" role="dialog" aria-modal="true" aria-labelledby="bookmarkDialogTitle">
+    <div class="bm-dialog-box">
+      <h2 id="bookmarkDialogTitle">사이트 추가</h2>
+      <form id="bookmarkForm" class="bm-form">
+        <label class="bm-field">
+          <span>사이트 이름 <em class="req">*</em></span>
+          <input type="text" id="bmTitle" name="title" maxlength="80" required placeholder="예: 네이버" autocomplete="off" />
+        </label>
+        <label class="bm-field">
+          <span>주소 (URL) <em class="req">*</em></span>
+          <input type="url" id="bmUrl" name="url" maxlength="500" required placeholder="https://example.com" autocomplete="off" />
+        </label>
+        <label class="bm-field">
+          <span>간단한 설명</span>
+          <textarea id="bmDesc" name="description" maxlength="200" rows="3" placeholder="이 사이트를 언제 쓰는지 적어 두세요 (선택)"></textarea>
+        </label>
+        <div class="bm-dialog-foot">
+          <button type="button" class="btn btn-ghost" id="bmCancelBtn">취소</button>
+          <button type="submit" class="btn btn-primary" id="bmSaveBtn">저장</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="bookmarkToast" class="bm-toast hidden" role="status"></div>
+
+  <script src="/js/bookmarks.js?v=1"></script>
+</body>
+</html>
