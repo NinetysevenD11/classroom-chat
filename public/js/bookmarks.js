@@ -40,6 +40,14 @@ const toastEl = document.getElementById("bookmarkToast");
 
 const titleCollator = new Intl.Collator("ko-KR", { sensitivity: "base" });
 
+function categoryLevel(cat) {
+  return Number(cat?.level) || LEVEL_MINOR;
+}
+
+function isLevel(cat, level) {
+  return categoryLevel(cat) === level;
+}
+
 function escapeHtml(s) {
   return String(s)
     .replace(/&/g, "&amp;")
@@ -165,7 +173,7 @@ function getCategory(id) {
 }
 
 function childrenOf(parentId, level) {
-  return categories.filter((c) => c.parentId === parentId && c.level === level);
+  return categories.filter((c) => c.parentId === parentId && isLevel(c, level));
 }
 
 function collectDescendantIds(id) {
@@ -178,20 +186,9 @@ function collectDescendantIds(id) {
   return ids;
 }
 
-function descendantLeafIds(catId) {
-  const cat = getCategory(catId);
-  if (!cat) return catId === UNCATEGORIZED_ID ? [UNCATEGORIZED_ID] : [];
-  if (cat.level === LEVEL_MINOR) return [cat.id];
-  if (cat.level === LEVEL_MID) {
-    return categories.filter((c) => c.level === LEVEL_MINOR && c.parentId === cat.id).map((c) => c.id);
-  }
-  if (cat.level === LEVEL_MAJOR) {
-    const midIds = categories.filter((c) => c.level === LEVEL_MID && c.parentId === cat.id).map((c) => c.id);
-    return categories
-      .filter((c) => c.level === LEVEL_MINOR && midIds.includes(c.parentId))
-      .map((c) => c.id);
-  }
-  return [];
+function categoryScopeIds(catId) {
+  if (catId === FILTER_ALL) return null;
+  return new Set(collectDescendantIds(catId));
 }
 
 function categoryPath(catId, separator = " › ") {
@@ -211,9 +208,9 @@ function categoryPath(catId, separator = " › ") {
 
 function itemsInCategory(catId) {
   if (catId === FILTER_ALL) return items;
-  const leafIds = new Set(descendantLeafIds(catId));
-  if (!leafIds.size) return [];
-  return items.filter((x) => leafIds.has(x.categoryId || UNCATEGORIZED_ID));
+  const scope = categoryScopeIds(catId);
+  if (!scope) return [];
+  return items.filter((x) => scope.has(x.categoryId || UNCATEGORIZED_ID));
 }
 
 function countInCategory(catId) {
@@ -270,13 +267,36 @@ function updateSubText() {
 
 function fillCategorySelect(selectedId) {
   if (!categorySelect) return;
-  const leaves = categories
-    .filter((c) => c.level === LEVEL_MINOR)
-    .sort((a, b) => titleCollator.compare(categoryPath(a.id), categoryPath(b.id)));
-  categorySelect.innerHTML = leaves
+  const options = [];
+  const majors = categories.filter((c) => isLevel(c, LEVEL_MAJOR));
+
+  for (const major of majors) {
+    options.push({ id: major.id, label: `[대] ${categoryPath(major.id)}` });
+    const mids = categories.filter((c) => isLevel(c, LEVEL_MID) && c.parentId === major.id);
+    for (const mid of mids) {
+      options.push({ id: mid.id, label: `[중] ${categoryPath(mid.id)}` });
+      const minors = categories.filter((c) => isLevel(c, LEVEL_MINOR) && c.parentId === mid.id);
+      for (const minor of minors) {
+        options.push({ id: minor.id, label: `[소] ${categoryPath(minor.id)}` });
+      }
+    }
+  }
+
+  const listed = new Set(options.map((o) => o.id));
+  for (const cat of categories) {
+    if (listed.has(cat.id)) continue;
+    options.push({
+      id: cat.id,
+      label: `[${levelShort(categoryLevel(cat))}] ${categoryPath(cat.id)}`,
+    });
+  }
+
+  options.sort((a, b) => titleCollator.compare(a.label, b.label));
+
+  categorySelect.innerHTML = options
     .map(
-      (c) =>
-        `<option value="${escapeHtml(c.id)}"${c.id === selectedId ? " selected" : ""}>${escapeHtml(categoryPath(c.id))}</option>`
+      (opt) =>
+        `<option value="${escapeHtml(opt.id)}"${opt.id === selectedId ? " selected" : ""}>${escapeHtml(opt.label)}</option>`
     )
     .join("");
 }
@@ -285,9 +305,9 @@ function fillParentSelect(level, selectedId) {
   if (!catParentSelect) return;
   let parents = [];
   if (level === LEVEL_MID) {
-    parents = categories.filter((c) => c.level === LEVEL_MAJOR);
+    parents = categories.filter((c) => isLevel(c, LEVEL_MAJOR));
   } else if (level === LEVEL_MINOR) {
-    parents = categories.filter((c) => c.level === LEVEL_MID);
+    parents = categories.filter((c) => isLevel(c, LEVEL_MID));
   }
   catParentSelect.innerHTML = parents
     .map(
@@ -319,9 +339,7 @@ function openDialog(item) {
   descInput.value = item?.description || "";
   const cat =
     item?.categoryId ||
-    (activeFilter !== FILTER_ALL && getCategory(activeFilter)?.level === LEVEL_MINOR
-      ? activeFilter
-      : UNCATEGORIZED_ID);
+    (activeFilter !== FILTER_ALL && getCategory(activeFilter) ? activeFilter : UNCATEGORIZED_ID);
   fillCategorySelect(cat);
   dialogEl.classList.remove("hidden");
   titleInput.focus();
@@ -337,7 +355,7 @@ function openCategoryDialog(cat, defaults = {}) {
   editingCategoryId = cat?.id || null;
   if (cat?.builtin) return;
 
-  const level = cat?.level || defaults.level || LEVEL_MINOR;
+  const level = categoryLevel(cat) || defaults.level || LEVEL_MINOR;
   categoryDialogTitleEl.textContent = editingCategoryId
     ? `${levelLabel(level)} 수정`
     : `${levelLabel(level)} 추가`;
@@ -367,11 +385,11 @@ function renderCategoryRow(cat) {
   const count = countInCategory(cat.id);
   const canEdit = !cat.builtin;
   const indent =
-    cat.level === LEVEL_MAJOR ? 0 : cat.level === LEVEL_MID ? 1 : 2;
+    categoryLevel(cat) === LEVEL_MAJOR ? 0 : categoryLevel(cat) === LEVEL_MID ? 1 : 2;
   return `
-    <div class="bm-cat-row bm-cat-level-${cat.level}${active ? " is-active" : ""}" data-cat-id="${escapeHtml(cat.id)}" style="--bm-cat-depth:${indent}">
+    <div class="bm-cat-row bm-cat-level-${categoryLevel(cat)}${active ? " is-active" : ""}" data-cat-id="${escapeHtml(cat.id)}" style="--bm-cat-depth:${indent}">
       <button type="button" class="bm-cat-btn" data-cat-id="${escapeHtml(cat.id)}">
-        <span class="bm-cat-level">${levelShort(cat.level)}</span>
+        <span class="bm-cat-level">${levelShort(categoryLevel(cat))}</span>
         <span class="bm-cat-name">${escapeHtml(cat.name)}</span>
         <span class="bm-cat-count">${count}</span>
       </button>
@@ -379,9 +397,9 @@ function renderCategoryRow(cat) {
         canEdit
           ? `<div class="bm-cat-actions">
           ${
-            cat.level === LEVEL_MAJOR
+            isLevel(cat, LEVEL_MAJOR)
               ? `<button type="button" class="bm-cat-add-child" data-level="${LEVEL_MID}" data-parent-id="${escapeHtml(cat.id)}" title="중분류 추가" aria-label="중분류 추가">＋</button>`
-              : cat.level === LEVEL_MID
+              : isLevel(cat, LEVEL_MID)
                 ? `<button type="button" class="bm-cat-add-child" data-level="${LEVEL_MINOR}" data-parent-id="${escapeHtml(cat.id)}" title="소분류 추가" aria-label="소분류 추가">＋</button>`
                 : ""
           }
@@ -390,9 +408,9 @@ function renderCategoryRow(cat) {
         </div>`
           : `<div class="bm-cat-actions bm-cat-actions-static">
           ${
-            cat.level === LEVEL_MAJOR
+            isLevel(cat, LEVEL_MAJOR)
               ? `<button type="button" class="bm-cat-add-child" data-level="${LEVEL_MID}" data-parent-id="${escapeHtml(cat.id)}" title="중분류 추가" aria-label="중분류 추가">＋</button>`
-              : cat.level === LEVEL_MID
+              : isLevel(cat, LEVEL_MID)
                 ? `<button type="button" class="bm-cat-add-child" data-level="${LEVEL_MINOR}" data-parent-id="${escapeHtml(cat.id)}" title="소분류 추가" aria-label="소분류 추가">＋</button>`
                 : ""
           }
@@ -404,7 +422,7 @@ function renderCategoryRow(cat) {
 function renderSidebar() {
   if (!categoryListEl) return;
 
-  const majors = categories.filter((c) => c.level === LEVEL_MAJOR);
+  const majors = categories.filter((c) => isLevel(c, LEVEL_MAJOR));
   let html = `
     <div class="bm-cat-row bm-cat-all${activeFilter === FILTER_ALL ? " is-active" : ""}" data-cat-id="${FILTER_ALL}">
       <button type="button" class="bm-cat-btn" data-cat-id="${FILTER_ALL}">
@@ -419,10 +437,10 @@ function renderSidebar() {
 
   for (const major of majors) {
     html += renderCategoryRow(major);
-    const mids = categories.filter((c) => c.level === LEVEL_MID && c.parentId === major.id);
+    const mids = categories.filter((c) => isLevel(c, LEVEL_MID) && c.parentId === major.id);
     for (const mid of mids) {
       html += renderCategoryRow(mid);
-      const minors = categories.filter((c) => c.level === LEVEL_MINOR && c.parentId === mid.id);
+      const minors = categories.filter((c) => isLevel(c, LEVEL_MINOR) && c.parentId === mid.id);
       for (const minor of minors) {
         html += renderCategoryRow(minor);
       }
@@ -462,12 +480,9 @@ function renderSidebar() {
       const label = levelLabel(cat.level);
       if (!confirm(`이 ${label}를 삭제할까요?\n하위 분류와 사이트는 「미분류」로 이동합니다.`)) return;
       const removeIds = new Set(collectDescendantIds(id));
-      const removedLeafIds = [...removeIds].filter(
-        (rid) => getCategory(rid)?.level === LEVEL_MINOR
-      );
       categories = categories.filter((c) => !removeIds.has(c.id));
       items = items.map((x) =>
-        removedLeafIds.includes(x.categoryId) ? { ...x, categoryId: UNCATEGORIZED_ID } : x
+        removeIds.has(x.categoryId) ? { ...x, categoryId: UNCATEGORIZED_ID } : x
       );
       if (removeIds.has(activeFilter)) setActiveFilter(FILTER_ALL);
       try {
@@ -831,11 +846,13 @@ categoryFormEl?.addEventListener("submit", async (e) => {
       name,
       level,
       parentId,
-      order: categories.filter((c) => c.level === level && c.parentId === parentId).length,
+      order: categories.filter(
+        (c) => categoryLevel(c) === level && c.parentId === parentId
+      ).length,
       builtin: false,
       createdAt: Date.now(),
     });
-    if (level === LEVEL_MINOR) setActiveFilter(id);
+    setActiveFilter(id);
   }
 
   try {

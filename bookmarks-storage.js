@@ -207,12 +207,10 @@ export function sortBookmarkCategories(categories) {
 }
 
 function leafCategoryIds(categories) {
-  return new Set(
-    categories.filter((c) => c.level === LEVEL_MINOR).map((c) => c.id)
-  );
+  return new Set(categories.map((c) => c.id));
 }
 
-function normalizeItem(item, leafIds) {
+function normalizeItem(item, validCategoryIds) {
   if (!item || typeof item !== "object") return null;
   const title = String(item.title || "").trim();
   const url = normalizeUrl(item.url);
@@ -224,7 +222,7 @@ function normalizeItem(item, leafIds) {
     return null;
   }
   let categoryId = String(item.categoryId || UNCATEGORIZED_ID);
-  if (!leafIds.has(categoryId)) categoryId = UNCATEGORIZED_ID;
+  if (!validCategoryIds.has(categoryId)) categoryId = UNCATEGORIZED_ID;
   const out = {
     id: String(item.id || uid()),
     title: title.slice(0, 80),
@@ -265,9 +263,9 @@ function normalizeState(raw) {
   categories = ensureDefaultHierarchy(categories);
   categories = sortBookmarkCategories(categories);
 
-  const leafIds = leafCategoryIds(categories);
+  const validCategoryIds = leafCategoryIds(categories);
   const items = (Array.isArray(incoming.items) ? incoming.items : [])
-    .map((item) => normalizeItem(item, leafIds))
+    .map((item) => normalizeItem(item, validCategoryIds))
     .filter(Boolean);
 
   return {
