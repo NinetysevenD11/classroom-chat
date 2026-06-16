@@ -609,6 +609,108 @@ function openFloating() {
 
 pipBtn.addEventListener("click", openFloating);
 
+// ----- 선생님 화면 공유 (학생에게 보기 전용 미러링) -----
+const mirrorShareBtn = document.getElementById("mirrorShareBtn");
+let mirrorStream = null;
+let mirrorVideo = null;
+let mirrorCanvas = null;
+let mirrorCtx = null;
+let mirrorTimer = null;
+let mirrorSharing = false;
+let mirrorPending = false;
+
+function updateMirrorBtn() {
+  if (!mirrorShareBtn) return;
+  mirrorShareBtn.classList.toggle("is-active", mirrorSharing);
+  mirrorShareBtn.setAttribute("aria-pressed", mirrorSharing ? "true" : "false");
+  mirrorShareBtn.textContent = mirrorSharing ? "🖥️ 화면 공유 중…" : "🖥️ 선생님 화면 공유";
+}
+
+async function startMirrorShare() {
+  if (mirrorSharing || mirrorPending) return;
+  if (!navigator.mediaDevices?.getDisplayMedia) {
+    alert("이 브라우저에서는 화면 공유를 지원하지 않아요. Chrome 또는 Edge를 사용해 주세요.");
+    return;
+  }
+  mirrorPending = true;
+  try {
+    const stream = await navigator.mediaDevices.getDisplayMedia({
+      video: {
+        width: { ideal: 1920 },
+        height: { ideal: 1080 },
+        frameRate: { ideal: 8, max: 12 },
+      },
+      audio: false,
+      preferCurrentTab: true,
+      selfBrowserSurface: "include",
+      monitorTypeSurfaces: "exclude",
+    });
+    mirrorStream = stream;
+    mirrorVideo = document.createElement("video");
+    mirrorVideo.srcObject = stream;
+    mirrorVideo.muted = true;
+    mirrorVideo.playsInline = true;
+    await mirrorVideo.play();
+
+    mirrorCanvas = document.createElement("canvas");
+    mirrorCtx = mirrorCanvas.getContext("2d", { alpha: false });
+
+    stream.getVideoTracks()[0].addEventListener("ended", () => stopMirrorShare(true));
+
+    socket.emit("teacher:mirrorStart");
+    mirrorSharing = true;
+    updateMirrorBtn();
+
+    const sendFrame = () => {
+      if (!mirrorSharing || !mirrorVideo?.videoWidth) return;
+      const vw = mirrorVideo.videoWidth;
+      const vh = mirrorVideo.videoHeight;
+      const maxW = 960;
+      const scale = Math.min(1, maxW / vw);
+      const w = Math.max(1, Math.round(vw * scale));
+      const h = Math.max(1, Math.round(vh * scale));
+      if (mirrorCanvas.width !== w) mirrorCanvas.width = w;
+      if (mirrorCanvas.height !== h) mirrorCanvas.height = h;
+      mirrorCtx.drawImage(mirrorVideo, 0, 0, w, h);
+      socket.emit("teacher:mirrorFrame", { frame: mirrorCanvas.toDataURL("image/jpeg", 0.52) });
+    };
+
+    sendFrame();
+    mirrorTimer = setInterval(sendFrame, 450);
+  } catch (err) {
+    if (err?.name !== "NotAllowedError") {
+      alert("화면 공유를 시작하지 못했어요. 다시 시도해 주세요.");
+    }
+  } finally {
+    mirrorPending = false;
+  }
+}
+
+function stopMirrorShare(emitStop = true) {
+  if (!mirrorSharing && !mirrorStream) return;
+  mirrorSharing = false;
+  clearInterval(mirrorTimer);
+  mirrorTimer = null;
+  if (mirrorStream) {
+    mirrorStream.getTracks().forEach((t) => t.stop());
+    mirrorStream = null;
+  }
+  mirrorVideo = null;
+  mirrorCanvas = null;
+  mirrorCtx = null;
+  updateMirrorBtn();
+  if (emitStop) socket.emit("teacher:mirrorStop");
+}
+
+mirrorShareBtn?.addEventListener("click", () => {
+  if (mirrorSharing) stopMirrorShare(true);
+  else startMirrorShare();
+});
+
+window.addEventListener("beforeunload", () => {
+  if (mirrorSharing) stopMirrorShare(true);
+});
+
 // ----- QR 모달 -----
 const qrModal = document.getElementById("qrModal");
 document.getElementById("qrBtn").addEventListener("click", async () => {

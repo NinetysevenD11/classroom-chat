@@ -65,6 +65,7 @@ const httpServer = createServer(app);
 const io = new Server(httpServer, {
   pingTimeout: 60000,
   pingInterval: 25000,
+  maxHttpBufferSize: 2e6,
 });
 
 // ----- 학생 프로필 (교사별, 번호+이름으로 저장) -----
@@ -1051,6 +1052,23 @@ function broadcastToStudents(userId, event, data) {
   }
 }
 
+function stopRoomMirror(userId) {
+  const room = rooms[userId];
+  if (!room || !room.mirrorActive) return;
+  room.mirrorActive = false;
+  room.mirrorTeacherSocket = null;
+  delete room.lastMirrorFrame;
+  broadcastToStudents(userId, "mirror:stop");
+}
+
+function startRoomMirror(userId, socketId) {
+  const room = rooms[userId];
+  if (!room) return;
+  room.mirrorActive = true;
+  room.mirrorTeacherSocket = socketId;
+  broadcastToStudents(userId, "mirror:start");
+}
+
 function resolveStudentContext(socket, clientId) {
   let userId = socket.data.userId;
   let room = userId && rooms[userId];
@@ -1190,6 +1208,30 @@ io.on("connection", (socket) => {
     socket.emit("state", room.seats);
     socket.emit("roster:data", getClassRoster(userId));
     if (room.activeQuestion) socket.emit("question:show", room.activeQuestion);
+    socket.emit("mirror:state", { active: !!room.mirrorActive });
+  });
+
+  socket.on("teacher:mirrorStart", () => {
+    const userId = getTeacherUserId(socket);
+    if (!userId) return;
+    startRoomMirror(userId, socket.id);
+  });
+
+  socket.on("teacher:mirrorStop", () => {
+    const userId = getTeacherUserId(socket);
+    if (!userId) return;
+    stopRoomMirror(userId);
+  });
+
+  socket.on("teacher:mirrorFrame", ({ frame }) => {
+    const userId = getTeacherUserId(socket);
+    const room = userId && rooms[userId];
+    if (!room || !room.mirrorActive || room.mirrorTeacherSocket !== socket.id) return;
+    if (typeof frame !== "string" || !frame.startsWith("data:image/jpeg") || frame.length > 900000) {
+      return;
+    }
+    room.lastMirrorFrame = frame;
+    broadcastToStudents(userId, "mirror:frame", { frame });
   });
 
   socket.on("teacher:getRoster", (cb) => {
@@ -1281,7 +1323,12 @@ io.on("connection", (socket) => {
         photo: seats[chosen].photo,
         handRaised: false,
         question: room.activeQuestion || null,
+        mirrorActive: !!room.mirrorActive,
       });
+    if (room.mirrorActive) {
+      socket.emit("mirror:start");
+      if (room.lastMirrorFrame) socket.emit("mirror:frame", { frame: room.lastMirrorFrame });
+    }
     notifyTeachers(userId, "seat:update", { seat: chosen, data: seats[chosen] });
   });
 
@@ -1541,6 +1588,9 @@ io.on("connection", (socket) => {
   socket.on("disconnect", () => {
     const userId = socket.data.userId;
     const room = userId && rooms[userId];
+    if (room && socket.data.role === "teacher" && room.mirrorTeacherSocket === socket.id) {
+      stopRoomMirror(userId);
+    }
     if (!room || socket.data.role !== "student") return;
     const seat = room.socketSeat[socket.id];
     if (!seat) return;

@@ -37,6 +37,10 @@ const profilePhotoInput = document.getElementById("profilePhotoInput");
 const profilePhotoImg = document.getElementById("profilePhotoImg");
 const profilePhotoEmoji = document.getElementById("profilePhotoEmoji");
 const chatBottom = document.querySelector(".chat-bottom");
+const mirrorPane = document.getElementById("mirrorPane");
+const mirrorImg = document.getElementById("mirrorImg");
+
+let mirrorViewActive = false;
 
 const SEAT_AVATAR = {
   1: "👸", 2: "🧚‍♀️", 3: "🦸‍♀️", 4: "👩‍🚀", 5: "👩‍🍳",
@@ -113,6 +117,19 @@ function showQuestion(q) {
 function hideQuestion() {
   hideEl(questionOverlay);
   questionText.textContent = "";
+}
+
+function showMirrorView() {
+  mirrorViewActive = true;
+  if (mirrorPane) showEl(mirrorPane);
+  if (chatLog) hideEl(chatLog);
+}
+
+function hideMirrorView() {
+  mirrorViewActive = false;
+  if (mirrorPane) hideEl(mirrorPane);
+  if (chatLog) showEl(chatLog);
+  if (mirrorImg) mirrorImg.removeAttribute("src");
 }
 
 function scrollChatToBottom() {
@@ -316,6 +333,7 @@ function doJoin(name, seatRaw, opts = {}) {
     setJoined(true);
     updateHandBtn(!!res.handRaised);
     if (res.question) showQuestion(res.question);
+    if (res.mirrorActive) showMirrorView();
     if (!opts.auto) chatInput.focus();
     if (pendingChat) {
       const t = pendingChat;
@@ -394,6 +412,12 @@ socket.on("you:photo", ({ photo }) => updateMyPhoto(photo));
 socket.on("question:show", (q) => showQuestion(q));
 socket.on("question:clear", () => hideQuestion());
 socket.on("you:handLowered", () => updateHandBtn(false));
+socket.on("mirror:start", () => showMirrorView());
+socket.on("mirror:stop", () => hideMirrorView());
+socket.on("mirror:frame", ({ frame }) => {
+  if (!mirrorViewActive || !mirrorImg || typeof frame !== "string") return;
+  mirrorImg.src = frame;
+});
 
 document.getElementById("questionClose").addEventListener("click", hideQuestion);
 document.getElementById("questionCloseBtn").addEventListener("click", hideQuestion);

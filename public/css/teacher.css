@@ -271,7 +271,8 @@ html[data-theme="light"] body:not(.pip-mode) > .teacher-chat {
 .danger-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #7b241c; }
 .qr-btn,
 .float-btn,
-.class-btn {
+.class-btn,
+.mirror-share-btn {
   position: relative;
   z-index: 1;
   padding: 9px 16px;
@@ -311,6 +312,29 @@ html[data-theme="light"] body:not(.pip-mode) > .teacher-chat {
 }
 .class-btn:hover { filter: brightness(1.06); }
 .class-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #2471a3; }
+.mirror-share-btn {
+  background: linear-gradient(180deg, #d7bde2 0%, #bb8fce 50%, #8e44ad 100%);
+  color: #2c1038;
+  border: 1px solid rgba(142, 68, 173, 0.55);
+  box-shadow:
+    0 3px 0 #6c3483,
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+.mirror-share-btn:hover { filter: brightness(1.06); }
+.mirror-share-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #6c3483; }
+.mirror-share-btn.is-active {
+  background: linear-gradient(180deg, #f5b7b1 0%, #e74c3c 50%, #c0392b 100%);
+  color: #fff;
+  border-color: rgba(192, 57, 43, 0.7);
+  box-shadow:
+    0 3px 0 #922b21,
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  animation: mirror-pulse 1.6s ease-in-out infinite;
+}
+@keyframes mirror-pulse {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.08); }
+}
 
 /* 칠판 배경 위 — 상·하단 바를 투명하게 해 일러스트 액자가 보이도록 */
 html:not([data-theme="light"]) body:not(.pip-mode) .topbar {

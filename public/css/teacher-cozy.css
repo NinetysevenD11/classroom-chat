@@ -257,7 +257,8 @@ body:not(.pip-mode) .danger-btn,
 body:not(.pip-mode) .group-btn,
 body:not(.pip-mode) .qr-btn,
 body:not(.pip-mode) .float-btn,
-body:not(.pip-mode) .class-btn {
+body:not(.pip-mode) .class-btn,
+body:not(.pip-mode) .mirror-share-btn {
   background: #a8d8ea !important;
   color: #1a1a1a !important;
   border: none !important;
@@ -275,7 +276,8 @@ body:not(.pip-mode) .danger-btn:hover,
 body:not(.pip-mode) .group-btn:hover,
 body:not(.pip-mode) .qr-btn:hover,
 body:not(.pip-mode) .float-btn:hover,
-body:not(.pip-mode) .class-btn:hover {
+body:not(.pip-mode) .class-btn:hover,
+body:not(.pip-mode) .mirror-share-btn:hover {
   background: #b8e4f2 !important;
   filter: brightness(1.02);
 }
@@ -284,9 +286,16 @@ body:not(.pip-mode) .danger-btn:active,
 body:not(.pip-mode) .group-btn:active,
 body:not(.pip-mode) .qr-btn:active,
 body:not(.pip-mode) .float-btn:active,
-body:not(.pip-mode) .class-btn:active {
+body:not(.pip-mode) .class-btn:active,
+body:not(.pip-mode) .mirror-share-btn:active {
   transform: translateY(3px);
   box-shadow: 0 1px 0 #7eb8d0 !important;
+}
+
+body:not(.pip-mode) .mirror-share-btn.is-active {
+  background: #ffb4a8 !important;
+  color: #5c1a12 !important;
+  box-shadow: 0 4px 0 #d9887a !important;
 }
 
 /* 툴바 */

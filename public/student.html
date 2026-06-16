@@ -12,7 +12,7 @@
     [hidden] { display: none !important; }
     .hidden { display: none !important; }
   </style>
-  <link rel="stylesheet" href="/css/student.css?v=4" />
+  <link rel="stylesheet" href="/css/student.css?v=5" />
   <link rel="stylesheet" href="/css/user-background.css?v=1" />
   <script src="/js/user-background.js?v=1"></script>
 </head>
@@ -50,6 +50,16 @@
 
     <div id="muteBanner" class="mute-banner" hidden>🔇 선생님이 음소거했어요. 메시지가 칠판에 보이지 않아요.</div>
 
+    <div id="mirrorPane" class="mirror-pane" hidden>
+      <div class="mirror-pane-bar">
+        <span>🖥️ 선생님 화면</span>
+        <span class="mirror-badge">보기만 가능</span>
+      </div>
+      <div class="mirror-pane-view">
+        <img id="mirrorImg" alt="선생님 화면" draggable="false" />
+      </div>
+    </div>
+
     <div id="chatLog" class="chat-log"></div>
 
     <div class="chat-bottom">
@@ -83,6 +93,6 @@
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
-  <script src="/js/student.js?v=5"></script>
+  <script src="/js/student.js?v=6"></script>
 </body>
 </html>
