@@ -1,0 +1,1903 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>{{ worksheet_title }}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+/* ========================================================================
+   v15 Cute Scrapbook Worksheet
+   — 파스텔 스크랩북·워시테이프·둥근 카드 감성 (초등 활동지)
+   ======================================================================== */
+
+:root {
+    --ink: #2D3436;
+    --ink-soft: #5C6370;
+    --ink-faint: #9AA3B2;
+    --paper: #FFF9E5;
+    --paper-soft: #FFFFFF;
+    --paper-mint: #E8F8F0;
+    --paper-pink: #FFF0F3;
+    --paper-sky: #EAF6FF;
+    --rule: #E8DFD0;
+    --rule-strong: #2D3436;
+
+    --accent-green: #6BCB9A;
+    --accent-coral: #FF8FAB;
+    --accent-sun: #FFD93D;
+    --accent-sky: #74C0FC;
+    --accent-lavender: #C9B8FF;
+
+    --shadow-peach: #FFB8B0;
+    --shadow-sky: #A8D8EA;
+    --shadow-lemon: #FFE08A;
+    --shadow-mint: #9BE7C4;
+
+    --radius-card: 16px;
+    --radius-sm: 12px;
+
+    --font-display: 'Jua', 'Noto Sans KR', sans-serif;
+    --font-body: 'Noto Sans KR', 'Pretendard', 'Malgun Gothic', sans-serif;
+
+    /* A4 가로 — HTML·PDF·auto-fit 공통 */
+    --page-w: 297mm;
+    --page-h: 210mm;
+    --page-w-px: 1123px;
+    --page-h-px: 794px;
+}
+
+@page { size: 297mm 210mm; margin: 0; }
+* { box-sizing: border-box; }
+html, body {
+    margin: 0; padding: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 13px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+}
+.pages-root {
+    width: var(--page-w);
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* =====================================================================
+   페이지 — A4 landscape 고정 (297×210mm)
+   ===================================================================== */
+.page {
+    width: var(--page-w);
+    height: var(--page-h);
+    min-width: var(--page-w);
+    min-height: var(--page-h);
+    max-width: var(--page-w);
+    max-height: var(--page-h);
+    aspect-ratio: 297 / 210;
+    overflow: hidden;
+    padding: 9mm 11mm 9mm 11mm;
+    page-break-after: always;
+    break-after: page;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    background-color: var(--paper);
+    background-image:
+        radial-gradient(circle at 12% 18%, rgba(255, 217, 61, 0.18) 0 6px, transparent 7px),
+        radial-gradient(circle at 88% 12%, rgba(116, 192, 252, 0.16) 0 5px, transparent 6px),
+        radial-gradient(circle at 92% 82%, rgba(255, 143, 171, 0.14) 0 7px, transparent 8px),
+        radial-gradient(circle at 8% 78%, rgba(107, 203, 154, 0.12) 0 4px, transparent 5px);
+    box-sizing: border-box;
+}
+.page:last-child { page-break-after: auto; break-after: auto; }
+
+@media screen {
+    html, body { background: #F5EDD8; }
+    .pages-root { padding: 12px 0 20px 0; gap: 14px; }
+    .page {
+        box-shadow: 0 6px 20px rgba(45, 52, 54, 0.12);
+    }
+}
+
+@media print {
+    html, body, .pages-root {
+        width: var(--page-w);
+        margin: 0;
+        padding: 0;
+        background: transparent;
+    }
+    .page {
+        width: var(--page-w) !important;
+        height: var(--page-h) !important;
+        min-width: var(--page-w) !important;
+        min-height: var(--page-h) !important;
+        max-width: var(--page-w) !important;
+        max-height: var(--page-h) !important;
+        box-shadow: none !important;
+        page-break-after: always;
+        break-after: page;
+    }
+    .page:last-child {
+        page-break-after: auto;
+        break-after: auto;
+    }
+}
+
+/* 페이지 모서리 장식 — 작은 별·하트 느낌 */
+.page::before {
+    content: "✦";
+    position: absolute;
+    top: 14px;
+    left: 22px;
+    font-size: 14px;
+    color: var(--accent-sun);
+    opacity: 0.85;
+    pointer-events: none;
+    z-index: 0;
+}
+.page::after {
+    content: "♡";
+    position: absolute;
+    top: 12px;
+    right: 24px;
+    font-size: 13px;
+    color: var(--accent-coral);
+    opacity: 0.7;
+    pointer-events: none;
+    z-index: 0;
+}
+.page.cover::before { content: "★"; font-size: 16px; top: 16px; left: 28px; }
+.page.cover::after { content: "✿"; font-size: 15px; top: 14px; right: 30px; color: var(--accent-green); }
+
+/* 푸터 */
+.footer {
+    position: static;
+    flex-shrink: 0;
+    margin-top: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: var(--font-body);
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--ink-faint);
+    border-top: 2px dashed var(--rule);
+    padding-top: 8px;
+    padding-left: 8px;
+    padding-right: 8px;
+}
+.footer > span:first-child {
+    word-break: keep-all;
+    color: var(--ink-soft);
+}
+.footer .phase-mark {
+    font-family: var(--font-display);
+    font-weight: 400;
+    color: var(--accent-sky);
+    font-size: 11px;
+    background: var(--paper-sky);
+    border: 1.5px solid var(--ink);
+    border-radius: 999px;
+    padding: 2px 10px;
+    box-shadow: 2px 2px 0 var(--shadow-sky);
+}
+
+/* =====================================================================
+   1쪽 표지 — 스크랩북 스타일
+   ===================================================================== */
+.cover-hero {
+    text-align: center;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 1;
+    margin-top: 6px;
+    margin-bottom: 10px;
+}
+.cover-meta {
+    font-family: var(--font-body);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ink-soft);
+    margin: 0 0 8px 0;
+}
+.cover-main-title {
+    font-family: var(--font-display);
+    font-size: 34px;
+    line-height: 1.18;
+    margin: 0;
+    color: var(--accent-sun);
+    -webkit-text-stroke: 1.5px var(--ink);
+    paint-order: stroke fill;
+    text-shadow: 3px 3px 0 var(--ink);
+    word-break: keep-all;
+}
+.cover-student-card {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 10px 18px;
+    background: #FFFFFF;
+    border: 2px solid var(--ink);
+    border-radius: var(--radius-sm);
+    padding: 10px 18px;
+    margin: 0 auto 12px auto;
+    max-width: 92%;
+    font-family: var(--font-body);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ink);
+    box-shadow: 3px 3px 0 var(--shadow-peach);
+    position: relative;
+    z-index: 1;
+    flex-shrink: 0;
+}
+.cover-student-card .field-line {
+    display: inline-block;
+    min-width: 72px;
+    border-bottom: 2px dotted var(--ink-soft);
+    margin-left: 4px;
+    vertical-align: middle;
+    height: 14px;
+}
+.cover-student-card .field-line.short { min-width: 36px; }
+
+/* 레거시 cover 클래스 호환 */
+.cover-head {
+    display: none;
+}
+.cover-subtitle {
+    margin-top: 8px;
+    font-family: var(--font-body);
+    font-size: 12px;
+    color: var(--ink-soft);
+    font-weight: 600;
+}
+.cover-title { display: none; }
+
+/* 교과서 추가 쪽 */
+.page.cover-textbook-extra .cover-main-title {
+    font-size: 24px;
+    text-shadow: 2px 2px 0 var(--ink);
+}
+.page.cover-textbook-extra .cover-subtitle {
+    font-size: 11px;
+    margin-top: 4px;
+}
+
+/* 표지 교과서 이미지: 두 슬롯이 같은 높이를 받고, 이미지는 contain으로 잘리지 않게 */
+.cover-images {
+    flex: 1 1 auto;
+    width: 100%;
+    min-height: 0;
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    justify-content: center;
+    gap: clamp(14px, 2.2vw, 26px);
+    padding: 4px 0 12px 0;
+    overflow: hidden;
+}
+.img-frame.empty {
+    /* 홀수 장수일 때 오른쪽 슬롯을 '비움' 처리 — 레이아웃 폭은 실제 프레임과 동일 */
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 0;
+    max-width: calc(50% - 8px);
+    align-self: stretch;
+    background: transparent;
+    border: 1px solid transparent;
+    box-shadow: none;
+}
+.img-frame.empty::before { display: none; }
+.img-frame {
+    position: relative;
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 0;
+    max-width: calc(50% - 8px);
+    height: auto;
+    align-self: stretch;
+    background: #FFFFFF;
+    padding: 8px;
+    border: 2px solid var(--ink);
+    border-radius: var(--radius-card);
+    box-shadow: 4px 4px 0 var(--shadow-sky);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.img-frame::after {
+    content: "";
+    position: absolute;
+    top: -7px;
+    left: 14px;
+    width: 46px;
+    height: 16px;
+    background: repeating-linear-gradient(
+        90deg,
+        #B8E8C8 0 6px,
+        #FFFFFF 6px 8px,
+        #B8E8C8 8px 14px
+    );
+    border: 1px solid rgba(45, 52, 54, 0.25);
+    transform: rotate(-4deg);
+    opacity: 0.9;
+    pointer-events: none;
+}
+.img-frame img {
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    object-position: center;
+    display: block;
+}
+.img-frame::before {
+    display: none;
+}
+
+/* =====================================================================
+   본문 페이지 헤더
+   ===================================================================== */
+.section-head {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 12px;
+    align-items: center;
+    padding: 10px 12px;
+    background: #FFFFFF;
+    border: 2px solid var(--ink);
+    border-radius: var(--radius-sm);
+    margin-bottom: 12px;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 1;
+    box-shadow: 3px 3px 0 var(--shadow-lemon);
+}
+.section-num {
+    width: 46px;
+    height: 46px;
+    background: var(--accent-sun);
+    border: 2px solid var(--ink);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-display);
+    font-size: 18px;
+    font-weight: 400;
+    color: var(--ink);
+    line-height: 1;
+    box-shadow: 2px 2px 0 var(--shadow-peach);
+}
+.section-label { align-self: center; }
+.section-label .label-en {
+    font-family: var(--font-body);
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    color: var(--accent-coral);
+    display: block;
+    margin-bottom: 2px;
+}
+.section-label h2 {
+    font-family: var(--font-display);
+    font-size: 20px;
+    margin: 0;
+    color: var(--ink);
+    font-weight: 400;
+    line-height: 1.2;
+}
+.student-info {
+    text-align: right;
+    font-family: var(--font-body);
+    font-size: 10px;
+    color: var(--ink-soft);
+    line-height: 1.9;
+    font-weight: 700;
+    background: var(--paper-sky);
+    border: 1.5px dashed var(--accent-sky);
+    border-radius: 10px;
+    padding: 6px 10px;
+}
+.student-info .field {
+    display: inline-block;
+    border-bottom: 2px dotted var(--ink-soft);
+    min-width: 36px;
+    padding: 0 6px;
+}
+
+/* =====================================================================
+   도입부 상단: 후킹 질문 배너 + SVG 일러스트
+   ===================================================================== */
+.hook-band {
+    display: grid;
+    grid-template-columns: 100px 1fr;
+    gap: 14px;
+    align-items: center;
+    background: #FFFFFF;
+    border: 2px solid var(--ink);
+    border-radius: var(--radius-card);
+    padding: 14px 16px;
+    margin-bottom: 12px;
+    position: relative;
+    flex-shrink: 0;
+    box-shadow: 4px 4px 0 var(--shadow-mint);
+}
+.hook-band::before {
+    content: "";
+    position: absolute;
+    top: -7px;
+    right: 22px;
+    width: 50px;
+    height: 16px;
+    background: repeating-linear-gradient(
+        45deg,
+        #FFD6E0 0 5px,
+        #FFFFFF 5px 7px,
+        #FFD6E0 7px 12px
+    );
+    border: 1px solid rgba(45, 52, 54, 0.2);
+    transform: rotate(2deg);
+    pointer-events: none;
+}
+.hook-band::after {
+    content: "📎";
+    position: absolute;
+    top: -4px;
+    left: 108px;
+    font-size: 14px;
+    pointer-events: none;
+}
+.hook-illust {
+    width: 88px;
+    height: 88px;
+    flex-shrink: 0;
+}
+.hook-illust svg {
+    width: 100%;
+    height: 100%;
+}
+.hook-text {
+    padding: 4px 0;
+}
+.hook-label {
+    font-family: var(--font-body);
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    color: var(--accent-coral);
+    display: block;
+    margin-bottom: 4px;
+}
+.hook-question {
+    font-family: var(--font-display);
+    font-size: 17px;
+    font-weight: 400;
+    color: var(--ink);
+    margin: 0;
+    line-height: 1.38;
+    word-break: keep-all;
+}
+
+/* =====================================================================
+   페이지 본문 래퍼 — 헤더와 푸터 사이 콘텐츠 영역
+   기본: 페이지 가득 채움.  .center 추가 시 → 자연 크기 + 세로 중앙
+   ===================================================================== */
+.page-body {
+    flex: 1 1 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    min-height: 0;
+    overflow: hidden;
+    gap: 12px;
+    padding-bottom: 6px;
+    position: relative;
+    z-index: 1;
+}
+
+/* =====================================================================
+   Auto-fit (오버플로 방지)
+   - 카드/답란이 푸터 영역을 침범하거나 페이지 밖으로 나갈 때만
+     페이지 본문을 아주 조금 축소해서 한 페이지에 '안전하게' 들어오게 함.
+   - 구조/배치는 유지, 크기만 미세 조정.
+   ===================================================================== */
+.page-body.__auto_fit_scaled {
+    transform-origin: top left;
+}
+.page-body.__auto_fit_scaled { will-change: transform; }
+.page-body.center {
+    /* 블록이 적은 페이지(특히 전개 2블록)에서 빈 공간이 크게 남는 문제를 줄이기 위해
+       '센터링'은 유지하되 그리드가 세로로 늘어날 수 있게 한다. */
+    justify-content: stretch;
+}
+/* 본문이 남는 세로 공간을 차지하되, 그리드 자체에 height:100% + 1fr 행을 주면
+   블록·답란이 '남는 높이'를 전부 먹고 첫 카드가 페이지 끝까지 늘어남 → flex만 사용 */
+.page-body > .blocks-grid {
+    flex: 1 1 auto;
+    min-height: 0;
+    align-self: stretch;
+}
+.page-body > .blocks-grid.count-1 {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: 100%;
+    align-self: stretch;
+}
+.page-body.center > .blocks-grid {
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+/* =====================================================================
+   블록 그리드 (자동 스케일링)
+   ===================================================================== */
+.blocks-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    align-content: start;
+    grid-auto-rows: auto;
+    grid-auto-flow: dense;
+    min-height: 0;
+}
+
+/* 1열·2열: 카드가 page-body 높이 안에서만 커지도록 (페이지 밖으로는 절대 못 나감) */
+.blocks-grid.count-1,
+.blocks-grid.count-2 {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: 100%;
+    align-content: stretch;
+    grid-template-rows: minmax(0, 1fr);
+    align-items: stretch;
+    overflow: hidden;
+}
+.blocks-grid.count-1 > .block,
+.blocks-grid.count-2 > .block {
+    align-self: stretch;
+    min-height: 0;
+    height: 100%;
+    max-height: 100%;
+    overflow: hidden;
+}
+
+/* 블록 1개 → 전체 폭 */
+.blocks-grid.count-1 { grid-template-columns: 1fr; }
+
+/* 블록 3개 홀수 → 3번째가 전체 폭, row 배분 명시 */
+.blocks-grid.count-3 > .block:nth-child(3):not(.span-full),
+.blocks-grid.count-5 > .block:nth-child(5):not(.span-full) {
+    grid-column: 1 / -1;
+}
+/* count-3(2개 + 1개 풀폭): 첫 줄 카드 높이 맞춤 + 둘째 줄도 남는 공간 채움 */
+.blocks-grid.count-3 {
+    flex: 1 1 auto;
+    min-height: 0;
+    align-content: stretch;
+    align-items: stretch;
+    grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+}
+.blocks-grid.count-3 > .block {
+    align-self: stretch;
+    min-height: 0;
+    height: 100%;
+    max-height: 100%;
+}
+
+/* 자동 스케일: 블록 많으면 작아짐 */
+.blocks-grid.count-2 { --block-pad: 18px; --block-title: 16px; --block-body: 13px; }
+.blocks-grid.count-3 { --block-pad: 14px; --block-title: 15px; --block-body: 12.5px; }
+.blocks-grid.count-4 { --block-pad: 12px; --block-title: 14px; --block-body: 12px; }
+
+/* 블록이 적은 페이지는 카드 자체를 더 '크게' 써서 배경 공란을 줄임 */
+.blocks-grid.count-1 { --block-pad: 24px; --block-title: 18px; --block-body: 14px; gap: 16px; }
+.blocks-grid.count-1 .box { min-height: 140px; }
+/* data_interpretation 답란은 아래 블록 전용 규칙으로만 제어(과도한 min-height가 한 페이지를 넘김) */
+.blocks-grid.count-1 > .block:not(.block-data_interpretation) .data-answer-box { min-height: 140px; }
+
+.blocks-grid.count-2 { gap: 16px; }
+.blocks-grid.count-2 .box { min-height: 110px; }
+.blocks-grid.count-2 .data-answer-box { min-height: 110px; }
+
+/* fit-one (도입·정리) 스케일링: 카드 밀도 높게 */
+.page.fit-one .blocks-grid.count-4 { --block-pad: 10px; --block-title: 13px; --block-body: 11.5px; }
+
+/* =====================================================================
+   블록 (카드)
+   ===================================================================== */
+.block {
+    --card-shadow: var(--shadow-peach);
+    background: var(--paper-soft);
+    border: 2px solid var(--ink);
+    border-radius: var(--radius-card);
+    padding: var(--block-pad, 14px);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-self: start;
+    min-height: 0;
+    break-inside: avoid;
+    page-break-inside: avoid;
+    overflow: hidden;
+    box-shadow: 4px 4px 0 var(--card-shadow);
+}
+.blocks-grid > .block:nth-child(3n+1) { --card-shadow: var(--shadow-peach); }
+.blocks-grid > .block:nth-child(3n+2) { --card-shadow: var(--shadow-sky); }
+.blocks-grid > .block:nth-child(3n)   { --card-shadow: var(--shadow-lemon); }
+.block::after {
+    content: "";
+    position: absolute;
+    top: -6px;
+    right: 16px;
+    width: 48px;
+    height: 15px;
+    border: 1px solid rgba(45, 52, 54, 0.2);
+    transform: rotate(3deg);
+    opacity: 0.92;
+    pointer-events: none;
+    z-index: 2;
+}
+.blocks-grid > .block:nth-child(3n+1)::after {
+    background: repeating-linear-gradient(90deg, #C8F0D4 0 5px, #fff 5px 7px, #C8F0D4 7px 12px);
+}
+.blocks-grid > .block:nth-child(3n+2)::after {
+    background: repeating-linear-gradient(45deg, #FFD6E0 0 4px, #fff 4px 6px, #FFD6E0 6px 10px);
+}
+.blocks-grid > .block:nth-child(3n)::after {
+    background: linear-gradient(90deg, #FFE566 0 30%, #FFF3B0 30% 60%, #FFE566 60% 100%);
+}
+
+/* 답란: 블록 안 남는 세로 공간을 채움 (페이지 넘침 시 auto-fit이 축소) */
+.blocks-grid.count-1 > .block > .box:last-of-type,
+.blocks-grid.count-2 > .block > .box:last-of-type {
+    flex: 1 1 auto;
+    min-height: 72px;
+}
+.block > .box:last-of-type,
+.block .data-answer-box {
+    flex: 1 1 auto;
+}
+.block > .matching-rows {
+    flex: 1 1 auto;
+    min-height: 0;
+}
+.block > .sequence-list {
+    flex: 1 1 auto;
+    min-height: 0;
+}
+.block.span-full { grid-column: 1 / -1; }
+
+/* 블록 타입별 class (템플릿에서 부여) 기준으로 세부 제어 */
+.block.block-data_interpretation .data-question {
+    margin-top: 8px;
+    margin-bottom: 10px;
+    align-items: start;
+    width: 100%;
+    grid-template-columns: 32px minmax(0, 1fr);
+}
+.block.block-data_interpretation .data-question-num {
+    justify-self: center;
+    align-self: start;
+    width: 30px;
+    height: 30px;
+    font-size: 13px;
+    background: var(--accent-sun);
+    color: var(--ink);
+    border: 2px solid var(--ink);
+}
+.block.block-data_interpretation .data-question-body {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 0;
+    width: 100%;
+}
+.block.block-data_interpretation .data-question-text {
+    flex: 0 0 auto;
+    margin-bottom: 0;
+    line-height: 1.55;
+}
+.block.block-data_interpretation .data-answer-box {
+    flex: 1 1 auto;
+    min-height: 72px;
+    max-height: none;
+    overflow: hidden;
+    padding: 16px 14px 14px 14px;
+}
+
+/* matching: 카드 높이에 맞춰 행을 자동 분배 (선 연결 활동이 카드 크기에 '맞춰' 배열되도록) */
+.block.block-matching .matching-rows {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+.block.block-matching .matching-row {
+    flex: 0 0 auto;
+}
+.block.block-matching .matching-item {
+    min-height: 42px;
+}
+.block.block-matching .matching-hint {
+    margin-top: 8px;
+    flex-shrink: 0;
+}
+
+/* 블록 타이틀 — 상단 왼쪽 코너 마크 + 제목 */
+.block-title {
+    font-family: var(--font-display);
+    font-size: var(--block-title, 15px);
+    font-weight: 400;
+    color: var(--ink);
+    margin: 0 0 10px 0;
+    padding: 4px 0 8px 0;
+    border-bottom: 2px dashed var(--rule);
+    line-height: 1.3;
+    word-break: keep-all;
+}
+
+/* 본문 */
+.block-content {
+    font-family: var(--font-body);
+    font-size: var(--block-body, 12.5px);
+    color: var(--ink);
+    line-height: 1.65;
+    margin-bottom: 8px;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+    white-space: pre-wrap;
+    font-weight: 500;
+    flex: 0 0 auto;           /* 기본: 자기 크기 유지 */
+}
+
+/* =====================================================================
+   답란 박스 — 깔끔한 라인
+   
+   핵심 원칙: 답란은 블록 안에서 "남는 공간"을 채우되, 페이지를 넘기지 않는다.
+   auto-fit + layout_audit이 넘침·여백(20% 초과)을 보정한다.
+   ===================================================================== */
+.box {
+    background: #FFFFFF;
+    border: 2px dashed var(--accent-sky);
+    border-radius: var(--radius-sm);
+    padding: 14px 14px 12px 14px;
+    flex: 1 1 auto;
+    min-height: 72px;
+    background-image: repeating-linear-gradient(
+        to bottom,
+        rgba(0, 0, 0, 0) 0px,
+        rgba(0, 0, 0, 0) 22px,
+        rgba(116, 192, 252, 0.22) 23px
+    );
+    background-size: 100% 23px;
+    background-origin: content-box;
+    background-clip: content-box;
+}
+.box-large { min-height: 100px; }
+.box-drawing {
+    min-height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--ink-faint);
+    font-size: 11px;
+    font-family: var(--font-display);
+    border-style: solid;
+    border-color: var(--accent-green);
+    background: var(--paper-mint);
+    background-image: none;
+}
+
+/* OX — 블록 하단 우측에 컴팩트하게 배치 (크기가 줄어도 잘리지 않게) */
+.ox-container {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    padding: 4px 0 0 0;
+    flex: 0 0 auto;        /* 고정 크기, 남는 공간 차지하지 않음 */
+    align-items: center;
+    margin-top: auto;      /* 블록 하단에 붙임 */
+}
+.ox-btn {
+    width: 44px; height: 44px;
+    border: 2px solid var(--ink);
+    background: #FFFFFF;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 400;
+    color: var(--ink);
+    border-radius: 50%;
+    box-shadow: 2px 2px 0 var(--shadow-peach);
+    flex-shrink: 0;
+}
+.ox-btn:first-child { background: var(--paper-sky); }
+.ox-btn:last-child { background: var(--paper-pink); }
+
+/* =====================================================================
+   comparison_table — 표가 블록·페이지 안 남는 세로 공간을 채움
+   ===================================================================== */
+.block.block-comparison_table {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+.block.block-comparison_table > .block-title {
+    flex: 0 0 auto;
+}
+.block.block-comparison_table > .block-content {
+    flex: 0 0 auto;
+}
+.comp-table-wrap {
+    width: 100%;
+    min-height: 0;
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+}
+table.comp-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    height: 100%;
+    flex: 1 1 auto;
+    font-family: var(--font-body);
+}
+table.comp-table thead {
+    display: table-header-group;
+}
+table.comp-table tbody {
+    height: 100%;
+}
+table.comp-table tbody tr {
+    height: 1%;
+}
+table.comp-table th {
+    background: var(--accent-sky);
+    color: var(--ink);
+    padding: 10px 8px;
+    border: 2px solid var(--ink);
+    font-weight: 800;
+    font-size: 12px;
+    text-align: center;
+}
+table.comp-table th:first-child {
+    background: var(--accent-sun);
+}
+table.comp-table td {
+    border: 2px solid var(--ink);
+    padding: 10px 8px;
+    vertical-align: top;
+    background: #FFFFFF;
+    font-size: 12px;
+    height: 100%;
+    min-height: 48px;
+}
+/* 전개 단독 페이지(count-1) — 표가 카드·페이지 세로 공간을 채움 */
+.blocks-grid.count-1:has(> .block.block-comparison_table) {
+    max-height: none;
+    height: 100%;
+}
+.blocks-grid.count-1 > .block.block-comparison_table .comp-table-wrap {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+}
+.blocks-grid.count-1 > .block.block-comparison_table {
+    max-height: none;
+    height: 100%;
+    min-height: 0;
+}
+.blocks-grid.count-1 > .block.block-comparison_table table.comp-table th {
+    padding: 12px 10px;
+    font-size: 13.5px;
+}
+.blocks-grid.count-1 > .block.block-comparison_table table.comp-table td {
+    padding: 14px 12px;
+    font-size: 13.5px;
+    min-height: 56px;
+    line-height: 1.55;
+}
+table.comp-table td:first-child {
+    background: var(--paper-mint);
+    font-weight: 700;
+    text-align: center;
+    width: 24%;
+    color: var(--ink);
+}
+
+/* =====================================================================
+   matching — 행 단위 그리드로 좌·연결·우 정렬 (PDF에서도 줄맞춤 유지)
+   ===================================================================== */
+.matching-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+    flex: 0 1 auto;
+    padding: 4px 0;
+}
+.matching-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 44px minmax(0, 1fr);
+    gap: 12px;
+    align-items: center;
+}
+.matching-bridge-mid {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--ink-faint);
+    font-size: 12px;
+    font-weight: 700;
+    user-select: none;
+}
+.matching-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #FFFFFF;
+    border: 2px solid var(--ink);
+    padding: 10px 16px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink);
+    border-radius: 18px;
+    word-break: keep-all;
+    line-height: 1.4;
+    text-align: center;
+    min-height: 44px;
+    width: 100%;
+    position: relative;
+    box-shadow: 2px 2px 0 var(--shadow-sky);
+}
+/* 2~4글자 → 작은 알약형 카드, 모두 동일 사이즈 */
+.matching-item.size-sm {
+    max-width: 180px;          /* 좌/우 밸런스: 둘 다 같은 상한 */
+    max-width: 100%;
+    justify-content: center;
+}
+.matching-row .matching-item.left.size-sm {
+    justify-self: end;         /* 왼쪽은 오른쪽 정렬(가운데 쪽으로) */
+}
+.matching-row .matching-item.right.size-sm {
+    justify-self: start;       /* 오른쪽은 왼쪽 정렬(가운데 쪽으로) */
+}
+/* 5글자 이상 → 칼럼 폭에 맞춘 카드, 모두 동일 사이즈 */
+.matching-item.size-md {
+    width: 100%;
+    text-align: left;
+    justify-content: flex-start;
+    padding: 9px 14px;
+}
+/* 강조는 '가운데(연결 쪽)' 한쪽만 — 바깥 가장자리 빨간 세로선처럼 보이지 않게 */
+.matching-item.left {
+    border-left: 5px solid var(--accent-green);
+}
+.matching-item.right {
+    border-left: 5px solid var(--accent-coral);
+}
+.matching-item.left::after {
+    /* 왼쪽(자연재해) 상자: 오른쪽에 점 1개 */
+    content: "";
+    position: absolute;
+    right: -10px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #FFFFFF;
+    border: 2px solid var(--ink);
+    box-shadow: 1px 1px 0 var(--shadow-mint);
+}
+.matching-item.right::before {
+    /* 오른쪽(원인/피해) 상자: 왼쪽에 점 1개 */
+    content: "";
+    position: absolute;
+    left: -10px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #FFFFFF;
+    border: 2px solid var(--ink);
+    box-shadow: 1px 1px 0 var(--shadow-peach);
+}
+.matching-bridge-mid {
+    /* 가운데는 '연결 구간'만 남기고 시각적 균형만 유지 */
+    color: transparent;
+    position: relative;
+}
+.matching-bridge-mid::before {
+    content: "";
+    width: 100%;
+    height: 2px;
+    background: var(--rule);
+    border-radius: 99px;
+    display: block;
+    opacity: 0.9;
+}
+.matching-hint {
+    text-align: center;
+    font-size: 10px;
+    color: var(--ink-soft);
+    font-style: italic;
+    margin-top: 6px;
+}
+
+/* =====================================================================
+   sequence_ordering
+   ===================================================================== */
+.sequence-list {
+    list-style: none;
+    padding: 0; margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 0 1 auto;
+    justify-content: flex-start;
+}
+.sequence-item {
+    display: grid;
+    grid-template-columns: 32px 1fr;
+    gap: 10px;
+    align-items: center;
+    background: #FFFFFF;
+    border: 2px solid var(--ink);
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    box-shadow: 2px 2px 0 var(--shadow-lemon);
+}
+.sequence-number {
+    width: 28px; height: 28px;
+    border: 2px solid var(--ink);
+    border-radius: 50%;
+    background: var(--accent-sun);
+    box-shadow: 1px 1px 0 var(--shadow-peach);
+}
+.sequence-text {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--ink);
+    word-break: keep-all;
+    line-height: 1.4;
+}
+
+/* =====================================================================
+   data_interpretation
+   ===================================================================== */
+.data-questions-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex: 1 1 auto;
+    min-height: 0;
+}
+.data-source {
+    background: #FFFFFF;
+    border: 2px solid var(--ink);
+    border-left: 6px solid var(--accent-sun);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    margin: 2px 0 10px 0;
+    flex-shrink: 0;
+    font-size: 11.5px;
+    line-height: 1.55;
+    color: var(--ink);
+    word-break: keep-all;
+    overflow-wrap: break-word;
+    white-space: pre-wrap;
+    font-weight: 500;
+    position: relative;
+    box-shadow: 2px 2px 0 var(--shadow-lemon);
+}
+.data-source::before {
+    content: "📌 자료 SOURCE";
+    display: block;
+    font-family: var(--font-body);
+    font-size: 9px;
+    font-weight: 800;
+    color: var(--accent-coral);
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+}
+.data-question {
+    display: grid;
+    grid-template-columns: 32px minmax(0, 1fr);
+    gap: 10px;
+    margin-top: 10px;
+    margin-bottom: 12px;
+    align-items: flex-start;
+    break-inside: avoid;
+    page-break-inside: avoid;
+}
+.data-question-body {
+    break-inside: avoid;
+    page-break-inside: avoid;
+}
+/* 전개 단독 페이지: 자료+문항이 한 카드·한 페이지 안에 들어가게(답란 flex-grow 금지) */
+.blocks-grid.count-1 > .block.block-data_interpretation {
+    min-height: 0;
+    overflow: hidden;
+    container-type: inline-size;
+    container-name: di-card;
+    flex: 1 1 auto;
+}
+.blocks-grid.count-1 > .block.block-data_interpretation > .block-title {
+    font-size: 18px;
+    line-height: 1.28;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    letter-spacing: -0.35px;
+}
+.blocks-grid.count-1 > .block.block-data_interpretation .data-questions-stack {
+    flex: 1 1 auto;
+    min-height: 0;
+    gap: 10px;
+    justify-content: flex-start;
+    overflow: hidden;
+}
+/* 시·지문: 가로 빈칸 줄이기 + 가독성 */
+.blocks-grid.count-1 > .block.block-data_interpretation .data-source {
+    font-size: 14.25px;
+    line-height: 1.75;
+    font-weight: 600;
+    color: var(--ink);
+    padding: 16px 18px 14px 18px;
+    margin-bottom: 10px;
+    flex: 0 1 auto;
+    max-height: min(210px, 32vh);
+    overflow: hidden;
+    column-count: 2;
+    column-gap: 22px;
+    column-rule: 1px solid var(--rule);
+    orphans: 2;
+    widows: 2;
+}
+.blocks-grid.count-1 > .block.block-data_interpretation .data-source::before {
+    font-size: 9.5px;
+    margin-bottom: 8px;
+    column-span: all;
+}
+.blocks-grid.count-1 > .block.block-data_interpretation .data-question {
+    flex: 1 1 0;
+    min-height: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+    align-items: start;
+    grid-template-columns: 32px minmax(0, 1fr);
+    gap: 10px;
+    overflow: hidden;
+}
+.blocks-grid.count-1 > .block.block-data_interpretation .data-question-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    gap: 6px;
+    overflow: hidden;
+}
+.blocks-grid.count-1 > .block.block-data_interpretation .data-question-text {
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1.62;
+    margin-bottom: 0;
+    flex-shrink: 0;
+    color: var(--ink);
+    letter-spacing: -0.02em;
+}
+.blocks-grid.count-1 > .block.block-data_interpretation .data-question-num {
+    font-size: 13px;
+    flex-shrink: 0;
+}
+.blocks-grid.count-1 > .block.block-data_interpretation .data-answer-box {
+    flex: 1 1 auto;
+    min-height: 80px;
+    max-height: none;
+    overflow: hidden;
+    padding: 14px 14px 12px 14px;
+    /* 줄 노트 간격을 글자 크기에 맞춤 */
+    background-image: repeating-linear-gradient(
+        to bottom,
+        rgba(0, 0, 0, 0) 0px,
+        rgba(0, 0, 0, 0) 23px,
+        rgba(0, 0, 0, 0.07) 24px
+    );
+    background-size: 100% 24px;
+    background-origin: content-box;
+    background-clip: content-box;
+}
+/* 매우 좁은 카드 폭에서만 1단으로 복귀(컨테이너 쿼리 미지원 브라우저는 2단 유지) */
+@container di-card (max-width: 420px) {
+    .data-source {
+        column-count: 1;
+        column-rule: none;
+    }
+}
+.data-question-num {
+    width: 28px; height: 28px;
+    background: var(--accent-sun);
+    color: var(--ink);
+    border: 2px solid var(--ink);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 12px;
+    box-shadow: 2px 2px 0 var(--shadow-peach);
+}
+.data-question-text {
+    font-size: 12px;
+    color: var(--ink);
+    font-weight: 500;
+    margin-bottom: 6px;
+    line-height: 1.5;
+    word-break: keep-all;
+    padding-top: 2px;
+}
+.data-answer-box {
+    background: #FFFFFF;
+    border: 2px dashed var(--accent-sky);
+    border-radius: var(--radius-sm);
+    padding: 14px 14px 12px 14px;
+    min-height: 88px;
+    flex: 1 1 auto;
+    break-inside: avoid;
+    page-break-inside: avoid;
+    background-image: repeating-linear-gradient(
+        to bottom,
+        rgba(0, 0, 0, 0) 0px,
+        rgba(0, 0, 0, 0) 22px,
+        rgba(116, 192, 252, 0.22) 23px
+    );
+    background-size: 100% 23px;
+    background-origin: content-box;
+    background-clip: content-box;
+}
+
+/* =====================================================================
+   wrap_up — 키워드 칩 + 답란
+   ===================================================================== */
+.keywords-shelf {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 6px 0 12px 0;
+    padding: 12px;
+    background: var(--paper-pink);
+    border: 2px dashed var(--accent-coral);
+    border-radius: var(--radius-sm);
+    position: relative;
+}
+.keywords-shelf::before {
+    content: "✨ KEYWORDS";
+    position: absolute;
+    top: -9px; left: 12px;
+    background: var(--paper);
+    padding: 0 8px;
+    font-family: var(--font-display);
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--accent-coral);
+}
+.keyword-chip {
+    background: #FFFFFF;
+    border: 2px solid var(--accent-green);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 11.5px;
+    font-weight: 700;
+    padding: 5px 12px;
+    border-radius: 100px;
+    word-break: keep-all;
+    white-space: nowrap;
+    box-shadow: 2px 2px 0 var(--shadow-mint);
+}
+
+/* =====================================================================
+   인쇄 최적화
+   ===================================================================== */
+@media print {
+    .block, .img-frame, .ox-btn, .keyword-chip, .section-head, .hook-band, .cover-student-card {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+}
+</style>
+</head>
+<body>
+<div class="pages-root">
+
+{% macro render_block(block) %}
+    <div class="block block-{{ block.block_type }}">
+        <h3 class="block-title">{{ block.title }}</h3>
+        {% if block.content %}
+        <div class="block-content">{{ block.content | clean_content }}</div>
+        {% endif %}
+        
+        {% if block.block_type == 'ox_quiz' %}
+            <div class="ox-container">
+                <div class="ox-btn">O</div>
+                <div class="ox-btn">X</div>
+            </div>
+        
+        {% elif block.block_type == 'short_answer' %}
+            <div class="box"></div>
+        
+        {% elif block.block_type == 'discussion' %}
+            <div class="box box-large"></div>
+        
+        {% elif block.block_type == 'drawing' %}
+            <div class="box box-drawing">자유롭게 그려 봅시다</div>
+        
+        {% elif block.block_type == 'wrap_up' %}
+            {% set kws = block.keywords | clean_array if block.keywords else [] %}
+            {% if kws %}
+            <div class="keywords-shelf">
+                {% for kw in kws %}
+                <span class="keyword-chip">{{ kw }}</span>
+                {% endfor %}
+            </div>
+            {% endif %}
+            <div class="box"></div>
+        
+        {% elif block.block_type == 'comparison_table' %}
+            {% set headers = block.table_headers | clean_array if block.table_headers else [] %}
+            {% set rows = block.table_rows | clean_array if block.table_rows else [] %}
+            {% if headers and rows %}
+            <div class="comp-table-wrap">
+            <table class="comp-table">
+                <thead>
+                    <tr>{% for th in headers %}<th>{{ th }}</th>{% endfor %}</tr>
+                </thead>
+                <tbody>
+                    {% for tr in rows %}
+                    <tr>
+                        <td>{{ tr }}</td>
+                        {% for _ in range(headers|length - 1) %}<td></td>{% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            </div>
+            {% else %}<div class="box box-large"></div>{% endif %}
+        
+        {% elif block.block_type == 'matching' %}
+            {% set lefts = block.matching_left | clean_array if block.matching_left else [] %}
+            {% set rights = block.matching_right | clean_array if block.matching_right else [] %}
+            {# 컬럼 내 가장 긴 단어 길이 기준으로 사이즈 통일.
+               모두 10 미만이면 size-sm (알약형), 하나라도 10 이상이면 size-md (칼럼 폭). #}
+            {% set lefts_max = (lefts | map('length') | max) if lefts else 0 %}
+            {% set rights_max = (rights | map('length') | max) if rights else 0 %}
+            {% set left_size = 'size-sm' if lefts_max < 10 else 'size-md' %}
+            {% set right_size = 'size-sm' if rights_max < 10 else 'size-md' %}
+            {% if lefts and rights %}
+            <div class="matching-rows">
+                {% for left in lefts %}
+                {% set right = rights[loop.index0] %}
+                <div class="matching-row">
+                    <div class="matching-item left {{ left_size }}">{{ left }}</div>
+                    <div class="matching-bridge-mid"></div>
+                    <div class="matching-item right {{ right_size }}">{{ right }}</div>
+                </div>
+                {% endfor %}
+                <div class="matching-hint">왼쪽과 오른쪽에서 짝이 맞는 것끼리 선으로 이어 보세요</div>
+            </div>
+            {% else %}<div class="box box-large"></div>{% endif %}
+        
+        {% elif block.block_type == 'sequence_ordering' %}
+            {% set items = block.sequence_items | clean_array if block.sequence_items else [] %}
+            {% if items %}
+            <ol class="sequence-list">
+                {% for item in items %}
+                <li class="sequence-item">
+                    <div class="sequence-number"></div>
+                    <div class="sequence-text">{{ item }}</div>
+                </li>
+                {% endfor %}
+            </ol>
+            {% else %}<div class="box"></div>{% endif %}
+        
+        {% elif block.block_type == 'data_interpretation' %}
+            {% if block.data_text %}
+            <div class="data-source">{{ block.data_text | clean_content }}</div>
+            {% endif %}
+            {% set qs = block.data_questions | clean_array if block.data_questions else [] %}
+            {% if qs %}
+            <div class="data-questions-stack">
+                {% for q in qs %}
+                <div class="data-question">
+                    <div class="data-question-num">{{ loop.index }}</div>
+                    <div class="data-question-body">
+                        <div class="data-question-text">{{ q | clean_content }}</div>
+                        <div class="data-answer-box"></div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        
+        {% else %}
+            <div class="box"></div>
+        {% endif %}
+    </div>
+{% endmacro %}
+
+{# ============ 1쪽: 표지 + 교과서 미리보기 (한 페이지) ============
+   교과서 이미지 처리:
+   - 1~2쪽: 표지 한 페이지에 모두 (현재 동작)
+   - 3쪽 이상: 표지엔 처음 2쪽만, 나머지는 다음 페이지(들)에 2쪽씩 배치
+                각 추가 페이지에도 표지처럼 헤더(과목·학년·학교명) 동일하게 표시
+============ #}
+<div class="page cover fit-one">
+    <div class="cover-hero">
+        <p class="cover-meta">{{ meta.subject | default('과목') }} · 5학년 · 담양남초등학교</p>
+        <h1 class="cover-main-title">{{ worksheet_title }}</h1>
+        <p class="cover-subtitle">오늘 배울 교과서 내용을 함께 살펴봅시다</p>
+    </div>
+    <div class="cover-student-card">
+        <span>학교 <em class="field-line"></em></span>
+        <span>학년 <em class="field-line short"></em></span>
+        <span>반 <em class="field-line short"></em></span>
+        <span>이름 <em class="field-line"></em></span>
+    </div>
+    
+    <div class="cover-images">
+        {% if textbook_images %}
+            {% set first_imgs = textbook_images[:2] %}
+            {% for img_b64 in first_imgs %}
+            <div class="img-frame"><img src="data:image/png;base64,{{ img_b64 }}"></div>
+            {% endfor %}
+            {% if first_imgs|length == 1 %}
+            <div class="img-frame empty"></div>
+            {% endif %}
+        {% else %}
+            <div style="padding: 60px; text-align: center; color: var(--ink-faint);">(교과서 이미지 없음)</div>
+        {% endif %}
+    </div>
+    
+    <div class="footer">
+        <span>{{ meta.subject | default('과목') }} · 담양남초등학교</span>
+        <span class="phase-mark">교과 미리보기</span>
+    </div>
+</div>
+
+{# ============ 추가 교과서 페이지 — 3쪽 이상일 때 ============
+   3번째 이미지부터 끝까지를 2개씩 묶어 페이지 추가. 5쪽이면 (3,4)+(5) 형태.
+============ #}
+{% if textbook_images and textbook_images|length > 2 %}
+    {% set extra_imgs = textbook_images[2:] %}
+    {% set total_extra_pages = ((extra_imgs|length) + 1) // 2 %}
+    {% for page_idx in range(total_extra_pages) %}
+        {% set page_start = page_idx * 2 %}
+        {% set page_end = page_start + 2 %}
+        {% set page_imgs = extra_imgs[page_start:page_end] %}
+<div class="page cover fit-one cover-textbook-extra">
+    <div class="cover-hero">
+        <p class="cover-meta">{{ meta.subject | default('과목') }} · 5학년 · 담양남초등학교</p>
+        <h1 class="cover-main-title">{{ worksheet_title }}</h1>
+        <p class="cover-subtitle">교과서 미리보기 (계속) · {{ page_idx + 2 }}/{{ total_extra_pages + 1 }}쪽</p>
+    </div>
+    
+    <div class="cover-images">
+        {% for img_b64 in page_imgs %}
+        <div class="img-frame"><img src="data:image/png;base64,{{ img_b64 }}"></div>
+        {% endfor %}
+        {% if page_imgs|length == 1 %}
+        <div class="img-frame empty"></div>
+        {% endif %}
+    </div>
+    
+    <div class="footer">
+        <span>{{ meta.subject | default('과목') }} · 담양남초등학교</span>
+        <span class="phase-mark">TEXTBOOK PREVIEW</span>
+    </div>
+</div>
+    {% endfor %}
+{% endif %}
+
+{# ============ 2쪽: 도입 (fit-one) ============ #}
+{% set intro_blocks = blocks | selectattr('phase', 'equalto', 'intro') | list %}
+<div class="page fit-one">
+    <div class="section-head">
+        <div class="section-num">01</div>
+        <div class="section-label">
+            <span class="label-en">INTRO · 도입</span>
+            <h2>오늘의 질문과 시작</h2>
+        </div>
+        <div class="student-info">
+            반 번호 <span class="field">&nbsp;</span><br>
+            이름 <span class="field">&nbsp;</span>
+        </div>
+    </div>
+    
+    <div class="page-body">
+        {% if hook_question %}
+        <div class="hook-band">
+            <div class="hook-illust">{{ illustration_svg | safe }}</div>
+            <div class="hook-text">
+                <span class="hook-label">오늘의 생각 열기</span>
+                <p class="hook-question">{{ hook_question }}</p>
+            </div>
+        </div>
+        {% endif %}
+        
+        <div class="blocks-grid count-{{ intro_blocks|length }}">
+            {% for block in intro_blocks %}{{ render_block(block) }}{% endfor %}
+        </div>
+    </div>
+    
+    <div class="footer">
+        <span>{{ meta.subject | default('과목') }} · 담양남초등학교</span>
+        <span class="phase-mark">INTRO / 도입</span>
+    </div>
+</div>
+
+{# ============ 3쪽~: 전개 — 블록 weight 기반 페이지 그룹화 ============
+   heavy = 단독 페이지 (data_interpretation, comparison_table, sequence_ordering)
+   light = 2개씩 묶어서 한 페이지에 좌우 배치
+            (matching, discussion, short_answer, ox_quiz, drawing)
+============================================================ #}
+{% set develop_blocks = blocks | selectattr('phase', 'equalto', 'develop') | list %}
+{% set heavy_types = ['data_interpretation', 'comparison_table', 'sequence_ordering'] %}
+{% set ns = namespace(pages=[], pending=none) %}
+{% for block in develop_blocks %}
+    {% if block.block_type in heavy_types %}
+        {% if ns.pending %}
+            {% set _ = ns.pages.append([ns.pending]) %}
+            {% set ns.pending = none %}
+        {% endif %}
+        {% set _ = ns.pages.append([block]) %}
+    {% else %}
+        {% if ns.pending %}
+            {% set _ = ns.pages.append([ns.pending, block]) %}
+            {% set ns.pending = none %}
+        {% else %}
+            {% set ns.pending = block %}
+        {% endif %}
+    {% endif %}
+{% endfor %}
+{% if ns.pending %}
+    {% set _ = ns.pages.append([ns.pending]) %}
+{% endif %}
+
+{% for page_blocks in ns.pages %}
+<div class="page">
+    {% if loop.first %}
+    <div class="section-head">
+        <div class="section-num">02</div>
+        <div class="section-label">
+            <span class="label-en">DEVELOP · 전개</span>
+            <h2>핵심 활동 · 탐구</h2>
+        </div>
+        <div class="student-info">
+            반 번호 <span class="field">&nbsp;</span><br>
+            이름 <span class="field">&nbsp;</span>
+        </div>
+    </div>
+    {% endif %}
+    
+    <div class="page-body{% if page_blocks|length == 2 %} center{% endif %}">
+        <div class="blocks-grid count-{{ page_blocks|length }}">
+            {% for block in page_blocks %}{{ render_block(block) }}{% endfor %}
+        </div>
+    </div>
+    
+    <div class="footer">
+        <span>{{ meta.subject | default('과목') }} · 담양남초등학교</span>
+        <span class="phase-mark">DEVELOP / 전개</span>
+    </div>
+</div>
+{% endfor %}
+
+{# ============ 마지막: 정리 (fit-one) ============ #}
+{% set wrap_blocks = blocks | selectattr('phase', 'equalto', 'wrap') | list %}
+<div class="page fit-one">
+    <div class="section-head">
+        <div class="section-num">03</div>
+        <div class="section-label">
+            <span class="label-en">WRAP-UP · 정리</span>
+            <h2>오늘 배운 것 정리하기</h2>
+        </div>
+        <div class="student-info">
+            반 번호 <span class="field">&nbsp;</span><br>
+            이름 <span class="field">&nbsp;</span>
+        </div>
+    </div>
+    
+    <div class="page-body">
+        <div class="blocks-grid count-{{ wrap_blocks|length }}">
+            {% for block in wrap_blocks %}{{ render_block(block) }}{% endfor %}
+        </div>
+    </div>
+    
+    <div class="footer">
+        <span>{{ meta.subject | default('과목') }} · 담양남초등학교</span>
+        <span class="phase-mark">WRAP-UP / 정리</span>
+    </div>
+</div>
+
+</div>
+<script>
+(function () {
+  var EMPTY_TARGET = 0.20;  // 페이지당 최대 허용 여백 20%
+
+  function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+  function resetAnswerFill(body) {
+    body.querySelectorAll('.box, .data-answer-box').forEach(function (box) {
+      box.style.minHeight = '';
+      box.style.flex = '';
+    });
+  }
+
+  function resetTableFill(block) {
+    block.style.minHeight = '';
+    block.style.flex = '';
+    block.querySelectorAll('.comp-table-wrap, table.comp-table, tbody tr, tbody td').forEach(function (el) {
+      el.style.minHeight = '';
+      el.style.height = '';
+      el.style.flex = '';
+      el.style.display = '';
+      el.style.flexDirection = '';
+      el.style.tableLayout = '';
+    });
+  }
+
+  function expandComparisonTables(page) {
+    var footer = page.querySelector('.footer');
+    var pageH = page.offsetHeight;
+    var footerH = footer ? footer.offsetHeight : 28;
+    var safeBottom = pageH - footerH - 14;
+
+    page.querySelectorAll('.block.block-comparison_table').forEach(function (block) {
+      resetTableFill(block);
+      var wrap = block.querySelector('.comp-table-wrap');
+      var table = block.querySelector('table.comp-table');
+      if (!wrap || !table) return;
+
+      var bodyEl = block.closest('.page-body');
+      var title = block.querySelector('.block-title');
+      var content = block.querySelector('.block-content');
+      var titleH = title ? title.offsetHeight : 0;
+      var contentH = content ? content.offsetHeight : 0;
+      var style = window.getComputedStyle(block);
+      var padY = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
+      var gap = content ? 8 : 0;
+
+      var blockTop = rectInPage(block, page).top;
+      var blockAvailable = safeBottom - blockTop;
+      if (bodyEl) {
+        var maxInBody = bodyEl.clientHeight - block.offsetTop - 2;
+        if (maxInBody > 0) blockAvailable = Math.min(blockAvailable, maxInBody);
+      }
+      if (blockAvailable < 120) return;
+
+      blockAvailable = Math.max(120, blockAvailable - 6);
+      block.style.minHeight = Math.round(blockAvailable) + 'px';
+      block.style.flex = '1 1 auto';
+
+      var wrapAvailable = blockAvailable - titleH - contentH - padY - gap;
+      wrapAvailable = Math.max(72, wrapAvailable - 8);
+      wrap.style.flex = '1 1 auto';
+      wrap.style.minHeight = Math.round(wrapAvailable) + 'px';
+      wrap.style.display = 'flex';
+      wrap.style.flexDirection = 'column';
+      table.style.height = '100%';
+      table.style.tableLayout = 'fixed';
+
+      var thead = table.querySelector('thead');
+      var tbody = table.querySelector('tbody');
+      var rows = tbody ? tbody.querySelectorAll('tr') : [];
+      var rowCount = rows.length;
+      if (!rowCount) return;
+
+      var theadH = thead ? thead.offsetHeight : 0;
+      var bodyH = Math.max(40, wrap.clientHeight - theadH);
+      var rowH = Math.max(44, Math.floor(bodyH / rowCount));
+
+      for (var pass = 0; pass < 6; pass++) {
+        for (var i = 0; i < rows.length; i++) {
+          rows[i].style.height = rowH + 'px';
+        }
+        var tds = table.querySelectorAll('tbody td');
+        for (var j = 0; j < tds.length; j++) {
+          tds[j].style.height = rowH + 'px';
+          tds[j].style.verticalAlign = 'top';
+        }
+        if (block.scrollHeight <= block.clientHeight + 1 &&
+            wrap.scrollHeight <= wrap.clientHeight + 1 &&
+            table.scrollHeight <= wrap.clientHeight + 1) {
+          break;
+        }
+        rowH = Math.max(40, rowH - 3);
+      }
+    });
+  }
+
+  function rectInPage(el, page) {
+    var pr = page.getBoundingClientRect();
+    var er = el.getBoundingClientRect();
+    return {
+      top: er.top - pr.top,
+      bottom: er.bottom - pr.top,
+      height: er.height,
+    };
+  }
+
+  function fillAnswerSpace(page, body, footer) {
+    var pageH = page.offsetHeight;
+    var footerH = footer ? footer.offsetHeight : 28;
+    var safeBottom = pageH - footerH - 14;
+    var bodyTop = rectInPage(body, page).top;
+    var usableH = safeBottom - bodyTop;
+    if (usableH <= 0) return;
+
+    var lastBottom = bodyTop;
+    body.querySelectorAll('.block, .hook-band, .keywords-shelf').forEach(function (el) {
+      var bottom = rectInPage(el, page).bottom;
+      if (rectInPage(el, page).height > 0) lastBottom = Math.max(lastBottom, bottom);
+    });
+
+    var emptyH = safeBottom - lastBottom;
+    var emptyRatio = emptyH / usableH;
+    if (emptyRatio <= EMPTY_TARGET) return;
+
+    var extra = emptyH - usableH * EMPTY_TARGET;
+    var boxes = Array.from(body.querySelectorAll('.box, .data-answer-box'));
+    if (!boxes.length || extra <= 4) return;
+
+    var perBox = extra / boxes.length;
+    boxes.forEach(function (box) {
+      var h = rectInPage(box, page).height;
+      box.style.minHeight = Math.round(h + perBox) + 'px';
+      box.style.flex = '1 1 auto';
+    });
+  }
+
+  function autoFitPage(page) {
+    var body = page.querySelector('.page-body');
+    if (!body) return;
+
+    var footer = page.querySelector('.footer');
+    var pageH = page.offsetHeight;
+    var footerH = footer ? footer.offsetHeight : 28;
+    var safeBottom = pageH - footerH - 14;
+
+    body.classList.remove('__auto_fit_scaled');
+    body.style.transform = '';
+    body.style.width = '';
+    body.style.maxHeight = '';
+    resetAnswerFill(body);
+    page.querySelectorAll('.block.block-comparison_table').forEach(resetTableFill);
+
+    function maxContentBottom() {
+      var maxB = rectInPage(body, page).top;
+      var nodes = body.querySelectorAll(
+        '.hook-band, .blocks-grid, .block, .box, .data-source, .data-question, '
+        + '.data-question-text, .data-answer-box, table, .keywords-shelf, '
+        + '.matching-rows, .matching-row, .sequence-list, .sequence-item, .ox-container, .comp-table-wrap'
+      );
+      for (var i = 0; i < nodes.length; i++) {
+        var el = nodes[i];
+        var r = rectInPage(el, page);
+        if (r.height > 0) maxB = Math.max(maxB, r.bottom);
+      }
+      return maxB;
+    }
+
+    function pageOverflows() {
+      return maxContentBottom() > safeBottom + 0.5;
+    }
+
+    function blockInternalOverflow() {
+      var blocks = body.querySelectorAll('.block');
+      for (var i = 0; i < blocks.length; i++) {
+        var b = blocks[i];
+        if (b.scrollHeight > b.clientHeight + 1) return true;
+        var inner = b.querySelectorAll(
+          '.data-questions-stack, .data-question, .data-question-body, .data-source, .box, .comp-table-wrap, .matching-rows'
+        );
+        for (var j = 0; j < inner.length; j++) {
+          if (inner[j].scrollHeight > inner[j].clientHeight + 1) return true;
+        }
+      }
+      return false;
+    }
+
+    function needsFit() {
+      return pageOverflows() || blockInternalOverflow();
+    }
+
+    function pageHasComparisonTable() {
+      return body.querySelector('.block.block-comparison_table') !== null;
+    }
+
+    function shrinkToFit() {
+      if (!needsFit()) return;
+      var scale = 1.0;
+      for (var i = 0; i < 20; i++) {
+        scale = clamp(scale - 0.015, 0.72, 1.0);
+        body.classList.add('__auto_fit_scaled');
+        body.style.transform = 'scale(' + scale + ')';
+        body.style.width = 'calc(100% / ' + scale + ')';
+        if (!needsFit()) break;
+      }
+      /* 표 페이지: 축소 대신 표 행 높이 재조정으로 맞춤 (축소 시 표 아래 빈 공간 발생) */
+      if (needsFit() && pageHasComparisonTable()) {
+        body.classList.remove('__auto_fit_scaled');
+        body.style.transform = '';
+        body.style.width = '';
+        expandComparisonTables(page);
+      }
+    }
+
+    // 1) 표가 블록 안 빈 공간을 채우도록 확장
+    expandComparisonTables(page);
+
+    // 2) 넘침 시 축소
+    shrinkToFit();
+
+    // 3) 여백 20% 초과 시 답란 확대
+    fillAnswerSpace(page, body, footer);
+
+    // 4) 확대/축소 후 표 행 높이 재조정
+    expandComparisonTables(page);
+
+    // 5) 다시 넘치면 축소 (문항·표 잘림 방지)
+    if (needsFit()) {
+      resetAnswerFill(body);
+      page.querySelectorAll('.block.block-comparison_table').forEach(resetTableFill);
+      shrinkToFit();
+      expandComparisonTables(page);
+      fillAnswerSpace(page, body, footer);
+      expandComparisonTables(page);
+      if (needsFit()) {
+        resetAnswerFill(body);
+        page.querySelectorAll('.block.block-comparison_table').forEach(resetTableFill);
+        shrinkToFit();
+        expandComparisonTables(page);
+      }
+    }
+  }
+
+  function runLessonAutoFit() {
+    document.querySelectorAll('.page').forEach(autoFitPage);
+  }
+  window.__lessonRunAutoFit = runLessonAutoFit;
+
+  function scheduleLessonAutoFit() {
+    var go = function () { runLessonAutoFit(); };
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(go).catch(go);
+    } else {
+      go();
+    }
+    setTimeout(go, 80);
+    setTimeout(go, 400);
+    setTimeout(go, 900);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', scheduleLessonAutoFit);
+  } else {
+    scheduleLessonAutoFit();
+  }
+})();
+</script>
+</html>

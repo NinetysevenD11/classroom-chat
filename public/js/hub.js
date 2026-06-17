@@ -19,6 +19,12 @@ const APPS = [
     icon: "📝",
     path: "/app/grading",
   },
+  {
+    id: "lesson",
+    label: "수업 자료 생성",
+    icon: "📚",
+    path: "/app/lesson",
+  },
 ];
 
 const hubAppMenu = document.getElementById("hubAppMenu");

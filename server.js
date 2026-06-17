@@ -49,6 +49,13 @@ import {
 } from "./preferences-storage.js";
 import { fetchBookmarkPreview } from "./bookmark-preview.js";
 import { scanExamPaper, questionsToStored, analyzeStudentTrend } from "./grading-ai.js";
+import { createProxyMiddleware } from "http-proxy-middleware";
+import {
+  startLessonService,
+  getLessonPort,
+  getLessonPrefix,
+  isLessonReady,
+} from "./lesson-service.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -144,6 +151,13 @@ function verifyPassword(password, user) {
   const h = Buffer.from(hashPassword(password, user.salt), "hex");
   const stored = Buffer.from(user.hash, "hex");
   return h.length === stored.length && crypto.timingSafeEqual(h, stored);
+}
+
+function createLessonSsoToken(userId) {
+  const exp = Date.now() + 60_000;
+  const payload = Buffer.from(JSON.stringify({ userId, exp })).toString("base64url");
+  const sig = crypto.createHmac("sha256", sessionSecret).update(payload).digest("base64url");
+  return `${payload}.${sig}`;
 }
 
 function requireAuth(req, res, next) {
@@ -454,6 +468,56 @@ app.get("/app/bookmarks", requireAuth, (req, res) => {
     return res.redirect("/admin");
   }
   res.sendFile(path.join(__dirname, "views", "bookmarks.html"));
+});
+
+// 수업 자료 생성 (lesson-app 연동)
+app.get("/app/lesson", requireAuth, (req, res) => {
+  if (isAdminUserId(req.session.userId)) {
+    return res.redirect("/admin");
+  }
+  res.sendFile(path.join(__dirname, "views", "lesson.html"));
+});
+
+app.get("/api/lesson/status", requireAuth, (req, res) => {
+  if (isAdminUserId(req.session.userId)) {
+    return res.status(403).json({ ok: false, error: "사용할 수 없습니다." });
+  }
+  res.json({ ok: true, ready: isLessonReady() });
+});
+
+app.get("/api/lesson/sso", requireAuth, (req, res) => {
+  const userId = req.session.userId;
+  if (!userId || isAdminUserId(userId)) {
+    return res.status(403).json({ ok: false, error: "사용할 수 없습니다." });
+  }
+  if (!isLessonReady()) {
+    return res.status(503).json({
+      ok: false,
+      error: "수업 자료 생성기를 시작하는 중입니다. 잠시 후 다시 시도해 주세요.",
+    });
+  }
+  const token = createLessonSsoToken(userId);
+  const prefix = getLessonPrefix();
+  res.json({
+    ok: true,
+    url: `${prefix}/classroom-sso?token=${encodeURIComponent(token)}`,
+  });
+});
+
+const lessonProxy = createProxyMiddleware({
+  target: `http://127.0.0.1:${getLessonPort()}`,
+  changeOrigin: true,
+  ws: true,
+});
+
+app.use(getLessonPrefix(), (req, res, next) => {
+  if (!isLessonReady()) {
+    return res
+      .status(503)
+      .type("text/plain; charset=utf-8")
+      .send("수업 자료 생성기를 시작하는 중입니다. node server.js 로그를 확인해 주세요.");
+  }
+  return lessonProxy(req, res, next);
 });
 
 app.get("/api/bookmarks", requireAuth, (req, res) => {
@@ -1640,12 +1704,15 @@ function startTunnel() {
   });
 }
 
-httpServer.listen(PORT, "0.0.0.0", () => {
+httpServer.listen(PORT, "0.0.0.0", async () => {
   const ip = getLocalIP();
   console.log("==============================================");
   console.log(" 우리반 채팅 서버가 시작되었습니다!");
   console.log(` 교사 화면 : http://localhost:${PORT}`);
   console.log(` 학생 참여(같은 네트워크) : http://${ip}:${PORT}/student`);
   console.log("==============================================");
+  startLessonService(sessionSecret).catch((err) => {
+    console.warn("[lesson-app] 백그라운드 시작 오류:", err.message);
+  });
   if (!isProd) startTunnel();
 });

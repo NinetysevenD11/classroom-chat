@@ -1,0 +1,30 @@
+# Fly.io: https://fly.io/docs/launch/
+# 1) fly auth login
+# 2) fly volumes create lesson_data --region nrt --size 3
+# 3) fly secrets set STORAGE_SECRET="$(openssl rand -hex 32)"
+# 4) fly launch --no-deploy (또는 app 이름만 맞춘 뒤) fly deploy
+
+app = "lesson-app"
+primary_region = "nrt"
+
+[build]
+
+[env]
+  HOST = "0.0.0.0"
+  LESSON_PERSIST_DIR = "/data"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+[[vm]]
+  memory = "2gb"
+  cpu_kind = "shared"
+  cpus = 1
+
+[[mounts]]
+  source = "lesson_data"
+  destination = "/data"

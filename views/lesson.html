@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>수업 자료 생성 · 교실도구</title>
+  <script src="/js/hub-embed.js?v=1"></script>
+  <link rel="stylesheet" href="/css/user-background.css?v=1" />
+  <link rel="stylesheet" href="/css/hub-embed.css?v=1" />
+  <style>
+    html, body { margin: 0; height: 100%; overflow: hidden; background: #f4f6f8; }
+    .lesson-shell { height: 100%; display: flex; flex-direction: column; }
+    .lesson-loading,
+    .lesson-error {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 24px;
+      font-family: "Noto Sans KR", "Malgun Gothic", sans-serif;
+      text-align: center;
+      color: #444;
+    }
+    .lesson-error { color: #c0392b; }
+    .lesson-error small { color: #666; font-size: 13px; line-height: 1.5; }
+    #lessonFrame {
+      flex: 1;
+      width: 100%;
+      border: 0;
+      display: block;
+      background: #fff;
+    }
+  </style>
+</head>
+<body class="lesson-shell">
+  <div id="lessonLoading" class="lesson-loading">
+    <div>📚 수업 자료 생성기 연결 중…</div>
+    <small>처음 실행 시 1~2분 걸릴 수 있어요.</small>
+  </div>
+  <div id="lessonError" class="lesson-error hidden" hidden>
+    <div id="lessonErrorText">연결하지 못했습니다.</div>
+    <small id="lessonErrorHint"></small>
+  </div>
+  <iframe id="lessonFrame" title="수업 자료 생성" hidden></iframe>
+  <script src="/js/lesson-embed.js?v=1"></script>
+</body>
+</html>

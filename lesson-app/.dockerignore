@@ -1,0 +1,14 @@
+.git
+.nicegui
+.env
+.env.*
+__pycache__
+*.py[cod]
+*.bak
+.pytest_cache
+.mypy_cache
+outputs
+data
+*.md
+.cursor
+terminals
