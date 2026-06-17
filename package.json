@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "setup:lesson": "pip install -r lesson-app/requirements.txt && playwright install chromium"
+    "setup:lesson": "pip install -r lesson-app/requirements.txt && python -m playwright install chromium"
   },
   "engines": {
     "node": "20.x"

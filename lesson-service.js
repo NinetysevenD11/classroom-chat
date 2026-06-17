@@ -12,6 +12,7 @@ const LESSON_PREFIX = "/lesson-svc";
 let child = null;
 let ready = false;
 let starting = false;
+let failed = false;
 
 export function getLessonPort() {
   return LESSON_PORT;
@@ -23,6 +24,15 @@ export function getLessonPrefix() {
 
 export function isLessonReady() {
   return ready;
+}
+
+export function getLessonStatus() {
+  return {
+    ready,
+    starting: starting && !ready && !failed,
+    failed,
+    disabled: process.env.LESSON_APP_DISABLED === "1",
+  };
 }
 
 function resolveDataDir() {
@@ -47,7 +57,7 @@ function probeHealth() {
       },
       (res) => {
         res.resume();
-        resolve(res.statusCode && res.statusCode < 500);
+        resolve(res.statusCode === 200);
       }
     );
     req.on("error", () => resolve(false));
@@ -107,14 +117,19 @@ export async function startLessonService(sessionSecret) {
   child.on("exit", (code, signal) => {
     ready = false;
     starting = false;
+    failed = true;
     console.warn(`[lesson-app] 종료됨 (code=${code}, signal=${signal})`);
   });
 
   try {
     await waitForHealth();
+    ready = true;
+    starting = false;
     console.log(`[lesson-app] 연동 완료 — http://127.0.0.1:${LESSON_PORT} (허브: ${LESSON_PREFIX})`);
     return true;
   } catch (err) {
+    failed = true;
+    starting = false;
     console.warn(`[lesson-app] 시작 실패: ${err.message}`);
     console.warn(
       "[lesson-app] Python 의존성 설치: pip install -r lesson-app/requirements.txt && playwright install chromium"
