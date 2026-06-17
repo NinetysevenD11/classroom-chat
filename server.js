@@ -515,6 +515,7 @@ const lessonProxy = createProxyMiddleware({
   target: `http://127.0.0.1:${getLessonPort()}`,
   changeOrigin: true,
   ws: true,
+  pathRewrite: (p) => p.replace(/^\/lesson-svc/, "") || "/",
 });
 
 app.use(getLessonPrefix(), (req, res, next) => {

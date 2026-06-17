@@ -52,7 +52,7 @@ function probeHealth() {
       {
         host: "127.0.0.1",
         port: LESSON_PORT,
-        path: `${LESSON_PREFIX}/_nicegui/3.10.0/static/nicegui.css`,
+        path: "/_nicegui/3.10.0/static/nicegui.css",
         timeout: 2500,
       },
       (res) => {

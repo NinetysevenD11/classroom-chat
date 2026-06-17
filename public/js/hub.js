@@ -23,7 +23,8 @@ const APPS = [
     id: "lesson",
     label: "수업 자료 생성",
     icon: "📚",
-    path: "/app/lesson",
+    path: "/lesson-svc/",
+    direct: true,
   },
 ];
 
@@ -151,6 +152,14 @@ function selectApp(appId) {
   const app = APPS.find((a) => a.id === appId) || APPS[0];
   localStorage.setItem(APP_KEY, app.id);
   renderFabMenu(app.id);
+  if (app.direct && app.id === "lesson") {
+    closeMenu();
+    updateFabIcon(app.id);
+    if (window.LessonHub?.openLessonInFrame) {
+      window.LessonHub.openLessonInFrame(appFrame);
+    }
+    return;
+  }
   const currentPath = new URL(appFrame.getAttribute("src") || app.path, window.location.origin)
     .pathname;
   if (currentPath !== app.path) {
@@ -172,9 +181,16 @@ function initAppFromUrl() {
   const app = APPS.find((a) => a.id === id) || APPS[0];
   localStorage.setItem(APP_KEY, app.id);
   renderFabMenu(app.id);
-  appFrame.src = app.path;
-  appFrame.title = app.label;
-  updateFabIcon(app.id);
+  if (app.direct && app.id === "lesson") {
+    updateFabIcon(app.id);
+    if (window.LessonHub?.openLessonInFrame) {
+      window.LessonHub.openLessonInFrame(appFrame);
+    }
+  } else {
+    appFrame.src = app.path;
+    appFrame.title = app.label;
+    updateFabIcon(app.id);
+  }
   if (path !== "/" && path !== "/index.html") {
     history.replaceState(null, "", "/");
   }
