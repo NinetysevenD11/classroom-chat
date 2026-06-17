@@ -32,14 +32,24 @@ async def launch_chromium(playwright, *, headless: bool = True):
     """
     bundled Chromium → channel=chrome → channel=msedge 순으로 시도.
     """
+    import os
+
+    docker_args = []
+    if os.environ.get("RENDER") or os.environ.get("FLY_APP_NAME") or Path("/.dockerenv").exists():
+        docker_args = ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"]
+
     last: BaseException | None = None
     for channel in (None, "chrome", "msedge"):
         try:
             if channel is None:
-                return await playwright.chromium.launch(headless=headless)
+                return await playwright.chromium.launch(
+                    headless=headless,
+                    args=docker_args or None,
+                )
             return await playwright.chromium.launch(
                 channel=channel,
                 headless=headless,
+                args=docker_args or None,
             )
         except Exception as exc:
             last = exc

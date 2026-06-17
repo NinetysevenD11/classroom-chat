@@ -1,29 +1,51 @@
-# Render Blueprint — https://classroom-chat-h1ll.onrender.com
-# Playwright(Chromium) 때문에 RAM 2GB 이상(Standard) 권장
+# Render Blueprint — classroom-chat + 수업 자료 생성기(별도 Docker)
+#
+# 기존 Node 서비스는 그대로 두고, lesson 전용 Docker 서비스를 추가합니다.
+# 메인 서비스 환경변수 LESSON_REMOTE_URL 이 자동 연결됩니다.
+# 두 서비스 모두 동일한 SESSION_SECRET 을 설정해야 SSO가 동작합니다.
+
 services:
   - type: web
     name: classroom-chat
-    runtime: docker
-    plan: standard
+    runtime: node
+    plan: starter
     region: singapore
     branch: main
+    buildCommand: npm ci --omit=dev
+    startCommand: node server.js
     healthCheckPath: /login
     envVars:
       - key: NODE_ENV
         value: production
-      - key: CLASSROOM_INTEGRATED
-        value: "1"
-      - key: LESSON_PORT
-        value: "18080"
-      - key: LESSON_ROOT_PATH
-        value: /lesson-svc
-      - key: PYTHON
-        value: python3
+      - key: LESSON_REMOTE_URL
+        fromService:
+          type: web
+          name: classroom-lesson
+          property: host
       - key: DATA_DIR
         value: /data
-      - key: LESSON_PERSIST_DIR
-        value: /data/lesson-data
     disk:
       name: classroom-data
+      mountPath: /data
+      sizeGB: 1
+
+  - type: web
+    name: classroom-lesson
+    runtime: docker
+    dockerfilePath: ./lesson-app/Dockerfile
+    dockerContext: ./lesson-app
+    plan: standard
+    region: singapore
+    branch: main
+    healthCheckPath: /
+    envVars:
+      - key: CLASSROOM_INTEGRATED
+        value: "1"
+      - key: LESSON_PERSIST_DIR
+        value: /data
+      - key: HOST
+        value: 0.0.0.0
+    disk:
+      name: lesson-data
       mountPath: /data
       sizeGB: 2

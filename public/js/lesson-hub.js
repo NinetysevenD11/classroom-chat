@@ -1,10 +1,46 @@
 /** 교실도구 허브 — 수업 자료 생성기 SSO 연결 (허브 iframe에 직접 로드) */
 
+const IS_HOSTED =
+  location.hostname !== "localhost" && location.hostname !== "127.0.0.1";
+
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-async function waitLessonReady(maxMs = 120000) {
+function hintForStatus(data) {
+  if (data.disabled) {
+    return IS_HOSTED
+      ? "서버 관리자에게 문의해 주세요."
+      : "PC에서 node server.js 실행 후 http://localhost:3000 으로 접속해 주세요.";
+  }
+  if (data.failedReason) return data.failedReason;
+  if (data.failed) {
+    return IS_HOSTED
+      ? "서버가 방금 깨어났을 수 있습니다. 잠시 후 다시 시도해 주세요."
+      : "터미널에서 node server.js 로그를 확인하고 npm run setup:lesson 을 실행해 주세요.";
+  }
+  return IS_HOSTED
+    ? "첫 실행은 1~3분 걸릴 수 있습니다. 잠시 후 다시 시도해 주세요."
+    : "node server.js 실행 후 1~2분 기다렸다가 다시 시도해 주세요.";
+}
+
+async function tryRestartLesson() {
+  try {
+    const res = await fetch("/api/lesson/restart", {
+      method: "POST",
+      credentials: "include",
+    });
+    const data = await res.json().catch(() => ({}));
+    return Boolean(data.ok || data.starting);
+  } catch {
+    return false;
+  }
+}
+
+async function waitLessonReady(maxMs) {
+  const limit = maxMs || (IS_HOSTED ? 300000 : 120000);
   const start = Date.now();
-  while (Date.now() - start < maxMs) {
+  let retried = false;
+
+  while (Date.now() - start < limit) {
     const res = await fetch("/api/lesson/status", { credentials: "include" });
     const data = await res.json().catch(() => ({}));
     if (data.ready) return { ok: true };
@@ -12,22 +48,28 @@ async function waitLessonReady(maxMs = 120000) {
       return {
         ok: false,
         error: "이 서버에서는 수업 자료 생성기를 사용할 수 없습니다.",
-        hint: "PC에서 node server.js 실행 후 http://localhost:3000 으로 접속해 주세요.",
+        hint: hintForStatus(data),
       };
     }
     if (data.failed) {
+      if (!retried && IS_HOSTED) {
+        retried = true;
+        await tryRestartLesson();
+        await sleep(3000);
+        continue;
+      }
       return {
         ok: false,
         error: "수업 자료 생성기를 시작하지 못했습니다.",
-        hint: "터미널 로그를 확인하고 npm.cmd run setup:lesson 을 실행해 주세요.",
+        hint: hintForStatus(data),
       };
     }
-    await sleep(1500);
+    await sleep(2000);
   }
   return {
     ok: false,
     error: "수업 자료 생성기가 준비되지 않았습니다.",
-    hint: "node server.js 실행 후 1~2분 기다렸다가 다시 시도해 주세요.",
+    hint: hintForStatus({ failed: false }),
   };
 }
 
@@ -44,7 +86,7 @@ async function fetchLessonSsoUrl() {
     return null;
   }
   if (!res.ok || !data.ok) {
-    alert(data.error || "수업 자료 생성기에 연결하지 못했습니다.");
+    alert(data.error || data.failedReason || "수업 자료 생성기에 연결하지 못했습니다.");
     return null;
   }
   return data.url;

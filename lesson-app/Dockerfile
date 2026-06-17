@@ -3,7 +3,9 @@ FROM python:3.12-slim-bookworm
 ENV PYTHONUNBUFFERED=1 \
     HOST=0.0.0.0 \
     PORT=8080 \
-    LESSON_PERSIST_DIR=/data
+    LESSON_PERSIST_DIR=/data \
+    CLASSROOM_INTEGRATED=1 \
+    RENDER=true
 
 WORKDIR /app
 

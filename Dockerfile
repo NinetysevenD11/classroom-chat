@@ -7,7 +7,9 @@ ENV DEBIAN_FRONTEND=noninteractive \
     CLASSROOM_INTEGRATED=1 \
     LESSON_PORT=18080 \
     LESSON_ROOT_PATH=/lesson-svc \
-    PYTHON=python3
+    PYTHON=python3 \
+    RENDER=true \
+    PLAYWRIGHT_BROWSERS_PATH=/root/.cache/ms-playwright
 
 WORKDIR /app
 
@@ -22,7 +24,8 @@ RUN npm ci --omit=dev
 
 COPY lesson-app/requirements.txt lesson-app/requirements.txt
 RUN pip3 install --no-cache-dir --break-system-packages -r lesson-app/requirements.txt \
-    && python3 -m playwright install --with-deps chromium
+    && python3 -m playwright install --with-deps chromium \
+    && python3 -c "import nicegui; print('nicegui ok')"
 
 COPY . .
 

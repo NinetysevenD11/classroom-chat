@@ -11,7 +11,11 @@ from typing import Callable
 
 
 def verify_classroom_sso_token(token: str) -> str | None:
-    secret = (os.environ.get("CLASSROOM_SSO_SECRET") or "").strip()
+    secret = (
+        os.environ.get("CLASSROOM_SSO_SECRET")
+        or os.environ.get("SESSION_SECRET")
+        or ""
+    ).strip()
     if not secret or not token or "." not in token:
         return None
 

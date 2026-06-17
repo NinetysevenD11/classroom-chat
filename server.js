@@ -52,8 +52,9 @@ import { scanExamPaper, questionsToStored, analyzeStudentTrend } from "./grading
 import { createProxyMiddleware } from "http-proxy-middleware";
 import {
   startLessonService,
-  getLessonPort,
+  restartLessonService,
   getLessonPrefix,
+  getLessonProxyTarget,
   isLessonReady,
   getLessonStatus,
 } from "./lesson-service.js";
@@ -486,6 +487,14 @@ app.get("/api/lesson/status", requireAuth, (req, res) => {
   res.json({ ok: true, ...getLessonStatus() });
 });
 
+app.post("/api/lesson/restart", requireAuth, async (req, res) => {
+  if (isAdminUserId(req.session.userId)) {
+    return res.status(403).json({ ok: false, error: "사용할 수 없습니다." });
+  }
+  const ok = await restartLessonService(sessionSecret);
+  res.json({ ok, ...getLessonStatus() });
+});
+
 app.get("/api/lesson/sso", requireAuth, (req, res) => {
   const userId = req.session.userId;
   if (!userId || isAdminUserId(userId)) {
@@ -496,9 +505,9 @@ app.get("/api/lesson/sso", requireAuth, (req, res) => {
     return res.status(503).json({
       ok: false,
       error: status.disabled
-        ? "이 서버에서는 수업 자료 생성기를 사용할 수 없습니다. PC에서 node server.js 로 실행해 주세요."
+        ? "이 서버에서는 수업 자료 생성기를 사용할 수 없습니다."
         : status.failed
-          ? "수업 자료 생성기를 시작하지 못했습니다. 터미널 로그를 확인해 주세요."
+          ? status.failedReason || "수업 자료 생성기를 시작하지 못했습니다."
           : "수업 자료 생성기를 시작하는 중입니다. 잠시만 기다려 주세요.",
       ...status,
     });
@@ -512,7 +521,8 @@ app.get("/api/lesson/sso", requireAuth, (req, res) => {
 });
 
 const lessonProxy = createProxyMiddleware({
-  target: `http://127.0.0.1:${getLessonPort()}`,
+  target: "http://127.0.0.1",
+  router: () => getLessonProxyTarget(),
   changeOrigin: true,
   ws: true,
   pathRewrite: (p) => p.replace(/^\/lesson-svc/, "") || "/",
@@ -520,10 +530,11 @@ const lessonProxy = createProxyMiddleware({
 
 app.use(getLessonPrefix(), (req, res, next) => {
   if (!isLessonReady()) {
-    return res
-      .status(503)
-      .type("text/plain; charset=utf-8")
-      .send("수업 자료 생성기를 시작하는 중입니다. node server.js 로그를 확인해 주세요.");
+    const st = getLessonStatus();
+    const msg = st.failed
+      ? st.failedReason || "수업 자료 생성기를 시작하지 못했습니다."
+      : "수업 자료 생성기를 시작하는 중입니다. 1~3분 정도 기다려 주세요.";
+    return res.status(503).type("text/plain; charset=utf-8").send(msg);
   }
   return lessonProxy(req, res, next);
 });
