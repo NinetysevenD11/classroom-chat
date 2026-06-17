@@ -1,0 +1,29 @@
+# Render Blueprint — https://classroom-chat-h1ll.onrender.com
+# Playwright(Chromium) 때문에 RAM 2GB 이상(Standard) 권장
+services:
+  - type: web
+    name: classroom-chat
+    runtime: docker
+    plan: standard
+    region: singapore
+    branch: main
+    healthCheckPath: /login
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: CLASSROOM_INTEGRATED
+        value: "1"
+      - key: LESSON_PORT
+        value: "18080"
+      - key: LESSON_ROOT_PATH
+        value: /lesson-svc
+      - key: PYTHON
+        value: python3
+      - key: DATA_DIR
+        value: /data
+      - key: LESSON_PERSIST_DIR
+        value: /data/lesson-data
+    disk:
+      name: classroom-data
+      mountPath: /data
+      sizeGB: 2

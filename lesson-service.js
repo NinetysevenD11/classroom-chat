@@ -68,14 +68,17 @@ function probeHealth() {
   });
 }
 
-async function waitForHealth(maxMs = 120000) {
+async function waitForHealth(maxMs) {
+  const limit =
+    maxMs ||
+    (process.env.RENDER === "true" || process.env.NODE_ENV === "production" ? 240000 : 120000);
   const start = Date.now();
-  while (Date.now() - start < maxMs) {
+  while (Date.now() - start < limit) {
     if (await probeHealth()) {
       ready = true;
       return;
     }
-    await new Promise((r) => setTimeout(r, 900));
+    await new Promise((r) => setTimeout(r, 1500));
   }
   throw new Error("수업 자료 생성기가 시간 내에 시작되지 않았습니다.");
 }
@@ -111,7 +114,7 @@ export async function startLessonService(sessionSecret) {
     cwd: LESSON_DIR,
     env,
     stdio: "inherit",
-    windowsHide: true,
+    windowsHide: process.platform === "win32",
   });
 
   child.on("exit", (code, signal) => {

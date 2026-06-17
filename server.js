@@ -1717,7 +1717,12 @@ httpServer.listen(PORT, "0.0.0.0", async () => {
   console.log("==============================================");
   console.log(" 우리반 채팅 서버가 시작되었습니다!");
   console.log(` 교사 화면 : http://localhost:${PORT}`);
-  console.log(` 학생 참여(같은 네트워크) : http://${ip}:${PORT}/student`);
+  if (!isProd) {
+    console.log(` 학생 참여(같은 네트워크) : http://${ip}:${PORT}/student`);
+  }
+  if (process.env.RENDER === "true") {
+    console.log(" Render 배포 — 수업 자료 생성기 포함 통합 모드");
+  }
   console.log("==============================================");
   startLessonService(sessionSecret).catch((err) => {
     console.warn("[lesson-app] 백그라운드 시작 오류:", err.message);
