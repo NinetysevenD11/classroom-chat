@@ -2504,6 +2504,75 @@ body {
 
 .grades-table .col-score {
   color: #334155;
+  padding: 4px 6px;
+}
+
+.score-edit-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 52px;
+  min-height: 32px;
+  padding: 4px 8px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.score-edit-btn:hover,
+.score-edit-btn:focus-visible {
+  border-color: #6366f1;
+  background: #eef2ff;
+  outline: none;
+}
+
+.score-edit-btn.is-empty {
+  color: #94a3b8;
+}
+
+.score-edit-btn.is-manual {
+  border-style: solid;
+  border-color: #86efac;
+  background: #f0fdf4;
+}
+
+.score-manual-tag {
+  font-size: 10px;
+  font-weight: 700;
+  color: #15803d;
+  line-height: 1;
+}
+
+.grades-direct-hint {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #475569;
+}
+
+.btn-add-student {
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+}
+
+.btn-row-score {
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid #c4b5fd;
+  background: #f5f3ff;
+  color: #5b21b6;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn-row-score:hover {
+  background: #ede9fe;
 }
 
 .grades-table .score-pending {

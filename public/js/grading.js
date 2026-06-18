@@ -1824,21 +1824,46 @@ function scoreFor(studentKey, unitId) {
   return v === undefined || v === null ? "—" : v;
 }
 
-function scoreCellHtml(studentKey, unitId) {
+function scoreCellHtml(studentKey, unitId, unitName) {
   const rec = state.studentScores?.[studentKey];
-  if (!rec) return "—";
-  const v = rec[unitId];
-  const sub = rec._detail?.[unitId];
-  if (sub && sub.finalized === false) {
+  const sub = rec?._detail?.[unitId];
+  const v = rec?.[unitId];
+  const manual = sub?.manual;
+  let inner = "—";
+
+  if (sub && sub.finalized === false && !manual) {
     const prov = sub.provisionalScore;
     if (prov !== null && prov !== undefined) {
-      return `<span class="score-pending">${prov}<small> (확정전)</small></span>`;
+      inner = `${prov}<small> (확정전)</small>`;
+    } else {
+      inner = `채점중`;
     }
-    return `<span class="score-pending">채점중</span>`;
+  } else if (v === "—" || v === undefined || v === null) {
+    inner = "—";
+  } else if (v === "채점중" || v === "대기") {
+    inner = `채점중`;
+  } else {
+    inner = String(v);
   }
-  if (v === "—" || v === undefined || v === null) return "—";
-  if (v === "채점중" || v === "대기") return `<span class="score-pending">채점중</span>`;
-  return `<span class="score-final">${escapeHtml(String(v))}</span>`;
+
+  const rawVal =
+    v === undefined || v === null || v === "—" || v === "채점중" || v === "대기"
+      ? ""
+      : String(v);
+  const cls = [
+    "score-edit-btn",
+    sub && sub.finalized === false && !manual ? "is-pending" : "",
+    manual ? "is-manual" : "",
+    inner === "—" ? "is-empty" : "is-filled",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  const title = manual
+    ? "선생님이 직접 입력한 점수 (클릭하여 수정)"
+    : "클릭하여 점수 직접 입력";
+
+  return `<button type="button" class="${cls}" data-score-edit="1" data-student-key="${escapeHtml(studentKey)}" data-unit-id="${escapeHtml(unitId)}" data-unit-name="${escapeHtml(unitName || "")}" data-value="${escapeHtml(rawVal)}" title="${escapeHtml(title)}">${inner === "—" ? "—" : manual ? `<span class="score-final">${escapeHtml(String(v))}</span><small class="score-manual-tag">직접</small>` : sub && sub.finalized === false && !manual ? `<span class="score-pending">${inner}</span>` : v === "채점중" || v === "대기" ? `<span class="score-pending">채점중</span>` : `<span class="score-final">${escapeHtml(String(v))}</span>`}</button>`;
 }
 
 function formatSubmitted(ts) {
@@ -2027,6 +2052,154 @@ async function saveManualGradeModal() {
   refreshGradesOrTrendView();
 }
 
+async function postManualScore(studentKey, unitId, score) {
+  const res = await fetch("/api/grading/manual-score", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ studentKey, unitId, score }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "저장 실패");
+  if (!state.studentScores[studentKey]) state.studentScores[studentKey] = { _detail: {} };
+  if (!state.studentScores[studentKey]._detail) state.studentScores[studentKey]._detail = {};
+  if (score === null || score === undefined || score === "") {
+    delete state.studentScores[studentKey][unitId];
+    delete state.studentScores[studentKey]._detail[unitId];
+  } else {
+    state.studentScores[studentKey][unitId] = data.score;
+    state.studentScores[studentKey]._detail[unitId] = data.submission;
+  }
+  return data;
+}
+
+function openManualScoreDialog(studentKey, unitId, seat, name, unitName) {
+  const rec = state.studentScores?.[studentKey];
+  const sub = rec?._detail?.[unitId];
+  const current = scoreFor(studentKey, unitId);
+  const currentVal =
+    current === "—" || current === "채점중" || current === "대기" ? "" : String(current);
+  const pendingNote =
+    sub && sub.finalized === false && !sub.manual
+      ? "\n(현재 자동 채점 중입니다. 저장하면 직접 입력 점수로 확정됩니다.)"
+      : "";
+
+  openDialog({
+    title: "점수 직접 입력",
+    message: `${seat}번 ${name} · ${unitName || "단원"}${pendingNote}\n시험 도구를 쓰지 않은 학생도 0~100 점을 입력할 수 있습니다. 비우면 점수를 삭제합니다.`,
+    confirmText: "저장",
+    fields: [{ name: "score", label: "점수 (0~100)", type: "number", value: currentVal, min: 0, max: 100 }],
+    onConfirm: async (v) => {
+      const raw = String(v.score ?? "").trim();
+      try {
+        if (!raw) {
+          await postManualScore(studentKey, unitId, null);
+        } else {
+          const n = Number(raw);
+          if (!Number.isFinite(n) || n < 0 || n > 100) {
+            showToast("0~100 사이 숫자를 입력하세요.", true);
+            return false;
+          }
+          await postManualScore(studentKey, unitId, Math.round(n));
+        }
+        refreshGradesOrTrendView();
+        showToast("점수를 저장했습니다.");
+        return true;
+      } catch (err) {
+        showToast(err.message || "저장하지 못했습니다.", true);
+        return false;
+      }
+    },
+  });
+}
+
+function openStudentManualScoresDialog(studentKey, seat, name) {
+  const gradesSub = getGradesSubject();
+  const units = gradesSub ? getUnitsForSubject(gradesSub.id) : [];
+  if (!units.length) {
+    showToast("먼저 시험·단원을 추가해 주세요.", true);
+    return;
+  }
+
+  openDialog({
+    title: "학생 점수 일괄 입력",
+    message: `${seat}번 ${name} — 각 단원 점수를 입력하세요. (비우면 해당 단원 점수 삭제)`,
+    confirmText: "저장",
+    fields: units.map((u) => {
+      const current = scoreFor(studentKey, u.id);
+      const val =
+        current === "—" || current === "채점중" || current === "대기" ? "" : String(current);
+      return {
+        name: u.id,
+        label: u.name,
+        type: "number",
+        value: val,
+        min: 0,
+        max: 100,
+      };
+    }),
+    onConfirm: async (values) => {
+      let saved = 0;
+      try {
+        for (const u of units) {
+          const raw = String(values[u.id] ?? "").trim();
+          if (!raw) {
+            const had = state.studentScores?.[studentKey]?.[u.id];
+            if (had !== undefined && had !== null && had !== "—") {
+              await postManualScore(studentKey, u.id, null);
+              saved += 1;
+            }
+            continue;
+          }
+          const n = Number(raw);
+          if (!Number.isFinite(n) || n < 0 || n > 100) {
+            showToast(`「${u.name}」: 0~100 사이 숫자를 입력하세요.`, true);
+            return false;
+          }
+          await postManualScore(studentKey, u.id, Math.round(n));
+          saved += 1;
+        }
+        refreshGradesOrTrendView();
+        showToast(saved ? `${saved}개 단원 점수를 저장했습니다.` : "변경 사항이 없습니다.");
+        return true;
+      } catch (err) {
+        showToast(err.message || "저장하지 못했습니다.", true);
+        return false;
+      }
+    },
+  });
+}
+
+function addStudentToGrades() {
+  openDialog({
+    title: "학생 추가",
+    message: "시험 도구를 사용하지 않은 학생도 성적표에 추가할 수 있습니다.",
+    confirmText: "추가",
+    fields: [
+      { name: "seat", label: "번호 (1~19)", type: "number", value: "", min: 1, max: 19 },
+      { name: "name", label: "이름", type: "text", placeholder: "예: 홍길동", maxlength: 12 },
+    ],
+    onConfirm: async (v) => {
+      const seat = Number(v.seat);
+      const name = v.name?.trim();
+      if (!name || !Number.isFinite(seat) || seat < 1 || seat > 19) {
+        showToast("번호(1~19)와 이름을 입력하세요.", true);
+        return false;
+      }
+      const key = `${seat}:${name}`;
+      if (!state.studentScores) state.studentScores = {};
+      if (!state.studentScores[key]) {
+        state.studentScores[key] = { _detail: {} };
+      }
+      const ok = await saveNow();
+      if (!ok) return false;
+      renderGrades();
+      showToast(`${seat}번 ${name} 을(를) 추가했습니다. 점수 칸을 클릭해 입력하세요.`);
+      return true;
+    },
+  });
+}
+
 async function postReview(studentKey, unitId, essayMarks, finalize) {
   const res = await fetch("/api/grading/review", {
     method: "POST",
@@ -2055,11 +2228,15 @@ function buildStudentResultHtml(studentKey, seat, name) {
   for (const u of units) {
     const sc = scoreFor(studentKey, u.id);
     const sub = detail[u.id];
-    const scoreLabel = sub && sub.finalized === false
+    const scoreLabel = sub?.manual
+      ? `${displayScore(sc)}점 (선생님 직접 입력)`
+      : sub && sub.finalized === false
       ? `자동 ${sub.provisionalScore ?? "—"}점 (확정 전)`
       : `${displayScore(sc)}점`;
 
-    const answerLines = sub?.detail
+    const answerLines = sub?.manual
+      ? `<tr><td colspan="4" class="muted">시험 도구 제출 없음 · 선생님이 직접 입력한 점수입니다.</td></tr>`
+      : sub?.detail
       ? Object.entries(sub.detail)
           .map(([num, info]) => {
             const mark = info.correct ? "✓" : info.partial ? "△" : info.pending ? "⋯" : "✗";
@@ -2535,14 +2712,15 @@ function renderGrades() {
           const avg = calcStudentAverage(key, units);
           const online = !!onlineSeats[st.seat];
           return `
-            <tr data-student-key="${escapeHtml(key)}">
+            <tr data-student-key="${escapeHtml(key)}" data-seat="${st.seat}" data-name="${escapeHtml(st.name)}">
               <td class="col-no"><span class="dot ${online ? "on" : "off"}"></span>${st.seat}</td>
               <td class="name">${escapeHtml(st.name)}</td>
-              ${units.length ? units.map((u) => `<td class="col-score">${scoreCellHtml(key, u.id)}</td>`).join("") : ""}
+              ${units.length ? units.map((u) => `<td class="col-score">${scoreCellHtml(key, u.id, u.name)}</td>`).join("") : ""}
               <td class="avg">${avg}</td>
               <td class="col-submit">${formatSubmitted(state.studentScores?.[key]?._submittedAt)}</td>
               <td class="col-actions">
                 <div class="row-actions">
+                  <button type="button" class="btn-row-score" data-student-score="${escapeHtml(key)}" data-seat="${st.seat}" data-name="${escapeHtml(st.name)}">점수입력</button>
                   <button type="button" class="btn-row-view" data-student-result="${escapeHtml(key)}" data-seat="${st.seat}" data-name="${escapeHtml(st.name)}">학생결과보기</button>
                   <button type="button" class="print" data-print="${escapeHtml(key)}" data-seat="${st.seat}" data-name="${escapeHtml(st.name)}">인쇄</button>
                   <button type="button" class="reset" data-reset="${escapeHtml(key)}">초기화</button>
@@ -2554,7 +2732,7 @@ function renderGrades() {
         .join("")
     : `<tr><td colspan="${5 + Math.max(units.length, 1)}">${
         examSubjects.length
-          ? "칠판 「우리반 학생」에서 명단을 저장하거나, 학생이 시험을 제출하면 표시됩니다."
+          ? "칠판 「우리반 학생」 명단이 있거나, 아래 「+ 학생 추가」로 학생을 넣은 뒤 점수 칸을 클릭해 입력하세요."
           : "왼쪽 「+ 새 시험(과목) 추가」로 과목을 만든 뒤 단원을 설정하세요."
       }</td></tr>`;
 
@@ -2566,9 +2744,11 @@ function renderGrades() {
           <div class="legend legend-block">
             <p><span class="dot on"></span> <strong>온라인</strong> : 정상적으로 시험에 응시 중</p>
             <p><span class="dot off"></span> <strong>오프라인</strong> : 브라우저를 끄거나, 다른 창을 여는 등 시험에 응시중이지 않음</p>
+            <p class="grades-direct-hint">💡 점수 칸을 클릭하거나 「점수입력」으로 시험 도구를 쓰지 않은 학생 점수도 직접 넣을 수 있습니다.</p>
           </div>
         </div>
         <div class="grades-actions">
+          <button type="button" class="btn btn-add-student" id="addStudentGradesBtn">+ 학생 추가</button>
           <button type="button" class="btn btn-publish ${state.resultsPublished ? "on" : "off"}" id="togglePublish">
             📊 ${state.resultsPublished ? "결과 공개 중 (ON)" : "결과 비공개 (OFF)"}
           </button>
@@ -2608,6 +2788,7 @@ function renderGrades() {
 
   bindGradesSubjectTabs();
 
+  document.getElementById("addStudentGradesBtn")?.addEventListener("click", addStudentToGrades);
   document.getElementById("togglePublish")?.addEventListener("click", async () => {
     state.resultsPublished = !state.resultsPublished;
     await saveNow();
@@ -2645,6 +2826,25 @@ function renderGrades() {
       renderGrades();
     } catch (_) {}
   }, 5000);
+
+  mainEl.querySelectorAll("[data-score-edit]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const row = btn.closest("tr");
+      openManualScoreDialog(
+        btn.dataset.studentKey,
+        btn.dataset.unitId,
+        row?.dataset.seat || "",
+        row?.dataset.name || "",
+        btn.dataset.unitName
+      );
+    });
+  });
+
+  mainEl.querySelectorAll("[data-student-score]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      openStudentManualScoresDialog(btn.dataset.studentScore, btn.dataset.seat, btn.dataset.name);
+    });
+  });
 
   mainEl.querySelectorAll("[data-student-result]").forEach((btn) => {
     btn.addEventListener("click", () => {

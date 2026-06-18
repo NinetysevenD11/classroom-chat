@@ -755,6 +755,72 @@ app.post("/api/grading/review-question", requireAuth, async (req, res) => {
   }
 });
 
+/** 시험 도구 미사용 학생 — 선생님이 단원 점수를 직접 입력 */
+app.post("/api/grading/manual-score", requireAuth, async (req, res) => {
+  const userId = req.session.userId;
+  if (isAdminUserId(userId)) return res.status(403).json({ ok: false, error: "사용할 수 없습니다." });
+
+  const { studentKey, unitId, score } = req.body || {};
+  if (!studentKey || !unitId) {
+    return res.status(400).json({ ok: false, error: "학생·단원 정보가 필요합니다." });
+  }
+  if (!String(studentKey).includes(":")) {
+    return res.status(400).json({ ok: false, error: "학생 정보 형식이 올바르지 않습니다." });
+  }
+
+  const grading = getGradingState(userId);
+  const hit = findUnitInGrading(grading, unitId);
+  if (!hit) return res.status(404).json({ ok: false, error: "시험을 찾을 수 없습니다." });
+
+  if (!grading.studentScores) grading.studentScores = {};
+  if (!grading.studentScores[studentKey]) {
+    grading.studentScores[studentKey] = { _detail: {} };
+  }
+  const rec = grading.studentScores[studentKey];
+  if (!rec._detail) rec._detail = {};
+
+  const clearScore = score === null || score === undefined || score === "";
+
+  if (clearScore) {
+    delete rec[unitId];
+    delete rec._detail[unitId];
+    const hasAnyScore = Object.keys(rec).some((k) => !k.startsWith("_") && rec[k] !== undefined);
+    const hasAnyDetail = rec._detail && Object.keys(rec._detail).length > 0;
+    if (!hasAnyScore && !hasAnyDetail) {
+      delete rec._submittedAt;
+    }
+  } else {
+    const num = Math.round(Number(score));
+    if (!Number.isFinite(num) || num < 0 || num > 100) {
+      return res.status(400).json({ ok: false, error: "0~100 사이 점수를 입력해 주세요." });
+    }
+    const prev = rec._detail[unitId];
+    rec[unitId] = num;
+    rec._detail[unitId] = {
+      manual: true,
+      finalized: true,
+      earned: num,
+      max: 100,
+      provisionalScore: num,
+      submittedAt: prev?.submittedAt || null,
+      teacherEnteredAt: Date.now(),
+    };
+  }
+
+  try {
+    await saveGradingState(userId, grading, { preserveSecrets: false });
+    res.json({
+      ok: true,
+      studentKey,
+      unitId,
+      score: clearScore ? null : rec[unitId],
+      submission: rec._detail[unitId] || null,
+    });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: "저장에 실패했습니다." });
+  }
+});
+
 function numericScoreFromRecord(rec, unitId) {
   if (!rec) return null;
   const v = rec[unitId];
