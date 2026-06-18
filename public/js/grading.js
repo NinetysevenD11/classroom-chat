@@ -2052,6 +2052,33 @@ async function saveManualGradeModal() {
   refreshGradesOrTrendView();
 }
 
+function getUnitSubmission(studentKey, unitId) {
+  return state.studentScores?.[studentKey]?._detail?.[unitId] || null;
+}
+
+function isExamSubmissionScore(studentKey, unitId) {
+  const sub = getUnitSubmission(studentKey, unitId);
+  if (!sub || sub.manual) return false;
+  return !!(sub.submittedAt || sub.detail || sub.answers);
+}
+
+function unitScoreInputValue(studentKey, unitId) {
+  const current = scoreFor(studentKey, unitId);
+  if (current !== "—" && current !== "채점중" && current !== "대기") return String(current);
+  const sub = getUnitSubmission(studentKey, unitId);
+  if (sub && !sub.manual && sub.provisionalScore !== null && sub.provisionalScore !== undefined) {
+    return String(sub.provisionalScore);
+  }
+  return "";
+}
+
+function currentUnitNumericScore(studentKey, unitId) {
+  const raw = unitScoreInputValue(studentKey, unitId);
+  if (!raw) return null;
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : null;
+}
+
 async function postManualScore(studentKey, unitId, score) {
   const res = await fetch("/api/grading/manual-score", {
     method: "POST",
@@ -2074,11 +2101,7 @@ async function postManualScore(studentKey, unitId, score) {
 }
 
 function openManualScoreDialog(studentKey, unitId, seat, name, unitName) {
-  const rec = state.studentScores?.[studentKey];
-  const sub = rec?._detail?.[unitId];
-  const current = scoreFor(studentKey, unitId);
-  const currentVal =
-    current === "—" || current === "채점중" || current === "대기" ? "" : String(current);
+  const sub = getUnitSubmission(studentKey, unitId);
   const pendingNote =
     sub && sub.finalized === false && !sub.manual
       ? "\n(현재 자동 채점 중입니다. 저장하면 직접 입력 점수로 확정됩니다.)"
@@ -2086,13 +2109,30 @@ function openManualScoreDialog(studentKey, unitId, seat, name, unitName) {
 
   openDialog({
     title: "점수 직접 입력",
-    message: `${seat}번 ${name} · ${unitName || "단원"}${pendingNote}\n시험 도구를 쓰지 않은 학생도 0~100 점을 입력할 수 있습니다. 비우면 점수를 삭제합니다.`,
+    message: `${seat}번 ${name} · ${unitName || "단원"}${pendingNote}\n시험 도구를 쓰지 않은 학생도 0~100 점을 입력할 수 있습니다.${isExamSubmissionScore(studentKey, unitId) ? "\n(QR 시험으로 받은 점수는 비워도 삭제되지 않습니다.)" : "\n비우면 직접 입력한 점수만 삭제됩니다."}`,
     confirmText: "저장",
-    fields: [{ name: "score", label: "점수 (0~100)", type: "number", value: currentVal, min: 0, max: 100 }],
+    fields: [
+      {
+        name: "score",
+        label: "점수 (0~100)",
+        type: "number",
+        value: unitScoreInputValue(studentKey, unitId),
+        min: 0,
+        max: 100,
+      },
+    ],
     onConfirm: async (v) => {
       const raw = String(v.score ?? "").trim();
       try {
         if (!raw) {
+          if (isExamSubmissionScore(studentKey, unitId)) {
+            showToast("QR 시험으로 받은 점수는 삭제할 수 없습니다.", true);
+            return false;
+          }
+          const sub = getUnitSubmission(studentKey, unitId);
+          if (!sub?.manual && scoreFor(studentKey, unitId) === "—") {
+            return true;
+          }
           await postManualScore(studentKey, unitId, null);
         } else {
           const n = Number(raw);
@@ -2123,29 +2163,24 @@ function openStudentManualScoresDialog(studentKey, seat, name) {
 
   openDialog({
     title: "학생 점수 일괄 입력",
-    message: `${seat}번 ${name} — 각 단원 점수를 입력하세요. (비우면 해당 단원 점수 삭제)`,
+    message: `${seat}번 ${name} — 입력한 단원만 저장됩니다. 비운 칸은 그대로 두며, QR 시험으로 받은 점수는 지우지 않습니다.`,
     confirmText: "저장",
-    fields: units.map((u) => {
-      const current = scoreFor(studentKey, u.id);
-      const val =
-        current === "—" || current === "채점중" || current === "대기" ? "" : String(current);
-      return {
-        name: u.id,
-        label: u.name,
-        type: "number",
-        value: val,
-        min: 0,
-        max: 100,
-      };
-    }),
+    fields: units.map((u) => ({
+      name: u.id,
+      label: u.name,
+      type: "number",
+      value: unitScoreInputValue(studentKey, u.id),
+      min: 0,
+      max: 100,
+    })),
     onConfirm: async (values) => {
       let saved = 0;
       try {
         for (const u of units) {
           const raw = String(values[u.id] ?? "").trim();
           if (!raw) {
-            const had = state.studentScores?.[studentKey]?.[u.id];
-            if (had !== undefined && had !== null && had !== "—") {
+            if (isExamSubmissionScore(studentKey, u.id)) continue;
+            if (getUnitSubmission(studentKey, u.id)?.manual) {
               await postManualScore(studentKey, u.id, null);
               saved += 1;
             }
@@ -2156,7 +2191,12 @@ function openStudentManualScoresDialog(studentKey, seat, name) {
             showToast(`「${u.name}」: 0~100 사이 숫자를 입력하세요.`, true);
             return false;
           }
-          await postManualScore(studentKey, u.id, Math.round(n));
+          const rounded = Math.round(n);
+          const prev = currentUnitNumericScore(studentKey, u.id);
+          if (prev !== null && rounded === Math.round(prev) && isExamSubmissionScore(studentKey, u.id)) {
+            continue;
+          }
+          await postManualScore(studentKey, u.id, rounded);
           saved += 1;
         }
         refreshGradesOrTrendView();

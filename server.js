@@ -782,6 +782,13 @@ app.post("/api/grading/manual-score", requireAuth, async (req, res) => {
   const clearScore = score === null || score === undefined || score === "";
 
   if (clearScore) {
+    const existing = rec._detail[unitId];
+    if (existing && !existing.manual) {
+      return res.status(400).json({
+        ok: false,
+        error: "QR 시험으로 받은 점수는 삭제할 수 없습니다.",
+      });
+    }
     delete rec[unitId];
     delete rec._detail[unitId];
     const hasAnyScore = Object.keys(rec).some((k) => !k.startsWith("_") && rec[k] !== undefined);
