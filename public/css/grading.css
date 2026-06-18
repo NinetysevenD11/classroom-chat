@@ -2560,21 +2560,6 @@ body {
   color: #334155;
 }
 
-.btn-row-score {
-  padding: 4px 8px;
-  border-radius: 6px;
-  border: 1px solid #c4b5fd;
-  background: #f5f3ff;
-  color: #111827;
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.btn-row-score:hover {
-  background: #ede9fe;
-}
-
 .grades-table .score-pending {
   color: #b45309;
   font-weight: 700;
@@ -2881,6 +2866,16 @@ body {
   cursor: pointer;
   color: #fff;
   font-family: inherit;
+}
+
+.row-actions .btn-row-score {
+  background: #f5f3ff;
+  border: 1px solid #c4b5fd;
+  color: #111827;
+}
+
+.row-actions .btn-row-score:hover {
+  background: #ede9fe;
 }
 
 .row-actions .btn-row-view {
