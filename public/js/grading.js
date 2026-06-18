@@ -2476,7 +2476,7 @@ function renderTrendCharts(studentKey) {
   const series = buildTrendSeriesBySubject(studentKey, gradesSubjectId || undefined);
   const subjects = Object.keys(series);
   if (!subjects.length) {
-    grid.innerHTML = `<p class="trend-empty">표시할 점수가 없습니다. 학생이 시험을 제출하면 그래프가 나타납니다.</p>`;
+    grid.innerHTML = `<p class="trend-empty">표시할 점수가 없습니다. 실시간 성적에서 점수를 직접 입력하면 그래프가 나타납니다.</p>`;
     return;
   }
 
