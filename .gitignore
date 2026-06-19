@@ -21,3 +21,5 @@ lesson-app/**/.DS_Store
 lesson-app/**/__pycache__/
 lesson-app/python
 lesson-app/data/accounts.json
+.python/
+.python-tar.gz

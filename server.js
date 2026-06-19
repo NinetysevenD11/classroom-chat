@@ -1811,5 +1811,13 @@ httpServer.listen(PORT, "0.0.0.0", async () => {
   startLessonService(sessionSecret).catch((err) => {
     console.warn("[lesson-app] 백그라운드 시작 오류:", err.message);
   });
+  if (process.env.RENDER === "true") {
+    setInterval(() => {
+      const st = getLessonStatus();
+      if (!st.ready && !st.starting && !st.disabled) {
+        restartLessonService(sessionSecret).catch(() => {});
+      }
+    }, 90000);
+  }
   if (!isProd) startTunnel();
 });

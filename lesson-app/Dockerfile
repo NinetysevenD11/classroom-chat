@@ -20,7 +20,7 @@ RUN pip install --no-cache-dir -r requirements.txt \
 COPY docker-entrypoint.sh /app/docker-entrypoint.sh
 RUN chmod +x /app/docker-entrypoint.sh
 
-COPY app.py pipeline.py state.py pdf_utils.py accounts_store.py ./
+COPY app.py pipeline.py state.py pdf_utils.py accounts_store.py classroom_sso.py ./
 COPY services/ ./services/
 COPY templates/ ./templates/
 COPY check_library.py layout_audit.py ./

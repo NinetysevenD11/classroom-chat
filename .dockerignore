@@ -13,6 +13,8 @@ lesson-app/_debug_social_ws
 lesson-app/.env
 .env
 .sessions
+.python
+.python-tar.gz
 *.md
 !lesson-app/README.md
 _backup
