@@ -23,6 +23,9 @@ import {
   recordLogin,
   getLastLoginByUser,
   getRecentLoginLogs,
+  ensureUserRoomCode,
+  ensureAllUserRoomCodes,
+  findUserIdByRoomCode,
   ensureAdminAccount,
   createSessionStore,
 } from "./storage.js";
@@ -187,7 +190,7 @@ function saveSession(req) {
   });
 }
 
-// ----- 교실 (선생님 계정별, 입장 코드 없음) -----
+// ----- 교실 (선생님 계정별, QR room 코드로 구분) -----
 // rooms[userId] = { seats, socketSeat, seatSocket }
 const rooms = {};
 let activeTeacherId = null; // 현재 접속 중인 선생님 (학생은 여기로 자동 입장)
@@ -271,6 +274,7 @@ app.set("trust proxy", 1);
 const isProd = process.env.NODE_ENV === "production";
 
 await initStorage();
+await ensureAllUserRoomCodes();
 await initGradingStorage();
 await initBookmarksStorage();
 await initPreferencesStorage();
@@ -333,6 +337,7 @@ app.post("/api/signup", async (req, res) => {
   const u = makeUser(password);
   try {
     await saveUser(id, u);
+    await ensureUserRoomCode(id);
     req.session.userId = id;
     await recordLogin(id, { ip: clientIp(req) });
     await saveSession(req);
@@ -589,6 +594,26 @@ function studentBaseUrl(req) {
   if (publicUrl) return publicUrl;
   if (process.env.PUBLIC_URL) return process.env.PUBLIC_URL;
   return `${req.protocol}://${req.get("host")}`;
+}
+
+function buildStudentJoinUrl(base, roomCode) {
+  return `${base}/student?room=${encodeURIComponent(roomCode)}`;
+}
+
+function buildExamJoinUrl(base, roomCode) {
+  return `${base}/exam?room=${encodeURIComponent(roomCode)}`;
+}
+
+function resolveTeacherByRoomCode(roomCode) {
+  const userId = findUserIdByRoomCode(roomCode);
+  if (!userId) return null;
+  return { userId, room: getRoomForUser(userId) };
+}
+
+function resolveTeacherFromQuery(req) {
+  const roomCode = String(req.query.room || "").trim();
+  if (!roomCode) return null;
+  return resolveTeacherByRoomCode(roomCode);
 }
 
 app.get("/api/grading", requireAuth, (req, res) => {
@@ -976,11 +1001,13 @@ app.get("/api/grading/online", requireAuth, (req, res) => {
 app.get("/api/grading/student-url", requireAuth, async (req, res) => {
   const userId = req.session.userId;
   if (isAdminUserId(userId)) return res.status(403).json({ error: "관리자는 사용할 수 없습니다." });
+  const roomCode = await ensureUserRoomCode(userId);
   const base = studentBaseUrl(req);
-  const examUrl = `${base}/exam`;
+  const url = buildStudentJoinUrl(base, roomCode);
+  const examUrl = buildExamJoinUrl(base, roomCode);
   try {
     const dataUrl = await qrcode.toDataURL(examUrl, { width: 320, margin: 1 });
-    res.json({ url: `${base}/student`, examUrl, dataUrl });
+    res.json({ url, examUrl, dataUrl, room: roomCode });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -1138,9 +1165,13 @@ app.post("/api/grading/scan", requireAuth, async (req, res) => {
 });
 
 app.get("/api/exam/public", (req, res) => {
-  const found = findTeacherRoom();
+  const found = resolveTeacherFromQuery(req);
   if (!found) {
-    return res.json({ ok: false, units: [], message: "선생님이 접속 중이 아닙니다." });
+    return res.json({
+      ok: false,
+      units: [],
+      message: "참여 코드가 없거나 올바르지 않습니다. 선생님 QR으로 접속해 주세요.",
+    });
   }
   const state = getGradingState(found.userId);
   const activeSubjects = [];
@@ -1172,9 +1203,9 @@ app.get("/api/exam/public", (req, res) => {
 });
 
 app.get("/api/exam/unit/:unitId", (req, res) => {
-  const found = findTeacherRoom();
+  const found = resolveTeacherFromQuery(req);
   if (!found) {
-    return res.json({ ok: false, error: "선생님이 접속 중이 아닙니다." });
+    return res.json({ ok: false, error: "참여 코드가 없거나 올바르지 않습니다. 선생님 QR으로 접속해 주세요." });
   }
   const state = getGradingState(found.userId);
   const hit = findUnitInGrading(state, req.params.unitId);
@@ -1226,17 +1257,8 @@ function startRoomMirror(userId, socketId) {
 }
 
 function resolveStudentContext(socket, clientId) {
-  let userId = socket.data.userId;
-  let room = userId && rooms[userId];
-  if (!room) {
-    const found = findTeacherRoom();
-    if (found) {
-      userId = found.userId;
-      room = found.room;
-      socket.data.userId = userId;
-      socket.data.role = "student";
-    }
-  }
+  const userId = socket.data.userId;
+  const room = userId && rooms[userId];
   if (!room) return { userId: null, room: null, seat: null };
 
   let seat = room.socketSeat[socket.id];
@@ -1255,9 +1277,7 @@ function resolveStudentContext(socket, clientId) {
   return { userId, room, seat };
 }
 
-// 예전 QR(?room=코드)로 들어온 경우 주소 정리
 app.get("/student", (req, res) => {
-  if (req.query.room) return res.redirect(302, "/student");
   res.sendFile(path.join(__dirname, "public", "student.html"));
 });
 
@@ -1279,14 +1299,12 @@ app.get("/qr", requireAuth, async (req, res) => {
   const userId = req.session.userId;
   if (isAdminUserId(userId)) return res.status(403).json({ error: "관리자 계정은 QR을 사용할 수 없습니다." });
   if (!users[userId]) return res.status(401).json({ error: "로그인이 필요합니다." });
-  let base;
-  if (publicUrl) base = publicUrl;
-  else if (process.env.PUBLIC_URL) base = process.env.PUBLIC_URL;
-  else base = `${req.protocol}://${req.get("host")}`;
-  const url = `${base}/student`;
+  const roomCode = await ensureUserRoomCode(userId);
+  const base = studentBaseUrl(req);
+  const url = buildStudentJoinUrl(base, roomCode);
   try {
     const dataUrl = await qrcode.toDataURL(url, { width: 320, margin: 1 });
-    res.json({ url, dataUrl });
+    res.json({ url, dataUrl, room: roomCode });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -1415,13 +1433,22 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("student:join", ({ name, seat, clientId }, cb) => {
-    const found = findTeacherRoom();
-    if (!found) {
+  socket.on("student:join", ({ name, seat, clientId, room: roomCode }, cb) => {
+    const code = String(roomCode || "").trim();
+    if (!code) {
+      cb && cb({ ok: false, error: "선생님 QR 코드로 접속해 주세요." });
+      return;
+    }
+    const resolved = resolveTeacherByRoomCode(code);
+    if (!resolved) {
+      cb && cb({ ok: false, error: "유효하지 않은 참여 코드예요. 선생님 QR을 다시 스캔해 주세요." });
+      return;
+    }
+    const { userId, room } = resolved;
+    if (!isTeacherOnline(userId)) {
       cb && cb({ ok: false, error: "선생님이 아직 접속하지 않았어요. 선생님 화면을 켠 뒤 다시 시도해 주세요." });
       return;
     }
-    const { userId, room } = found;
     const { seats, socketSeat, seatSocket } = room;
     socket.data.userId = userId;
     socket.data.role = "student";

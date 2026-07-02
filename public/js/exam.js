@@ -1,5 +1,10 @@
 /** 학생 시험 응시 — 태블릿 최적화 */
 
+const joinRoomCode = (() => {
+  const code = new URLSearchParams(window.location.search).get("room");
+  return code ? String(code).trim() : "";
+})();
+
 const socket = io({ reconnection: true });
 const joinView = document.getElementById("joinView");
 const examView = document.getElementById("examView");
@@ -41,12 +46,14 @@ function escapeHtml(s) {
 }
 
 async function loadPublicExam() {
-  const res = await fetch("/api/exam/public");
+  const q = joinRoomCode ? `?room=${encodeURIComponent(joinRoomCode)}` : "";
+  const res = await fetch(`/api/exam/public${q}`);
   publicData = await res.json();
 }
 
 async function loadUnitDetail(unitId) {
-  const res = await fetch(`/api/exam/unit/${encodeURIComponent(unitId)}`);
+  const q = joinRoomCode ? `?room=${encodeURIComponent(joinRoomCode)}` : "";
+  const res = await fetch(`/api/exam/unit/${encodeURIComponent(unitId)}${q}`);
   return res.json();
 }
 
@@ -290,6 +297,10 @@ document.getElementById("examBackBtn").addEventListener("click", () => {
 
 document.getElementById("examJoinBtn").addEventListener("click", () => {
   examJoinError.textContent = "";
+  if (!joinRoomCode) {
+    examJoinError.textContent = "선생님 QR 코드로 접속해 주세요.";
+    return;
+  }
   const name = document.getElementById("examName").value.trim();
   const pin = document.getElementById("examPin").value.trim();
   const seat = Number(pin);
@@ -298,7 +309,7 @@ document.getElementById("examJoinBtn").addEventListener("click", () => {
     return;
   }
   examSubmitBtn.disabled = true;
-  socket.emit("student:join", { name, seat, clientId }, async (res) => {
+  socket.emit("student:join", { name, seat, clientId, room: joinRoomCode }, async (res) => {
     examSubmitBtn.disabled = false;
     if (!res?.ok) {
       examJoinError.textContent = res?.error || "입장할 수 없습니다.";
@@ -340,4 +351,9 @@ document.getElementById("submitModalOk").addEventListener("click", () => {
   renderUnitPicker();
 });
 
-loadPublicExam();
+if (!joinRoomCode) {
+  examJoinError.textContent = "선생님이 보여 주신 QR 코드로 접속해 주세요.";
+  document.getElementById("examJoinBtn").disabled = true;
+} else {
+  loadPublicExam();
+}

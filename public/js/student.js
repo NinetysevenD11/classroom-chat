@@ -59,8 +59,14 @@ let joined = false;
 let handRaised = false;
 let pendingChat = null;
 
-if (window.location.search.includes("room=")) {
-  history.replaceState({}, "", "/student");
+const joinRoomCode = (() => {
+  const code = new URLSearchParams(window.location.search).get("room");
+  return code ? String(code).trim() : "";
+})();
+
+if (!joinRoomCode) {
+  joinError.textContent = "선생님이 보여 주신 QR 코드로 접속해 주세요.";
+  joinBtn.disabled = true;
 }
 
 const clientId = (() => {
@@ -301,7 +307,7 @@ function uploadMyPhoto(photo) {
   socket.emit("student:setPhoto", { photo }, (res) => {
     if (!res || !res.ok) {
       alert((res && res.error) || "프로필 사진을 저장하지 못했어요.");
-      socket.emit("student:join", { name: myName, seat: mySeat, clientId }, (joinRes) => {
+      socket.emit("student:join", { name: myName, seat: mySeat, clientId, room: joinRoomCode }, (joinRes) => {
         if (joinRes && joinRes.ok) updateMyPhoto(joinRes.photo);
       });
     }
@@ -310,7 +316,7 @@ function uploadMyPhoto(photo) {
 
 function doJoin(name, seatRaw, opts = {}) {
   setJoined(false);
-  socket.emit("student:join", { name, seat: seatRaw, clientId }, (res) => {
+  socket.emit("student:join", { name, seat: seatRaw, clientId, room: joinRoomCode }, (res) => {
     if (!opts.auto) joinBtn.disabled = false;
     if (!res || !res.ok) {
       setJoined(false);

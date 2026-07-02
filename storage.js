@@ -304,6 +304,48 @@ export async function initStorage() {
   }
 }
 
+function collectRoomCodes() {
+  const set = new Set();
+  for (const u of Object.values(users)) {
+    if (u?.room) set.add(u.room);
+  }
+  return set;
+}
+
+export function generateRoomCode() {
+  return crypto.randomBytes(6).toString("base64url").slice(0, 8);
+}
+
+/** 교사 계정별 학생 입장 코드 (QR용) */
+export async function ensureUserRoomCode(userId) {
+  const user = users[userId];
+  if (!user) return null;
+  if (user.room && String(user.room).length >= 6) return user.room;
+  const taken = collectRoomCodes();
+  let code;
+  do {
+    code = generateRoomCode();
+  } while (taken.has(code));
+  user.room = code;
+  await saveUser(userId, user);
+  return code;
+}
+
+export function findUserIdByRoomCode(code) {
+  const c = String(code || "").trim();
+  if (!c) return null;
+  for (const [id, user] of Object.entries(users)) {
+    if (user?.room === c && !isAdminUserId(id)) return id;
+  }
+  return null;
+}
+
+export async function ensureAllUserRoomCodes() {
+  for (const id of Object.keys(users)) {
+    if (!isAdminUserId(id)) await ensureUserRoomCode(id);
+  }
+}
+
 export async function saveUser(id, userData) {
   users[id] = userData;
   if (mongoDb) {
