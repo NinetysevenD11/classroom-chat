@@ -52,6 +52,7 @@ import {
 } from "./preferences-storage.js";
 import { fetchBookmarkPreview } from "./bookmark-preview.js";
 import { scanExamPaper, questionsToStored, analyzeStudentTrend } from "./grading-ai.js";
+import { stylizePhoto, COMIC_STYLES } from "./comic-ai.js";
 import { createProxyMiddleware } from "http-proxy-middleware";
 import {
   startLessonService,
@@ -475,6 +476,52 @@ app.get("/app/bookmarks", requireAuth, (req, res) => {
     return res.redirect("/admin");
   }
   res.sendFile(path.join(__dirname, "views", "bookmarks.html"));
+});
+
+// 네컷 만화
+app.get("/app/comic", requireAuth, (req, res) => {
+  if (isAdminUserId(req.session.userId)) {
+    return res.redirect("/admin");
+  }
+  res.sendFile(path.join(__dirname, "views", "comic.html"));
+});
+
+app.get("/api/comic/styles", requireAuth, (req, res) => {
+  res.json({ ok: true, styles: COMIC_STYLES });
+});
+
+app.post("/api/comic/stylize", requireAuth, async (req, res) => {
+  const userId = req.session.userId;
+  if (isAdminUserId(userId)) {
+    return res.status(403).json({ ok: false, error: "사용할 수 없습니다." });
+  }
+  const dataUrl = req.body?.dataUrl;
+  const style = String(req.body?.style || "anime");
+  if (!dataUrl || typeof dataUrl !== "string" || !dataUrl.startsWith("data:image/")) {
+    return res.status(400).json({ ok: false, error: "이미지 데이터가 필요합니다." });
+  }
+  if (dataUrl.length > 3_500_000) {
+    return res.status(400).json({ ok: false, error: "이미지가 너무 큽니다. 더 작은 사진을 올려 주세요." });
+  }
+
+  const state = getGradingState(userId);
+  const geminiKey =
+    String(state.settings?.apiKeys?.gemini || "").trim() ||
+    String(process.env.GEMINI_API_KEY || "").trim() ||
+    null;
+  // 채점도구에 Gemini가 현재 선택·저장된 키면 그걸로도 허용
+  const creds = getAiCredentials(userId);
+  const apiKey =
+    geminiKey ||
+    (creds.provider === "gemini" && creds.apiKey ? creds.apiKey : null);
+
+  try {
+    const result = await stylizePhoto({ dataUrl, styleId: style, apiKey });
+    res.json({ ok: true, image: result.image, style: result.style });
+  } catch (err) {
+    console.error("[네컷만화]", err.message);
+    res.status(500).json({ ok: false, error: err.message || "변환 실패" });
+  }
 });
 
 // 수업 자료 생성 (lesson-app 연동)

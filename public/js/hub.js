@@ -20,6 +20,12 @@ const APPS = [
     path: "/app/grading",
   },
   {
+    id: "comic",
+    label: "네컷 만화",
+    icon: "🖼️",
+    path: "/app/comic",
+  },
+  {
     id: "lesson",
     label: "수업 자료 생성",
     icon: "📚",

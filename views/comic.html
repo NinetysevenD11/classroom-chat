@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>네컷 만화</title>
+  <script src="/js/hub-embed.js?v=1"></script>
+  <link rel="stylesheet" href="/css/cozy-meadow.css?v=3" />
+  <link rel="stylesheet" href="/css/user-background.css?v=1" />
+  <link rel="stylesheet" href="/css/comic.css?v=1" />
+  <script src="/js/user-background.js?v=1"></script>
+</head>
+<body class="comic-app">
+  <div class="comic-shell">
+    <header class="comic-head">
+      <div>
+        <h1>네컷 만화</h1>
+        <p class="comic-sub">사진 4장 → AI 그림체 → 네컷 프레임 · 말풍선은 직접 넣어요</p>
+      </div>
+      <div class="comic-head-actions">
+        <button type="button" id="downloadBtn" class="btn-primary" disabled>PNG 저장</button>
+      </div>
+    </header>
+
+    <section class="comic-step" aria-label="사진 올리기">
+      <h2>1. 사진 4장</h2>
+      <div class="comic-slots" id="photoSlots"></div>
+    </section>
+
+    <section class="comic-step" aria-label="그림체 선택">
+      <h2>2. 그림체 고르기</h2>
+      <div class="comic-styles" id="styleList" role="radiogroup" aria-label="그림체"></div>
+    </section>
+
+    <section class="comic-step comic-actions-row">
+      <button type="button" id="makeBtn" class="btn-primary btn-lg">만화로 만들기</button>
+      <button type="button" id="addBubbleBtn" class="btn-secondary" disabled>말풍선 추가</button>
+      <button type="button" id="clearBubblesBtn" class="btn-ghost" disabled>말풍선 지우기</button>
+      <p id="comicStatus" class="comic-status" role="status"></p>
+    </section>
+
+    <section class="comic-step" aria-label="미리보기">
+      <h2>3. 미리보기 · 말풍선</h2>
+      <p class="comic-hint">말풍선을 추가한 뒤 드래그해서 옮기고, 글자를 눌러 수정하세요.</p>
+      <div class="comic-stage-wrap">
+        <div class="comic-stage" id="comicStage">
+          <canvas id="comicCanvas" width="2360" height="1840"></canvas>
+          <div id="bubbleLayer" class="bubble-layer"></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <dialog id="bubbleDialog" class="bubble-dialog">
+    <form method="dialog" id="bubbleForm">
+      <h3>말풍선 글</h3>
+      <textarea id="bubbleText" rows="3" maxlength="80" placeholder="대사를 입력하세요"></textarea>
+      <div class="bubble-dialog-actions">
+        <button type="submit" value="cancel" class="btn-ghost">취소</button>
+        <button type="submit" value="ok" class="btn-primary">넣기</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="/js/comic.js?v=1"></script>
+</body>
+</html>
