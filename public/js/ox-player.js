@@ -58,8 +58,24 @@ if (!roomCode) {
 }
 
 function showPlay() {
+  joined = true;
+  document.body.classList.add("is-playing");
   joinView.hidden = true;
+  joinView.setAttribute("aria-hidden", "true");
   playView.hidden = false;
+  playView.removeAttribute("aria-hidden");
+  nickInput.value = "";
+  nickInput.blur();
+  joinBtn.blur();
+}
+
+function showJoin() {
+  joined = false;
+  document.body.classList.remove("is-playing");
+  joinView.hidden = false;
+  joinView.removeAttribute("aria-hidden");
+  playView.hidden = true;
+  playView.setAttribute("aria-hidden", "true");
 }
 
 function emit(event, payload) {
@@ -103,10 +119,14 @@ async function doJoin() {
     joinError.textContent = res.error || "참여 실패";
     return;
   }
-  joined = true;
   me = res.me;
   state = res.state;
   meLabel.textContent = me.nickname;
+  try {
+    sessionStorage.setItem("oxJoined", JSON.stringify({ room: roomCode, nickname: me.nickname, clientId }));
+  } catch {
+    /* ignore */
+  }
   showPlay();
   render();
 }
@@ -237,14 +257,47 @@ socket.on("ox:myResult", (r) => {
     : `아쉬워요. 숨겨진 O는 <b>${r.oCount}</b>명 · 내 예측 ${r.guess} · 0점<br/><span class="muted">내 답(${r.answer})은 공개되지 않아요.</span>`;
 });
 
+async function tryResumeSession() {
+  if (!roomCode) return;
+  let saved = null;
+  try {
+    saved = JSON.parse(sessionStorage.getItem("oxJoined") || "null");
+  } catch {
+    saved = null;
+  }
+  if (!saved || saved.room !== roomCode || !saved.nickname) return;
+  await whenConnected();
+  const res = await emit("ox:playerJoin", {
+    room: roomCode,
+    nickname: saved.nickname,
+    clientId: saved.clientId || clientId,
+  });
+  if (!res.ok) {
+    try {
+      sessionStorage.removeItem("oxJoined");
+    } catch {
+      /* ignore */
+    }
+    return;
+  }
+  me = res.me;
+  state = res.state;
+  meLabel.textContent = me.nickname;
+  showPlay();
+  render();
+}
+
 socket.on("connect", () => {
   if (joined && me) {
     emit("ox:playerJoin", { room: roomCode, nickname: me.nickname, clientId }).then((res) => {
       if (res.ok) {
         state = res.state;
         me = res.me;
+        showPlay();
         render();
       }
     });
   }
 });
+
+tryResumeSession();

@@ -65,6 +65,15 @@
   border: 0;
 }
 
+/* display 유틸이 [hidden]을 덮어쓰지 않게 */
+.ox-app [hidden] {
+  display: none !important;
+}
+
+.ox-app.is-playing .ox-join {
+  display: none !important;
+}
+
 .ox-shell {
   width: 100%;
   max-width: 1240px;
