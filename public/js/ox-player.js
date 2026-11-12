@@ -25,6 +25,7 @@ const nickInput = document.getElementById("nickInput");
 const joinBtn = document.getElementById("joinBtn");
 const joinError = document.getElementById("joinError");
 const meLabel = document.getElementById("meLabel");
+const meAvatar = document.getElementById("meAvatar");
 const scoreLabel = document.getElementById("scoreLabel");
 const phasePill = document.getElementById("phasePill");
 const timerPill = document.getElementById("timerPill");
@@ -123,9 +124,12 @@ async function doJoin() {
   }
   me = res.me;
   state = res.state;
-  meLabel.textContent = me.nickname;
+  updateMeCard();
   try {
-    sessionStorage.setItem("oxJoined", JSON.stringify({ room: roomCode, nickname: me.nickname, clientId }));
+    sessionStorage.setItem(
+      "oxJoined",
+      JSON.stringify({ room: roomCode, nickname: me.nickname, clientId, avatarId: me.avatarId })
+    );
   } catch {
     /* ignore */
   }
@@ -212,17 +216,19 @@ function updateTimer() {
   timerTick = setInterval(tick, 250);
 }
 
+function updateMeCard() {
+  if (!me) return;
+  meLabel.textContent = me.nickname;
+  if (me.avatarId != null && meAvatar) {
+    meAvatar.src = window.oxAvatarUrl(me.avatarId);
+    meAvatar.hidden = false;
+  }
+}
+
 function renderPeers() {
   peerList.innerHTML = "";
   for (const p of state?.players || []) {
-    const li = document.createElement("li");
-    const name = document.createElement("span");
-    name.textContent = p.online ? p.nickname : `${p.nickname} (나감)`;
-    const score = document.createElement("strong");
-    score.textContent = `${p.score}점`;
-    li.appendChild(name);
-    li.appendChild(score);
-    peerList.appendChild(li);
+    peerList.appendChild(window.oxPlayerTile(p, { mine: p.clientId === clientId }));
   }
 }
 
@@ -235,7 +241,14 @@ function renderRank() {
   rankList.innerHTML = "";
   for (const r of state.ranking) {
     const li = document.createElement("li");
-    li.textContent = `${r.rank}위 ${r.nickname} — ${r.score}점`;
+    li.className = "ox-rank-row";
+    li.appendChild(window.oxAvatarImg(r.avatarId, "ox-avatar ox-avatar--xs"));
+    const text = document.createElement("span");
+    text.textContent = `${r.rank}위 ${r.nickname}`;
+    const score = document.createElement("strong");
+    score.textContent = `${r.score}점`;
+    li.appendChild(text);
+    li.appendChild(score);
     rankList.appendChild(li);
   }
 }
@@ -245,8 +258,15 @@ function render() {
   phasePill.textContent = PHASE_KO[state.phase] || state.phase;
   questionText.textContent = state.question || "선생님 질문을 기다려 주세요.";
 
-  const myScore = state.players?.find((p) => p.clientId === clientId)?.score;
-  if (myScore != null) scoreLabel.textContent = `${myScore}점`;
+  const mine = state.players?.find((p) => p.clientId === clientId);
+  if (mine) {
+    scoreLabel.textContent = `${mine.score}점`;
+    if (me) {
+      me.score = mine.score;
+      me.avatarId = mine.avatarId;
+      updateMeCard();
+    }
+  }
 
   const voting = state.phase === "voting";
   votePanel.hidden = !voting;
@@ -325,7 +345,7 @@ async function tryResumeSession() {
   }
   me = res.me;
   state = res.state;
-  meLabel.textContent = me.nickname;
+  updateMeCard();
   showPlay();
   render();
 }
@@ -336,6 +356,7 @@ socket.on("connect", () => {
       if (res.ok) {
         state = res.state;
         me = res.me;
+        updateMeCard();
         showPlay();
         render();
       }

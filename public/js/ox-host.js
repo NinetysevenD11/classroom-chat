@@ -118,21 +118,16 @@ async function askFromBank(themeId, questionIndex, text) {
 
 function renderPlayers() {
   playerList.innerHTML = "";
-  for (const p of state?.players || []) {
-    const li = document.createElement("li");
-    const name = document.createElement("span");
-    name.textContent = p.online
-      ? `${p.nickname}${p.submitted ? " · 제출" : ""}`
-      : `${p.nickname} (나감)`;
-    const score = document.createElement("strong");
-    score.textContent = `${p.score}점`;
-    li.appendChild(name);
-    li.appendChild(score);
-    if (!p.online) li.classList.add("is-offline");
-    playerList.appendChild(li);
+  const players = state?.players || [];
+  if (!players.length) {
+    const empty = document.createElement("p");
+    empty.className = "ox-lobby-empty";
+    empty.textContent = "QR을 비추면 캐릭터가 여기 모여요.";
+    playerList.appendChild(empty);
+    return;
   }
-  if (!(state?.players || []).length) {
-    playerList.innerHTML = "<li class='muted'>QR을 비추면 참가자가 여기에 뜹니다.</li>";
+  for (const p of players) {
+    playerList.appendChild(window.oxPlayerTile(p));
   }
 }
 
@@ -235,6 +230,7 @@ revealBtn.addEventListener("click", async () => {
 });
 
 endBtn.addEventListener("click", async () => {
+  if (!window.confirm("지금 게임을 종료할까요? 최종 순위가 공개됩니다.")) return;
   const res = await emit("ox:end");
   setStatus(res.ok ? "게임 종료 · 최종 순위" : res.error || "실패", !res.ok);
 });

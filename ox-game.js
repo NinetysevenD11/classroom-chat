@@ -8,6 +8,7 @@ export const VOTE_SECONDS = 60;
 export const MAX_PLAYERS = 19;
 export const MIN_PLAYERS = 2;
 export const MAX_SCORE = 1000;
+export const AVATAR_COUNT = 32;
 
 export const QUESTION_THEMES = [
   {
@@ -79,10 +80,11 @@ export const QUESTION_THEMES = [
 /** teacherUserId → game */
 const games = new Map();
 
-function emptyPlayer(nickname, clientId) {
+function emptyPlayer(nickname, clientId, avatarId) {
   return {
     nickname,
     clientId,
+    avatarId,
     socketId: null,
     score: 0,
     online: false,
@@ -91,6 +93,18 @@ function emptyPlayer(nickname, clientId) {
     submittedAt: null,
     lastRoundPoints: 0,
   };
+}
+
+function pickAvatarId(game) {
+  const used = new Set(
+    [...game.players.values()].map((p) => p.avatarId).filter((id) => id != null)
+  );
+  const free = [];
+  for (let i = 0; i < AVATAR_COUNT; i++) {
+    if (!used.has(i)) free.push(i);
+  }
+  const pool = free.length ? free : [...Array(AVATAR_COUNT).keys()];
+  return pool[Math.floor(Math.random() * pool.length)];
 }
 
 function makeGame(teacherUserId, roomCode) {
@@ -147,6 +161,7 @@ function playerList(game) {
     .map((p) => ({
       clientId: p.clientId,
       nickname: p.nickname,
+      avatarId: p.avatarId ?? 0,
       score: p.score,
       online: p.online,
       submitted: !!(p.answer && p.guess !== null),
@@ -163,7 +178,13 @@ function ranking(game) {
   return list.map((p, i) => {
     if (prev === null || p.score < prev) rank = i + 1;
     prev = p.score;
-    return { nickname: p.nickname, score: p.score, rank, clientId: p.clientId };
+    return {
+      nickname: p.nickname,
+      score: p.score,
+      rank,
+      clientId: p.clientId,
+      avatarId: p.avatarId ?? 0,
+    };
   });
 }
 
@@ -187,6 +208,7 @@ export function publicOxState(game) {
     lastReveal: game.lastReveal,
     ranking: game.phase === "finished" || game.phase === "reveal" ? ranking(game) : null,
     themes: QUESTION_THEMES.map((t) => ({ id: t.id, label: t.label, count: t.questions.length })),
+    avatarCount: AVATAR_COUNT,
   };
 }
 
@@ -391,10 +413,11 @@ export function registerOxGame(io, deps) {
           reply(cb, { ok: false, error: "같은 닉네임이 이미 있어요." });
           return;
         }
-        player = emptyPlayer(name, cid);
+        player = emptyPlayer(name, cid, pickAvatarId(game));
         game.players.set(cid, player);
       } else {
         player.nickname = name;
+        if (player.avatarId == null) player.avatarId = pickAvatarId(game);
       }
       player.socketId = socket.id;
       player.online = true;
@@ -406,7 +429,12 @@ export function registerOxGame(io, deps) {
       reply(cb, {
         ok: true,
         state: publicOxState(game),
-        me: { clientId: cid, nickname: name, score: player.score },
+        me: {
+          clientId: cid,
+          nickname: name,
+          score: player.score,
+          avatarId: player.avatarId ?? 0,
+        },
       });
       broadcastState(io, game);
     });
@@ -415,8 +443,8 @@ export function registerOxGame(io, deps) {
       const { cb } = takeAck(a, b);
       const userId = getTeacherUserId(socket);
       const game = userId && getOxGame(userId);
-      if (!game || game.hostSocketId !== socket.id) {
-        reply(cb, { ok: false, error: "호스트만 시작할 수 있어요." });
+      if (!game || game.hostSocketId !== socket.id || socket.data.oxRole !== "host") {
+        reply(cb, { ok: false, error: "선생님만 시작할 수 있어요." });
         return;
       }
       const online = [...game.players.values()].filter((p) => p.online).length;
@@ -443,8 +471,8 @@ export function registerOxGame(io, deps) {
       const { question, themeId, questionIndex } = payload;
       const userId = getTeacherUserId(socket);
       const game = userId && getOxGame(userId);
-      if (!game || game.hostSocketId !== socket.id) {
-        reply(cb, { ok: false, error: "호스트만 질문을 시작할 수 있어요." });
+      if (!game || game.hostSocketId !== socket.id || socket.data.oxRole !== "host") {
+        reply(cb, { ok: false, error: "선생님만 질문을 시작할 수 있어요." });
         return;
       }
       if (game.phase !== "lobby" && game.phase !== "reveal") {
@@ -476,8 +504,8 @@ export function registerOxGame(io, deps) {
       const { cb } = takeAck(a, b);
       const userId = getTeacherUserId(socket);
       const game = userId && getOxGame(userId);
-      if (!game || game.hostSocketId !== socket.id) {
-        reply(cb, { ok: false, error: "호스트만 투표를 시작할 수 있어요." });
+      if (!game || game.hostSocketId !== socket.id || socket.data.oxRole !== "host") {
+        reply(cb, { ok: false, error: "선생님만 투표를 시작할 수 있어요." });
         return;
       }
       if (game.phase !== "asking") {
@@ -530,8 +558,8 @@ export function registerOxGame(io, deps) {
       const { cb } = takeAck(a, b);
       const userId = getTeacherUserId(socket);
       const game = userId && getOxGame(userId);
-      if (!game || game.hostSocketId !== socket.id) {
-        reply(cb, { ok: false, error: "호스트만 결과를 열 수 있어요." });
+      if (!game || game.hostSocketId !== socket.id || socket.data.oxRole !== "host") {
+        reply(cb, { ok: false, error: "선생님만 결과를 열 수 있어요." });
         return;
       }
       if (game.phase !== "voting") {
@@ -546,15 +574,18 @@ export function registerOxGame(io, deps) {
       const { cb } = takeAck(a, b);
       const userId = getTeacherUserId(socket);
       const game = userId && getOxGame(userId);
-      if (!game || game.hostSocketId !== socket.id) {
-        reply(cb, { ok: false, error: "호스트만 종료할 수 있어요." });
+      if (!game || game.hostSocketId !== socket.id || socket.data.oxRole !== "host") {
+        reply(cb, { ok: false, error: "선생님만 게임을 종료할 수 있어요." });
         return;
       }
+      // 대기·투표·결과 중 언제든 종료 가능
       clearTimer(game);
       game.phase = "finished";
       game.question = null;
       game.askEndsAt = null;
       game.voteEndsAt = null;
+      game.voteStartedAt = null;
+      resetRoundAnswers(game);
       reply(cb, { ok: true, ranking: ranking(game) });
       broadcastState(io, game);
     });
@@ -563,8 +594,8 @@ export function registerOxGame(io, deps) {
       const { cb } = takeAck(a, b);
       const userId = getTeacherUserId(socket);
       const game = userId && getOxGame(userId);
-      if (!game || game.hostSocketId !== socket.id) {
-        reply(cb, { ok: false, error: "호스트만 초기화할 수 있어요." });
+      if (!game || game.hostSocketId !== socket.id || socket.data.oxRole !== "host") {
+        reply(cb, { ok: false, error: "선생님만 초기화할 수 있어요." });
         return;
       }
       clearTimer(game);

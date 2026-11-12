@@ -7,10 +7,10 @@
   <script src="/js/hub-embed.js?v=1"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/ox-game.css?v=6" />
+  <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/ox-game.css?v=10" />
 </head>
-<body class="ox-app ox-host">
+<body class="ox-app ox-host ox-shop">
   <div class="ox-bg" aria-hidden="true"></div>
   <div class="ox-shell">
     <header class="ox-hud">
@@ -38,6 +38,16 @@
       </div>
     </header>
 
+    <section class="ox-panel ox-lobby-panel" aria-label="대기실">
+      <div class="ox-panel-pin" aria-hidden="true"></div>
+      <div class="ox-banner">
+        <span class="ox-rivet" aria-hidden="true"></span>
+        <span>대기실</span>
+        <span class="ox-rivet" aria-hidden="true"></span>
+      </div>
+      <div id="playerList" class="ox-char-grid"></div>
+    </section>
+
     <div class="ox-grid">
       <section class="ox-panel ox-stage" aria-label="무대">
         <div class="ox-panel-pin" aria-hidden="true"></div>
@@ -48,28 +58,22 @@
         </div>
         <p id="currentQuestion" class="ox-question">아직 질문이 없어요.</p>
         <div id="revealBox" class="ox-reveal">라운드 결과가 여기 표시됩니다.</div>
-        <div class="ox-roster">
-          <div class="ox-banner ox-banner--sm">
-            <span class="ox-rivet" aria-hidden="true"></span>
-            <span>참가자</span>
-            <span class="ox-rivet" aria-hidden="true"></span>
-          </div>
-          <ol id="playerList" class="ox-players"></ol>
-        </div>
       </section>
 
       <aside class="ox-panel ox-console" aria-label="진행 콘솔">
         <div class="ox-panel-pin" aria-hidden="true"></div>
         <div class="ox-banner">
           <span class="ox-rivet" aria-hidden="true"></span>
-          <span>진행</span>
+          <span>선생님 조작</span>
           <span class="ox-rivet" aria-hidden="true"></span>
+        </div>
+        <div class="ox-actions ox-actions--end">
+          <button type="button" id="endBtn" class="btn-red btn-wide">게임 종료</button>
         </div>
         <div class="ox-actions" id="hostActions">
           <button type="button" id="startBtn" class="btn-yellow">게임 준비</button>
           <button type="button" id="voteBtn" class="btn-blue" disabled>투표 시작</button>
           <button type="button" id="revealBtn" class="btn-blue" disabled>결과 공개</button>
-          <button type="button" id="endBtn" class="btn-ghost">최종 순위</button>
           <button type="button" id="resetBtn" class="btn-ghost">로비로</button>
         </div>
 
@@ -89,6 +93,7 @@
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
-  <script src="/js/ox-host.js?v=4"></script>
+  <script src="/js/ox-avatars.js?v=10"></script>
+  <script src="/js/ox-host.js?v=10"></script>
 </body>
 </html>

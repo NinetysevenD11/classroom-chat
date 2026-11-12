@@ -1,9 +1,9 @@
-/* 눈치 O/X — 카툰 모바일 게임샵 (Brawl/Clash 톤) */
+/* 눈치 O/X — 카툰 모바일 게임샵 (Brawl/Clash 톤) v10 */
 
 :root {
-  --ox-bg: #4a372f;
-  --ox-bg-deep: #3a2a24;
-  --ox-bg-mid: #5a443a;
+  --ox-bg: #6d5146;
+  --ox-bg-deep: #4a372f;
+  --ox-bg-mid: #7a5c4e;
   --ox-parchment: #f3e4c4;
   --ox-parchment-2: #e8d4a8;
   --ox-ink: #2a1c16;
@@ -478,6 +478,29 @@
   color: #f5e6d0;
 }
 
+.btn-red {
+  background: linear-gradient(180deg, #ff8a8a 0%, #e85a5a 48%, #c04040 100%);
+  box-shadow: 0 5px 0 #8a2828;
+  color: #fff;
+  font: inherit;
+  font-weight: 900;
+  border-radius: 12px;
+  padding: 12px 16px;
+  border: var(--ox-stroke) solid var(--ox-line);
+  cursor: pointer;
+  min-height: 48px;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
+}
+
+.btn-red:active {
+  transform: translateY(3px);
+  box-shadow: 0 2px 0 var(--ox-line);
+}
+
+.ox-actions--end {
+  margin-bottom: 12px;
+}
+
 .btn-lg {
   width: 100%;
   padding: 14px 16px;
@@ -578,39 +601,122 @@
   background: #ffe9b8;
 }
 
-.ox-players,
-.ox-rank ol,
-.ox-mini-list ul {
+.ox-lobby-panel {
+  margin-bottom: 16px;
+}
+
+.ox-lobby-empty {
+  margin: 8px 0;
+  text-align: center;
+  font-weight: 800;
+  color: var(--ox-muted);
+}
+
+.ox-char-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(108px, 1fr));
+  gap: 12px;
+}
+
+.ox-char-grid--compact {
+  grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+  gap: 10px;
+}
+
+.ox-char-tile {
+  position: relative;
+  background: linear-gradient(180deg, #fffaf0 0%, var(--ox-parchment) 100%);
+  border: var(--ox-stroke) solid var(--ox-line);
+  border-radius: 14px;
+  padding: 10px 8px 8px;
+  text-align: center;
+  box-shadow: 0 4px 0 var(--ox-line);
+}
+
+.ox-char-tile.is-offline {
+  opacity: 0.45;
+  filter: grayscale(0.35);
+}
+
+.ox-char-tile.is-mine {
+  outline: 3px solid var(--ox-yellow);
+  outline-offset: 1px;
+}
+
+.ox-avatar {
+  display: block;
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 6px;
+  image-rendering: auto;
+}
+
+.ox-avatar--sm {
+  width: 52px;
+  height: 52px;
+  margin: 0;
+}
+
+.ox-avatar--xs {
+  width: 36px;
+  height: 36px;
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.ox-char-name {
+  font-weight: 900;
+  font-size: 0.88rem;
+  line-height: 1.2;
+  word-break: break-word;
+  color: var(--ox-ink);
+}
+
+.ox-char-meta {
+  margin-top: 4px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #c45a12;
+}
+
+.ox-me-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px 6px 6px;
+  background: var(--ox-banner);
+  border: 2px solid var(--ox-line);
+  border-radius: 999px;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.35);
+}
+
+.ox-me-card .ox-avatar {
+  border-radius: 50%;
+  background: var(--ox-parchment);
+  border: 2px solid var(--ox-line);
+}
+
+.ox-rank ol {
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.ox-players li,
-.ox-mini-list li,
-.ox-rank li {
+.ox-rank-row {
   display: flex;
-  justify-content: space-between;
+  align-items: center;
   gap: 10px;
-  padding: 9px 4px;
+  padding: 8px 4px;
   border-bottom: 2px solid rgba(42, 28, 22, 0.12);
-  font-size: 0.95rem;
   font-weight: 800;
 }
 
-.ox-players li:last-child,
-.ox-mini-list li:last-child,
-.ox-rank li:last-child {
+.ox-rank-row:last-child {
   border-bottom: none;
 }
 
-.ox-players li.is-offline {
-  opacity: 0.5;
-}
-
-.ox-players li strong,
-.ox-mini-list li strong,
-.ox-rank li strong {
+.ox-rank-row strong {
+  margin-left: auto;
   color: #c45a12;
   font-variant-numeric: tabular-nums;
 }
@@ -711,6 +817,13 @@
   border: 2px solid var(--ox-line);
   border-radius: 999px;
   box-shadow: 0 3px 0 rgba(0, 0, 0, 0.35);
+}
+
+.ox-player-id {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 }
 
 .ox-player-id strong {

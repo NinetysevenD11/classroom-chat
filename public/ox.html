@@ -6,10 +6,10 @@
   <title>눈치 O/X · 학생</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/ox-game.css?v=6" />
+  <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/ox-game.css?v=10" />
 </head>
-<body class="ox-app ox-player">
+<body class="ox-app ox-player ox-shop">
   <div class="ox-bg" aria-hidden="true"></div>
 
   <section id="joinView" class="ox-join">
@@ -27,9 +27,12 @@
 
   <section id="playView" class="ox-play" hidden aria-hidden="true">
     <header class="ox-player-head">
-      <div class="ox-player-id ox-chip">
-        <strong id="meLabel">—</strong>
-        <span id="scoreLabel" class="ox-score">0점</span>
+      <div class="ox-me-card" id="meCard">
+        <img id="meAvatar" class="ox-avatar ox-avatar--sm" alt="" width="56" height="56" hidden />
+        <div class="ox-player-id">
+          <strong id="meLabel">—</strong>
+          <span id="scoreLabel" class="ox-score">0점</span>
+        </div>
       </div>
       <div class="ox-phase-pill" id="phasePill">대기</div>
     </header>
@@ -73,14 +76,15 @@
     <div class="ox-panel ox-mini-list">
       <div class="ox-banner ox-banner--sm">
         <span class="ox-rivet" aria-hidden="true"></span>
-        <span>참가자</span>
+        <span>대기실</span>
         <span class="ox-rivet" aria-hidden="true"></span>
       </div>
-      <ul id="peerList"></ul>
+      <div id="peerList" class="ox-char-grid ox-char-grid--compact"></div>
     </div>
   </section>
 
   <script src="/socket.io/socket.io.js"></script>
-  <script src="/js/ox-player.js?v=6"></script>
+  <script src="/js/ox-avatars.js?v=10"></script>
+  <script src="/js/ox-player.js?v=10"></script>
 </body>
 </html>
