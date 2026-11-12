@@ -5,21 +5,32 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>눈치 O/X</title>
   <script src="/js/hub-embed.js?v=1"></script>
-  <link rel="stylesheet" href="/css/cozy-meadow.css?v=3" />
-  <link rel="stylesheet" href="/css/user-background.css?v=1" />
-  <link rel="stylesheet" href="/css/ox-game.css?v=2" />
-  <script src="/js/user-background.js?v=1"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/ox-game.css?v=3" />
 </head>
 <body class="ox-app ox-host">
+  <div class="ox-noise" aria-hidden="true"></div>
   <div class="ox-shell">
-    <header class="ox-head">
-      <div class="ox-head-copy">
-        <h1>눈치 O/X</h1>
-        <p class="ox-sub">비밀 답 · 눈치 예측 · 개인 답은 공개하지 않아요</p>
+    <header class="ox-hud">
+      <div class="ox-brand">
+        <span class="ox-brand-mark" aria-hidden="true">OX</span>
+        <div>
+          <h1>눈치 O/X</h1>
+          <p class="ox-sub">답은 비밀 · 예측만 승부</p>
+        </div>
       </div>
-      <div class="ox-head-meta">
+      <div class="ox-hud-stats" aria-live="polite">
+        <div class="ox-stat"><span>단계</span><strong id="phaseLabel">대기</strong></div>
+        <div class="ox-stat"><span>라운드</span><strong id="roundLabel">0</strong></div>
+        <div class="ox-stat"><span>접속</span><strong id="onlineLabel">0</strong></div>
+        <div class="ox-stat"><span>제출</span><strong id="submittedLabel">0</strong></div>
+        <div id="timerLabel" class="ox-timer" hidden></div>
+      </div>
+      <div class="ox-join-dock">
         <div class="ox-code-box">
-          <span class="ox-code-label">학생 참여</span>
+          <span class="ox-code-label">학생 접속</span>
           <strong id="joinUrl">—</strong>
           <button type="button" id="copyLinkBtn" class="btn-ghost">링크 복사</button>
         </div>
@@ -27,22 +38,24 @@
       </div>
     </header>
 
-    <section class="ox-panel ox-status-bar">
-      <div><span class="muted">단계</span> <strong id="phaseLabel">대기</strong></div>
-      <div><span class="muted">라운드</span> <strong id="roundLabel">0</strong></div>
-      <div><span class="muted">접속</span> <strong id="onlineLabel">0</strong></div>
-      <div><span class="muted">제출</span> <strong id="submittedLabel">0</strong></div>
-      <div id="timerLabel" class="ox-timer" hidden></div>
-    </section>
-
     <div class="ox-grid">
-      <section class="ox-panel">
-        <h2>진행</h2>
+      <section class="ox-stage" aria-label="무대">
+        <p class="ox-stage-kicker">현재 질문</p>
+        <p id="currentQuestion" class="ox-question">아직 질문이 없어요.</p>
+        <div id="revealBox" class="ox-reveal">라운드 결과가 여기 표시됩니다.</div>
+        <div class="ox-roster">
+          <h2>참가자</h2>
+          <ol id="playerList" class="ox-players"></ol>
+        </div>
+      </section>
+
+      <aside class="ox-console" aria-label="진행 콘솔">
+        <h2 class="ox-console-title">진행</h2>
         <div class="ox-actions" id="hostActions">
-          <button type="button" id="startBtn" class="btn-primary">게임 준비 (점수 초기화)</button>
+          <button type="button" id="startBtn" class="btn-primary">게임 준비</button>
           <button type="button" id="voteBtn" class="btn-secondary" disabled>투표 시작</button>
-          <button type="button" id="revealBtn" class="btn-secondary" disabled>지금 결과 보기</button>
-          <button type="button" id="endBtn" class="btn-ghost">최종 순위 · 종료</button>
+          <button type="button" id="revealBtn" class="btn-secondary" disabled>결과 공개</button>
+          <button type="button" id="endBtn" class="btn-ghost">최종 순위</button>
           <button type="button" id="resetBtn" class="btn-ghost">로비로</button>
         </div>
 
@@ -55,24 +68,13 @@
         <h3 class="ox-h3">질문 은행</h3>
         <div id="themeTabs" class="ox-themes"></div>
         <div id="questionBank" class="ox-bank"></div>
-      </section>
-
-      <section class="ox-panel">
-        <h2>현재 질문</h2>
-        <p id="currentQuestion" class="ox-question">아직 질문이 없어요.</p>
-
-        <h2>결과</h2>
-        <div id="revealBox" class="ox-reveal">라운드 결과가 여기 표시됩니다.</div>
-
-        <h2>참가자 · 점수</h2>
-        <ol id="playerList" class="ox-players"></ol>
-      </section>
+      </aside>
     </div>
 
     <p id="hostStatus" class="ox-status" role="status"></p>
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
-  <script src="/js/ox-host.js?v=2"></script>
+  <script src="/js/ox-host.js?v=3"></script>
 </body>
 </html>

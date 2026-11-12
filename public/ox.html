@@ -4,28 +4,31 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>눈치 O/X · 학생</title>
-  <link rel="stylesheet" href="/css/cozy-meadow.css?v=3" />
-  <link rel="stylesheet" href="/css/user-background.css?v=1" />
-  <link rel="stylesheet" href="/css/ox-game.css?v=2" />
-  <script src="/js/user-background.js?v=1"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/ox-game.css?v=3" />
 </head>
 <body class="ox-app ox-player">
+  <div class="ox-noise" aria-hidden="true"></div>
+
   <section id="joinView" class="ox-join">
     <div class="ox-join-card">
+      <span class="ox-brand-mark ox-brand-mark--lg" aria-hidden="true">OX</span>
       <h1>눈치 O/X</h1>
-      <p class="ox-join-lead">솔직하게 O/X · 친구들의 O는 몇 명일까요?</p>
+      <p class="ox-join-lead">솔직한 답은 비밀.<br />O를 고른 사람 수만 맞히면 됩니다.</p>
       <label class="ox-sr-only" for="nickInput">닉네임</label>
       <input id="nickInput" type="text" maxlength="12" placeholder="닉네임" autocomplete="off" enterkeyhint="done" />
-      <button type="button" id="joinBtn" class="btn-primary btn-lg">참여하기</button>
+      <button type="button" id="joinBtn" class="btn-primary btn-lg">입장</button>
       <p id="joinError" class="ox-status is-error"></p>
     </div>
   </section>
 
   <section id="playView" class="ox-play" hidden>
     <header class="ox-player-head">
-      <div>
+      <div class="ox-player-id">
         <strong id="meLabel">—</strong>
-        <span class="muted" id="scoreLabel">0점</span>
+        <span id="scoreLabel">0점</span>
       </div>
       <div class="ox-phase-pill" id="phasePill">대기</div>
     </header>
@@ -34,13 +37,13 @@
     <p id="questionText" class="ox-question">선생님 질문을 기다려 주세요.</p>
 
     <div id="votePanel" class="ox-vote" hidden>
-      <p class="ox-hint">내 진심은? (다른 사람에게 보이지 않아요)</p>
+      <p class="ox-hint">내 답은 보이지 않습니다</p>
       <div class="ox-ox-row">
-        <button type="button" class="ox-choice" data-answer="O" aria-pressed="false">O</button>
-        <button type="button" class="ox-choice" data-answer="X" aria-pressed="false">X</button>
+        <button type="button" class="ox-choice ox-choice--o" data-answer="O" aria-pressed="false">O</button>
+        <button type="button" class="ox-choice ox-choice--x" data-answer="X" aria-pressed="false">X</button>
       </div>
-      <label class="ox-guess-label" for="guessInput">O를 고른 사람은 몇 명일까요? (나 포함)</label>
-      <input id="guessInput" type="number" inputmode="numeric" min="0" max="19" placeholder="숫자" />
+      <label class="ox-guess-label" for="guessInput">O를 고른 사람 수 (나 포함)</label>
+      <input id="guessInput" type="number" inputmode="numeric" min="0" max="19" placeholder="0" />
       <button type="button" id="submitBtn" class="btn-primary btn-lg">제출</button>
       <p id="submitStatus" class="ox-status"></p>
     </div>
@@ -59,6 +62,6 @@
   </section>
 
   <script src="/socket.io/socket.io.js"></script>
-  <script src="/js/ox-player.js?v=2"></script>
+  <script src="/js/ox-player.js?v=3"></script>
 </body>
 </html>

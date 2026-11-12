@@ -120,12 +120,19 @@ function renderPlayers() {
   playerList.innerHTML = "";
   for (const p of state?.players || []) {
     const li = document.createElement("li");
-    const mark = p.online ? (p.submitted ? "✓" : "·") : "offline";
-    li.textContent = `${p.nickname} — ${p.score}점 ${p.online ? mark : "(나감)"}`;
+    const name = document.createElement("span");
+    name.textContent = p.online
+      ? `${p.nickname}${p.submitted ? " · 제출" : ""}`
+      : `${p.nickname} (나감)`;
+    const score = document.createElement("strong");
+    score.textContent = `${p.score}점`;
+    li.appendChild(name);
+    li.appendChild(score);
+    if (!p.online) li.classList.add("is-offline");
     playerList.appendChild(li);
   }
   if (!(state?.players || []).length) {
-    playerList.innerHTML = "<li class='muted'>아직 참가자가 없어요. QR을 보여 주세요.</li>";
+    playerList.innerHTML = "<li class='muted'>QR을 비추면 참가자가 여기에 뜹니다.</li>";
   }
 }
 
@@ -143,7 +150,7 @@ function renderReveal() {
     r.correct?.length > 0
       ? r.correct.map((c) => `${c.nickname}(+${c.points})`).join(", ")
       : "없음";
-  revealBox.innerHTML = `<strong>숨겨진 O는 ${r.oCount} / ${r.total}</strong><br/>정확히 맞힌 사람: ${correct}<br/><span class="muted">개인 O/X 답은 공개하지 않아요.</span>`;
+  revealBox.innerHTML = `<strong>숨겨진 O · ${r.oCount} / ${r.total}</strong><br/>정답자: ${correct}<br/><span class="muted">개인 O/X는 공개하지 않습니다.</span>`;
 }
 
 function updateActions() {

@@ -155,7 +155,12 @@ function renderPeers() {
   peerList.innerHTML = "";
   for (const p of state?.players || []) {
     const li = document.createElement("li");
-    li.textContent = `${p.nickname} · ${p.score}점${p.online ? "" : " (나감)"}`;
+    const name = document.createElement("span");
+    name.textContent = p.online ? p.nickname : `${p.nickname} (나감)`;
+    const score = document.createElement("strong");
+    score.textContent = `${p.score}점`;
+    li.appendChild(name);
+    li.appendChild(score);
     peerList.appendChild(li);
   }
 }
