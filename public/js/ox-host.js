@@ -43,9 +43,17 @@ function setStatus(msg, isError = false) {
   hostStatus.classList.toggle("is-error", !!isError);
 }
 
-function emit(event, payload = {}) {
+function emit(event, payload) {
   return new Promise((resolve) => {
-    socket.emit(event, payload, (res) => resolve(res || { ok: false }));
+    const done = (res) => resolve(res || { ok: false });
+    const t = setTimeout(() => done({ ok: false, error: "서버 응답이 없어요. 새로고침 후 다시 시도해 주세요." }), 8000);
+    const ack = (res) => {
+      clearTimeout(t);
+      done(res);
+    };
+    // payload 없으면 ack만 넘겨야 함 — 빈 객체를 보내면 서버가 그걸 콜백으로 받음
+    if (payload === undefined) socket.emit(event, ack);
+    else socket.emit(event, payload, ack);
   });
 }
 

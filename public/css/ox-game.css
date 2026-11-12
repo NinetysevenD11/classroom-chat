@@ -1,42 +1,70 @@
+/* 눈치 O/X — PC / 태블릿(iPad 11) / 폰 */
+
 .ox-app {
   min-height: 100vh;
+  min-height: 100dvh;
   font-family: var(--acnh-font, "Nunito", "Noto Sans KR", sans-serif);
   color: var(--acnh-text, #3d4a3d);
   background:
     radial-gradient(ellipse at 10% 0%, rgba(195, 204, 185, 0.55), transparent 45%),
     radial-gradient(ellipse at 90% 10%, rgba(184, 220, 232, 0.4), transparent 40%),
     linear-gradient(180deg, #eef2ea 0%, #e4ebe3 100%);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ox-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .ox-shell {
-  max-width: 1100px;
+  width: 100%;
+  max-width: 1180px;
   margin: 0 auto;
-  padding: 22px 16px 56px;
+  padding: 22px 20px calc(40px + env(safe-area-inset-bottom, 0px));
+  box-sizing: border-box;
 }
 
 .ox-head {
   display: flex;
   justify-content: space-between;
-  gap: 16px;
+  align-items: flex-start;
+  gap: 16px 24px;
   flex-wrap: wrap;
   margin-bottom: 14px;
 }
 
+.ox-head-copy {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
 .ox-head h1 {
   margin: 0 0 4px;
-  font-size: 1.65rem;
+  font-size: clamp(1.35rem, 1.1rem + 0.8vw, 1.75rem);
   font-weight: 800;
+  line-height: 1.2;
 }
 
 .ox-sub {
   margin: 0;
   color: var(--acnh-text-muted, #6b7a6b);
+  font-size: 0.95rem;
 }
 
 .ox-head-meta {
   display: flex;
   gap: 12px;
   align-items: center;
+  flex: 0 1 auto;
+  min-width: 0;
 }
 
 .ox-code-box {
@@ -44,7 +72,8 @@
   border: 1px solid rgba(100, 120, 100, 0.22);
   border-radius: 14px;
   padding: 10px 12px;
-  max-width: 360px;
+  max-width: min(380px, 100%);
+  min-width: 0;
 }
 
 .ox-code-label {
@@ -62,8 +91,9 @@
 }
 
 .ox-qr {
-  width: 96px;
-  height: 96px;
+  width: 104px;
+  height: 104px;
+  flex-shrink: 0;
   border-radius: 12px;
   background: #fff;
   border: 1px solid rgba(100, 120, 100, 0.2);
@@ -73,7 +103,7 @@
   background: rgba(255, 255, 255, 0.9);
   border: 1px solid rgba(100, 120, 100, 0.2);
   border-radius: 18px;
-  padding: 16px;
+  padding: 16px 18px;
   box-shadow: 0 4px 16px rgba(60, 80, 60, 0.07);
   margin-bottom: 14px;
 }
@@ -91,7 +121,7 @@
 .ox-status-bar {
   display: flex;
   flex-wrap: wrap;
-  gap: 14px 22px;
+  gap: 12px 22px;
   align-items: center;
 }
 
@@ -105,12 +135,15 @@
   margin-left: auto;
   font-weight: 800;
   color: #3d5a3d;
+  font-size: 1.05rem;
 }
 
+/* Desktop: richer two-column host */
 .ox-grid {
   display: grid;
-  grid-template-columns: 1.1fr 0.9fr;
-  gap: 14px;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  gap: 16px;
+  align-items: start;
 }
 
 .ox-actions {
@@ -127,8 +160,9 @@
   box-sizing: border-box;
   border-radius: 12px;
   border: 1px solid rgba(100, 120, 100, 0.3);
-  padding: 10px 12px;
+  padding: 12px 14px;
   font: inherit;
+  font-size: 1rem;
   margin-bottom: 8px;
   background: #fff;
 }
@@ -140,9 +174,10 @@
   font: inherit;
   font-weight: 700;
   border-radius: 12px;
-  padding: 10px 14px;
+  padding: 11px 14px;
   border: 1px solid transparent;
   cursor: pointer;
+  min-height: 44px;
 }
 
 .btn-primary {
@@ -162,8 +197,9 @@
 
 .btn-lg {
   width: 100%;
-  padding: 14px;
+  padding: 14px 16px;
   font-size: 1.05rem;
+  min-height: 52px;
 }
 
 .btn-primary:disabled,
@@ -175,7 +211,7 @@
 .ox-themes {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 8px;
   margin-bottom: 8px;
 }
 
@@ -183,11 +219,12 @@
   border: 1px solid rgba(100, 120, 100, 0.25);
   background: #f4f7f3;
   border-radius: 999px;
-  padding: 6px 12px;
+  padding: 8px 14px;
   font: inherit;
   font-weight: 700;
   font-size: 0.85rem;
   cursor: pointer;
+  min-height: 40px;
 }
 
 .ox-theme.is-on {
@@ -198,8 +235,9 @@
 .ox-bank {
   display: grid;
   gap: 6px;
-  max-height: 260px;
+  max-height: min(320px, 42vh);
   overflow: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .ox-bank button {
@@ -207,9 +245,10 @@
   border: 1px solid rgba(100, 120, 100, 0.18);
   background: #fafcfa;
   border-radius: 10px;
-  padding: 8px 10px;
+  padding: 10px 12px;
   font: inherit;
   cursor: pointer;
+  min-height: 44px;
 }
 
 .ox-bank button:hover {
@@ -217,7 +256,7 @@
 }
 
 .ox-question {
-  font-size: 1.15rem;
+  font-size: clamp(1.1rem, 1rem + 0.5vw, 1.25rem);
   font-weight: 700;
   line-height: 1.45;
   margin: 0 0 14px;
@@ -227,7 +266,7 @@
 .ox-reveal {
   background: #f3f7f0;
   border-radius: 12px;
-  padding: 12px;
+  padding: 12px 14px;
   margin-bottom: 14px;
   line-height: 1.45;
 }
@@ -253,19 +292,25 @@
   color: #a04444;
 }
 
-/* player */
+/* ——— Player ——— */
 .ox-join {
   min-height: 100vh;
+  min-height: 100dvh;
   display: grid;
   place-items: center;
-  padding: 20px;
+  padding:
+    max(20px, env(safe-area-inset-top, 0px))
+    max(16px, env(safe-area-inset-right, 0px))
+    max(24px, env(safe-area-inset-bottom, 0px))
+    max(16px, env(safe-area-inset-left, 0px));
+  box-sizing: border-box;
 }
 
 .ox-join-card {
-  width: min(100%, 380px);
+  width: min(100%, 400px);
   background: rgba(255, 255, 255, 0.94);
   border-radius: 20px;
-  padding: 24px 18px;
+  padding: 28px 20px;
   border: 1px solid rgba(100, 120, 100, 0.2);
   box-shadow: 0 10px 30px rgba(60, 80, 60, 0.1);
   text-align: center;
@@ -273,56 +318,74 @@
 
 .ox-join-card h1 {
   margin: 0 0 8px;
+  font-size: clamp(1.4rem, 1.2rem + 1vw, 1.7rem);
+}
+
+.ox-join-lead {
+  margin: 0 0 18px;
+  color: #6b7a6b;
+  line-height: 1.4;
 }
 
 .ox-play {
-  max-width: 480px;
+  width: 100%;
+  max-width: 520px;
   margin: 0 auto;
-  padding: 16px 14px 40px;
+  padding:
+    max(16px, env(safe-area-inset-top, 0px))
+    max(14px, env(safe-area-inset-right, 0px))
+    calc(40px + env(safe-area-inset-bottom, 0px))
+    max(14px, env(safe-area-inset-left, 0px));
+  box-sizing: border-box;
 }
 
 .ox-player-head {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
   margin-bottom: 12px;
 }
 
 .ox-phase-pill {
   background: #c3ccb9;
   border-radius: 999px;
-  padding: 6px 12px;
+  padding: 8px 14px;
   font-weight: 800;
   font-size: 0.85rem;
+  flex-shrink: 0;
 }
 
 .ox-timer-pill {
   text-align: center;
   font-weight: 800;
-  font-size: 1.2rem;
+  font-size: 1.25rem;
   margin: 0 0 10px;
 }
 
 .ox-hint {
   color: #6b7a6b;
   font-size: 0.9rem;
+  margin: 0;
 }
 
 .ox-ox-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  margin: 12px 0;
+  gap: 12px;
+  margin: 14px 0;
 }
 
 .ox-choice {
   border: 3px solid #222;
   border-radius: 18px;
   background: #fff;
-  font-size: 2.4rem;
+  font-size: clamp(2rem, 6vw, 2.6rem);
   font-weight: 900;
-  padding: 18px 0;
+  padding: 20px 0;
+  min-height: 72px;
   cursor: pointer;
+  touch-action: manipulation;
 }
 
 .ox-choice[aria-pressed="true"][data-answer="O"] {
@@ -340,12 +403,13 @@
   font-weight: 700;
   margin: 8px 0 6px;
   text-align: left;
+  font-size: 0.95rem;
 }
 
 .ox-my-result {
   background: rgba(255, 255, 255, 0.92);
   border-radius: 16px;
-  padding: 14px;
+  padding: 14px 16px;
   margin: 12px 0;
   border: 1px solid rgba(100, 120, 100, 0.22);
   font-weight: 700;
@@ -371,8 +435,165 @@
   color: #6b7a6b;
 }
 
-@media (max-width: 860px) {
+/* Hub iframe: slightly tighter chrome */
+html.hub-embedded .ox-shell {
+  padding-top: 12px;
+  padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+}
+
+html.hub-embedded .ox-head h1 {
+  font-size: 1.4rem;
+}
+
+/* ——— Tablet: iPad 11 band (~768–1194) ——— */
+@media (max-width: 1194px) and (min-width: 768px) {
+  .ox-shell {
+    max-width: 100%;
+    padding: 18px 20px calc(32px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .ox-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 14px;
+  }
+
+  .ox-qr {
+    width: 120px;
+    height: 120px;
+  }
+
+  .ox-bank {
+    max-height: min(280px, 36vh);
+  }
+
+  .ox-play {
+    max-width: 560px;
+  }
+
+  .ox-choice {
+    min-height: 88px;
+    padding: 24px 0;
+  }
+}
+
+/* Tablet portrait: stack if narrow (e.g. iPad 11 portrait 834) — keep 2-col above 900 */
+@media (max-width: 900px) and (min-width: 768px) {
   .ox-grid {
     grid-template-columns: 1fr;
+  }
+
+  .ox-head-meta {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .ox-code-box {
+    flex: 1 1 auto;
+    max-width: none;
+  }
+}
+
+/* Landscape tablet / small laptop: keep two columns comfortable */
+@media (max-width: 1194px) and (min-width: 901px) and (orientation: landscape) {
+  .ox-shell {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+
+  .ox-bank {
+    max-height: min(240px, 48vh);
+  }
+}
+
+/* ——— Phone (<768) ——— */
+@media (max-width: 767px) {
+  .ox-shell {
+    padding: 14px 12px calc(28px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .ox-head {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .ox-head-meta {
+    width: 100%;
+    align-items: stretch;
+  }
+
+  .ox-code-box {
+    flex: 1 1 auto;
+    max-width: none;
+  }
+
+  .ox-qr {
+    width: 88px;
+    height: 88px;
+  }
+
+  .ox-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .ox-panel {
+    padding: 14px;
+    border-radius: 16px;
+  }
+
+  .ox-status-bar {
+    gap: 10px 16px;
+  }
+
+  .ox-timer {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .ox-actions {
+    gap: 8px;
+  }
+
+  .ox-actions .btn-primary,
+  .ox-actions .btn-secondary,
+  .ox-actions .btn-ghost {
+    flex: 1 1 calc(50% - 8px);
+    min-width: 140px;
+  }
+
+  .ox-bank {
+    max-height: 220px;
+  }
+
+  .ox-join-card {
+    padding: 24px 16px;
+    border-radius: 18px;
+  }
+
+  .ox-play {
+    max-width: none;
+  }
+
+  .ox-choice {
+    min-height: 80px;
+  }
+
+  .ox-app input[type="number"] {
+    font-size: 1.15rem;
+    min-height: 48px;
+  }
+}
+
+/* Very small phones */
+@media (max-width: 380px) {
+  .ox-actions .btn-primary,
+  .ox-actions .btn-secondary,
+  .ox-actions .btn-ghost {
+    flex: 1 1 100%;
+  }
+
+  .ox-qr {
+    width: 72px;
+    height: 72px;
   }
 }

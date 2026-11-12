@@ -108,6 +108,7 @@ function makeGame(teacherUserId, roomCode) {
     voteStartedAt: null,
     lastReveal: null,
     timer: null,
+    hostOfflineTimer: null,
     createdAt: Date.now(),
   };
 }
@@ -245,10 +246,17 @@ function computeReveal(game) {
 }
 
 function emitAll(io, game, event, data) {
-  if (game.hostSocketId) io.to(game.hostSocketId).emit(event, data);
-  for (const p of game.players.values()) {
-    if (p.socketId) io.to(p.socketId).emit(event, data);
-  }
+  io.to(`ox:${game.teacherUserId}`).emit(event, data);
+}
+
+/** Socket.IO: (cb) 또는 (payload, cb) 둘 다 받기 */
+function takeAck(a, b) {
+  if (typeof a === "function") return { payload: {}, cb: a };
+  return { payload: a && typeof a === "object" ? a : {}, cb: typeof b === "function" ? b : null };
+}
+
+function reply(cb, data) {
+  if (typeof cb === "function") cb(data);
 }
 
 function broadcastState(io, game) {
@@ -327,42 +335,48 @@ export function registerOxGame(io, deps) {
   const { getTeacherUserId, findUserIdByRoomCode, ensureUserRoomCode } = deps;
 
   io.on("connection", (socket) => {
-    socket.on("ox:hostJoin", async (cb) => {
+    socket.on("ox:hostJoin", async (a, b) => {
+      const { cb } = takeAck(a, b);
       const userId = getTeacherUserId(socket);
       if (!userId) {
-        cb && cb({ ok: false, error: "로그인이 필요합니다." });
+        reply(cb, { ok: false, error: "로그인이 필요합니다." });
         return;
       }
       const roomCode = await ensureUserRoomCode(userId);
       const game = getOrCreateOxGame(userId, roomCode);
+      if (game.hostOfflineTimer) {
+        clearTimeout(game.hostOfflineTimer);
+        game.hostOfflineTimer = null;
+      }
       game.hostSocketId = socket.id;
       socket.data.oxRole = "host";
       socket.data.oxTeacherId = userId;
       socket.join(`ox:${userId}`);
-      cb && cb({ ok: true, state: publicOxState(game), roomCode });
+      reply(cb, { ok: true, state: publicOxState(game), roomCode });
       broadcastState(io, game);
     });
 
-    socket.on("ox:playerJoin", ({ room, nickname, clientId }, cb) => {
-      const code = String(room || "").trim();
-      const name = String(nickname || "").trim().slice(0, 12);
-      const cid = String(clientId || "").trim().slice(0, 64);
+    socket.on("ox:playerJoin", (a, b) => {
+      const { payload, cb } = takeAck(a, b);
+      const code = String(payload.room || "").trim();
+      const name = String(payload.nickname || "").trim().slice(0, 12);
+      const cid = String(payload.clientId || "").trim().slice(0, 64);
       if (!code || !name || !cid) {
-        cb && cb({ ok: false, error: "방 코드와 닉네임을 입력해 주세요." });
+        reply(cb, { ok: false, error: "방 코드와 닉네임을 입력해 주세요." });
         return;
       }
       const teacherId = findUserIdByRoomCode(code);
       if (!teacherId) {
-        cb && cb({ ok: false, error: "유효하지 않은 참여 코드예요." });
+        reply(cb, { ok: false, error: "유효하지 않은 참여 코드예요." });
         return;
       }
       const game = getOrCreateOxGame(teacherId, code);
       if (!game.hostSocketId) {
-        cb && cb({ ok: false, error: "선생님이 아직 눈치 게임 화면을 켜지 않았어요." });
+        reply(cb, { ok: false, error: "선생님이 아직 눈치 게임 화면을 켜지 않았어요." });
         return;
       }
       if (game.phase !== "lobby" && !game.players.has(cid)) {
-        cb && cb({ ok: false, error: "이미 게임이 시작됐어요. 다음 게임에 참여해 주세요." });
+        reply(cb, { ok: false, error: "이미 게임이 시작됐어요. 다음 게임에 참여해 주세요." });
         return;
       }
 
@@ -370,15 +384,14 @@ export function registerOxGame(io, deps) {
       if (!player) {
         const onlineCount = [...game.players.values()].filter((p) => p.online).length;
         if (onlineCount >= MAX_PLAYERS) {
-          cb && cb({ ok: false, error: `최대 ${MAX_PLAYERS}명까지 참여할 수 있어요.` });
+          reply(cb, { ok: false, error: `최대 ${MAX_PLAYERS}명까지 참여할 수 있어요.` });
           return;
         }
-        // nickname uniqueness among online
         const taken = [...game.players.values()].some(
           (p) => p.online && p.nickname === name && p.clientId !== cid
         );
         if (taken) {
-          cb && cb({ ok: false, error: "같은 닉네임이 이미 있어요." });
+          reply(cb, { ok: false, error: "같은 닉네임이 이미 있어요." });
           return;
         }
         player = emptyPlayer(name, cid);
@@ -393,20 +406,25 @@ export function registerOxGame(io, deps) {
       socket.data.oxClientId = cid;
       socket.join(`ox:${teacherId}`);
 
-      cb && cb({ ok: true, state: publicOxState(game), me: { clientId: cid, nickname: name, score: player.score } });
+      reply(cb, {
+        ok: true,
+        state: publicOxState(game),
+        me: { clientId: cid, nickname: name, score: player.score },
+      });
       broadcastState(io, game);
     });
 
-    socket.on("ox:start", (cb) => {
+    socket.on("ox:start", (a, b) => {
+      const { cb } = takeAck(a, b);
       const userId = getTeacherUserId(socket);
       const game = userId && getOxGame(userId);
       if (!game || game.hostSocketId !== socket.id) {
-        cb && cb({ ok: false, error: "호스트만 시작할 수 있어요." });
+        reply(cb, { ok: false, error: "호스트만 시작할 수 있어요." });
         return;
       }
       const online = [...game.players.values()].filter((p) => p.online).length;
       if (online < MIN_PLAYERS) {
-        cb && cb({ ok: false, error: `최소 ${MIN_PLAYERS}명이 모이면 시작할 수 있어요.` });
+        reply(cb, { ok: false, error: `최소 ${MIN_PLAYERS}명이 모이면 시작할 수 있어요.` });
         return;
       }
       game.phase = "lobby";
@@ -419,24 +437,26 @@ export function registerOxGame(io, deps) {
         p.guess = null;
       }
       clearTimer(game);
-      cb && cb({ ok: true });
+      reply(cb, { ok: true });
       broadcastState(io, game);
     });
 
-    socket.on("ox:ask", ({ question, themeId, questionIndex }, cb) => {
+    socket.on("ox:ask", (a, b) => {
+      const { payload, cb } = takeAck(a, b);
+      const { question, themeId, questionIndex } = payload;
       const userId = getTeacherUserId(socket);
       const game = userId && getOxGame(userId);
       if (!game || game.hostSocketId !== socket.id) {
-        cb && cb({ ok: false, error: "호스트만 질문을 시작할 수 있어요." });
+        reply(cb, { ok: false, error: "호스트만 질문을 시작할 수 있어요." });
         return;
       }
       if (game.phase !== "lobby" && game.phase !== "reveal") {
-        cb && cb({ ok: false, error: "지금은 질문을 시작할 수 없어요." });
+        reply(cb, { ok: false, error: "지금은 질문을 시작할 수 없어요." });
         return;
       }
       const onlineAsk = [...game.players.values()].filter((p) => p.online).length;
       if (onlineAsk < MIN_PLAYERS) {
-        cb && cb({ ok: false, error: `최소 ${MIN_PLAYERS}명이 모이면 질문을 시작할 수 있어요.` });
+        reply(cb, { ok: false, error: `최소 ${MIN_PLAYERS}명이 모이면 질문을 시작할 수 있어요.` });
         return;
       }
       let text = String(question || "").trim();
@@ -448,84 +468,89 @@ export function registerOxGame(io, deps) {
         }
       }
       if (!text) {
-        cb && cb({ ok: false, error: "질문을 입력하거나 골라 주세요." });
+        reply(cb, { ok: false, error: "질문을 입력하거나 골라 주세요." });
         return;
       }
       beginAsking(io, game, text, themeId || null);
-      cb && cb({ ok: true });
+      reply(cb, { ok: true });
     });
 
-    socket.on("ox:beginVote", (cb) => {
+    socket.on("ox:beginVote", (a, b) => {
+      const { cb } = takeAck(a, b);
       const userId = getTeacherUserId(socket);
       const game = userId && getOxGame(userId);
       if (!game || game.hostSocketId !== socket.id) {
-        cb && cb({ ok: false, error: "호스트만 투표를 시작할 수 있어요." });
+        reply(cb, { ok: false, error: "호스트만 투표를 시작할 수 있어요." });
         return;
       }
       if (game.phase !== "asking") {
-        cb && cb({ ok: false, error: "질문 단계에서만 투표를 열 수 있어요." });
+        reply(cb, { ok: false, error: "질문 단계에서만 투표를 열 수 있어요." });
         return;
       }
       beginVoting(io, game);
-      cb && cb({ ok: true });
+      reply(cb, { ok: true });
     });
 
-    socket.on("ox:submit", ({ answer, guess }, cb) => {
+    socket.on("ox:submit", (a, b) => {
+      const { payload, cb } = takeAck(a, b);
+      const { answer, guess } = payload;
       const teacherId = socket.data.oxTeacherId;
       const cid = socket.data.oxClientId;
       const game = teacherId && getOxGame(teacherId);
       if (!game || socket.data.oxRole !== "player" || !cid) {
-        cb && cb({ ok: false, error: "먼저 참여해 주세요." });
+        reply(cb, { ok: false, error: "먼저 참여해 주세요." });
         return;
       }
       if (game.phase !== "voting") {
-        cb && cb({ ok: false, error: "지금은 투표 시간이 아니에요." });
+        reply(cb, { ok: false, error: "지금은 투표 시간이 아니에요." });
         return;
       }
       const player = game.players.get(cid);
       if (!player || !player.online) {
-        cb && cb({ ok: false, error: "참여 정보가 없어요." });
+        reply(cb, { ok: false, error: "참여 정보가 없어요." });
         return;
       }
       const ans = String(answer || "").toUpperCase();
       if (ans !== "O" && ans !== "X") {
-        cb && cb({ ok: false, error: "O 또는 X로 답해 주세요." });
+        reply(cb, { ok: false, error: "O 또는 X로 답해 주세요." });
         return;
       }
       const g = Number(guess);
       const online = [...game.players.values()].filter((p) => p.online).length;
       if (!Number.isInteger(g) || g < 0 || g > online) {
-        cb && cb({ ok: false, error: `예측은 0~${online} 사이 숫자예요.` });
+        reply(cb, { ok: false, error: `예측은 0~${online} 사이 숫자예요.` });
         return;
       }
       player.answer = ans;
       player.guess = g;
       player.submittedAt = Date.now();
-      cb && cb({ ok: true });
+      reply(cb, { ok: true });
       broadcastState(io, game);
       maybeAutoReveal(io, game);
     });
 
-    socket.on("ox:revealNow", (cb) => {
+    socket.on("ox:revealNow", (a, b) => {
+      const { cb } = takeAck(a, b);
       const userId = getTeacherUserId(socket);
       const game = userId && getOxGame(userId);
       if (!game || game.hostSocketId !== socket.id) {
-        cb && cb({ ok: false, error: "호스트만 결과를 열 수 있어요." });
+        reply(cb, { ok: false, error: "호스트만 결과를 열 수 있어요." });
         return;
       }
       if (game.phase !== "voting") {
-        cb && cb({ ok: false, error: "투표 중이 아니에요." });
+        reply(cb, { ok: false, error: "투표 중이 아니에요." });
         return;
       }
       revealRound(io, game);
-      cb && cb({ ok: true });
+      reply(cb, { ok: true });
     });
 
-    socket.on("ox:end", (cb) => {
+    socket.on("ox:end", (a, b) => {
+      const { cb } = takeAck(a, b);
       const userId = getTeacherUserId(socket);
       const game = userId && getOxGame(userId);
       if (!game || game.hostSocketId !== socket.id) {
-        cb && cb({ ok: false, error: "호스트만 종료할 수 있어요." });
+        reply(cb, { ok: false, error: "호스트만 종료할 수 있어요." });
         return;
       }
       clearTimer(game);
@@ -533,15 +558,16 @@ export function registerOxGame(io, deps) {
       game.question = null;
       game.askEndsAt = null;
       game.voteEndsAt = null;
-      cb && cb({ ok: true, ranking: ranking(game) });
+      reply(cb, { ok: true, ranking: ranking(game) });
       broadcastState(io, game);
     });
 
-    socket.on("ox:resetLobby", (cb) => {
+    socket.on("ox:resetLobby", (a, b) => {
+      const { cb } = takeAck(a, b);
       const userId = getTeacherUserId(socket);
       const game = userId && getOxGame(userId);
       if (!game || game.hostSocketId !== socket.id) {
-        cb && cb({ ok: false, error: "호스트만 초기화할 수 있어요." });
+        reply(cb, { ok: false, error: "호스트만 초기화할 수 있어요." });
         return;
       }
       clearTimer(game);
@@ -556,7 +582,7 @@ export function registerOxGame(io, deps) {
         p.answer = null;
         p.guess = null;
       }
-      cb && cb({ ok: true });
+      reply(cb, { ok: true });
       broadcastState(io, game);
     });
 
@@ -567,9 +593,13 @@ export function registerOxGame(io, deps) {
       if (!game) return;
 
       if (game.hostSocketId === socket.id) {
+        // 새로고침/재연결 동안 타이머·라운드는 유지 (clearTimer 하지 않음)
         game.hostSocketId = null;
-        clearTimer(game);
-        // keep lobby state; players see host offline via next join check
+        if (game.hostOfflineTimer) clearTimeout(game.hostOfflineTimer);
+        game.hostOfflineTimer = setTimeout(() => {
+          game.hostOfflineTimer = null;
+          broadcastState(io, game);
+        }, 12000);
         broadcastState(io, game);
         return;
       }

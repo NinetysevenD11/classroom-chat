@@ -63,7 +63,21 @@ function showPlay() {
 }
 
 function emit(event, payload) {
-  return new Promise((resolve) => socket.emit(event, payload, (res) => resolve(res || { ok: false })));
+  return new Promise((resolve) => {
+    const done = (res) => resolve(res || { ok: false });
+    const t = setTimeout(() => done({ ok: false, error: "서버 응답이 없어요. 다시 시도해 주세요." }), 8000);
+    const ack = (res) => {
+      clearTimeout(t);
+      done(res);
+    };
+    if (payload === undefined) socket.emit(event, ack);
+    else socket.emit(event, payload, ack);
+  });
+}
+
+function whenConnected() {
+  if (socket.connected) return Promise.resolve();
+  return new Promise((resolve) => socket.once("connect", resolve));
 }
 
 document.querySelectorAll(".ox-choice").forEach((btn) => {
@@ -82,6 +96,7 @@ async function doJoin() {
     return;
   }
   joinBtn.disabled = true;
+  await whenConnected();
   const res = await emit("ox:playerJoin", { room: roomCode, nickname, clientId });
   joinBtn.disabled = false;
   if (!res.ok) {

@@ -6,15 +6,16 @@
   <title>눈치 O/X · 학생</title>
   <link rel="stylesheet" href="/css/cozy-meadow.css?v=3" />
   <link rel="stylesheet" href="/css/user-background.css?v=1" />
-  <link rel="stylesheet" href="/css/ox-game.css?v=1" />
+  <link rel="stylesheet" href="/css/ox-game.css?v=2" />
   <script src="/js/user-background.js?v=1"></script>
 </head>
 <body class="ox-app ox-player">
   <section id="joinView" class="ox-join">
     <div class="ox-join-card">
       <h1>눈치 O/X</h1>
-      <p>솔직하게 O/X · 친구들의 O는 몇 명일까요?</p>
-      <input id="nickInput" type="text" maxlength="12" placeholder="닉네임" autocomplete="off" />
+      <p class="ox-join-lead">솔직하게 O/X · 친구들의 O는 몇 명일까요?</p>
+      <label class="ox-sr-only" for="nickInput">닉네임</label>
+      <input id="nickInput" type="text" maxlength="12" placeholder="닉네임" autocomplete="off" enterkeyhint="done" />
       <button type="button" id="joinBtn" class="btn-primary btn-lg">참여하기</button>
       <p id="joinError" class="ox-status is-error"></p>
     </div>
@@ -58,6 +59,6 @@
   </section>
 
   <script src="/socket.io/socket.io.js"></script>
-  <script src="/js/ox-player.js?v=1"></script>
+  <script src="/js/ox-player.js?v=2"></script>
 </body>
 </html>
