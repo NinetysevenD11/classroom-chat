@@ -546,60 +546,6 @@
   transform: none;
 }
 
-.ox-themes {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 8px;
-}
-
-.ox-theme {
-  border: 2px solid var(--ox-line);
-  background: #fff6e0;
-  border-radius: 999px;
-  padding: 8px 12px;
-  font: inherit;
-  font-weight: 800;
-  font-size: 0.82rem;
-  color: var(--ox-ink);
-  cursor: pointer;
-  min-height: 40px;
-  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.2);
-}
-
-.ox-theme.is-on {
-  background: linear-gradient(180deg, #7adf88 0%, var(--ox-green) 100%);
-  color: #fff;
-  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.3);
-}
-
-.ox-bank {
-  display: grid;
-  gap: 6px;
-  max-height: min(340px, 46vh);
-  overflow: auto;
-  -webkit-overflow-scrolling: touch;
-  padding-right: 2px;
-}
-
-.ox-bank button {
-  text-align: left;
-  border: 2px solid var(--ox-line);
-  background: #fffaf0;
-  border-radius: 12px;
-  padding: 11px 12px;
-  font: inherit;
-  font-weight: 700;
-  color: var(--ox-ink);
-  cursor: pointer;
-  min-height: 44px;
-  line-height: 1.35;
-  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.18);
-}
-
-.ox-bank button:hover {
-  background: #ffe9b8;
-}
 
 .ox-lobby-panel {
   margin-bottom: 16px;
@@ -1020,10 +966,6 @@ html.hub-embedded .ox-title {
     height: 112px;
   }
 
-  .ox-bank {
-    max-height: min(280px, 38vh);
-  }
-
   .ox-play {
     max-width: 520px;
   }
@@ -1060,10 +1002,6 @@ html.hub-embedded .ox-title {
   .ox-shell {
     padding-left: 22px;
     padding-right: 22px;
-  }
-
-  .ox-bank {
-    max-height: min(220px, 42vh);
   }
 
   .ox-stage {
@@ -1119,10 +1057,6 @@ html.hub-embedded .ox-title {
   .ox-actions .btn-secondary {
     flex: 1 1 calc(50% - 8px);
     min-width: 132px;
-  }
-
-  .ox-bank {
-    max-height: 200px;
   }
 
   .ox-play {

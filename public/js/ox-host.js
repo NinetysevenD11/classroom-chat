@@ -13,8 +13,6 @@ const questionInput = document.getElementById("questionInput");
 const currentQuestion = document.getElementById("currentQuestion");
 const revealBox = document.getElementById("revealBox");
 const playerList = document.getElementById("playerList");
-const themeTabs = document.getElementById("themeTabs");
-const questionBank = document.getElementById("questionBank");
 const hostStatus = document.getElementById("hostStatus");
 
 const startBtn = document.getElementById("startBtn");
@@ -26,7 +24,6 @@ const resetBtn = document.getElementById("resetBtn");
 const copyLinkBtn = document.getElementById("copyLinkBtn");
 
 let state = null;
-let selectedTheme = null;
 let timerTick = null;
 let joinUrl = "";
 
@@ -51,69 +48,9 @@ function emit(event, payload) {
       clearTimeout(t);
       done(res);
     };
-    // payload 없으면 ack만 넘겨야 함 — 빈 객체를 보내면 서버가 그걸 콜백으로 받음
     if (payload === undefined) socket.emit(event, ack);
     else socket.emit(event, payload, ack);
   });
-}
-
-function renderThemes() {
-  const themes = state?.themes || [];
-  themeTabs.innerHTML = "";
-  if (!selectedTheme && themes[0]) selectedTheme = themes[0].id;
-  for (const t of themes) {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "ox-theme" + (selectedTheme === t.id ? " is-on" : "");
-    btn.textContent = `${t.label} (${t.count})`;
-    btn.addEventListener("click", () => {
-      selectedTheme = t.id;
-      renderThemes();
-      renderBank();
-    });
-    themeTabs.appendChild(btn);
-  }
-  renderBank();
-}
-
-function renderBank() {
-  questionBank.innerHTML = "";
-  const theme = (state?.themes || []).find((t) => t.id === selectedTheme);
-  if (!theme) return;
-  // themes from server only have count; host asks by index — load labels from buttons via ask with themeId+index
-  // We need question texts: fetch from a static mirror in client for UX
-  const LOCAL = window.OX_QUESTIONS || null;
-  const list = LOCAL?.[selectedTheme] || [];
-  if (!list.length) {
-    questionBank.innerHTML =
-      "<p class='muted'>아래에서 직접 질문을 입력하거나, 테마를 고른 뒤 번호를 눌러 주세요.</p>";
-    // numbered pickers
-    for (let i = 0; i < theme.count; i++) {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.textContent = `${theme.label} · ${i + 1}번 질문 사용`;
-      btn.addEventListener("click", () => askFromBank(selectedTheme, i));
-      questionBank.appendChild(btn);
-    }
-    return;
-  }
-  list.forEach((q, i) => {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.textContent = q;
-    btn.addEventListener("click", () => {
-      questionInput.value = q;
-      askFromBank(selectedTheme, i, q);
-    });
-    questionBank.appendChild(btn);
-  });
-}
-
-async function askFromBank(themeId, questionIndex, text) {
-  if (text) questionInput.value = text;
-  const res = await emit("ox:ask", { themeId, questionIndex, question: text || questionInput.value });
-  if (!res.ok) setStatus(res.error || "질문 시작 실패", true);
-  else setStatus("질문 라운드 시작!");
 }
 
 function renderPlayers() {
@@ -148,11 +85,20 @@ function renderReveal() {
   revealBox.innerHTML = `<strong>숨겨진 O · ${r.oCount} / ${r.total}</strong><br/>정답자: ${correct}<br/><span class="muted">개인 O/X는 공개하지 않습니다.</span>`;
 }
 
+function updateAskLabel() {
+  const round = Number(state?.round) || 0;
+  const phase = state?.phase || "lobby";
+  // 라운드 시작 전이거나 종료·초기화 후 로비(round 0)면 첫 질문 문구
+  const freshStart = round <= 0 && (phase === "lobby" || phase === "finished");
+  askBtn.textContent = freshStart ? "이 질문으로 시작" : "다음 질문";
+}
+
 function updateActions() {
   const phase = state?.phase || "lobby";
   askBtn.disabled = !(phase === "lobby" || phase === "reveal");
   voteBtn.disabled = phase !== "asking";
   revealBtn.disabled = phase !== "voting";
+  updateAskLabel();
 }
 
 function updateTimer() {
@@ -180,7 +126,6 @@ function render() {
   renderReveal();
   updateActions();
   updateTimer();
-  if (state.themes) renderThemes();
 }
 
 async function loadQr() {
@@ -194,7 +139,7 @@ async function loadQr() {
       qrImg.src = data.dataUrl;
       qrImg.hidden = false;
     }
-  } catch (e) {
+  } catch {
     joinUrlEl.textContent = "QR을 불러오지 못했어요.";
   }
 }
@@ -216,7 +161,12 @@ startBtn.addEventListener("click", async () => {
 
 askBtn.addEventListener("click", async () => {
   const res = await emit("ox:ask", { question: questionInput.value });
-  setStatus(res.ok ? "질문 시작!" : res.error || "실패", !res.ok);
+  if (!res.ok) {
+    setStatus(res.error || "실패", true);
+    return;
+  }
+  questionInput.value = "";
+  setStatus("질문 시작!");
 });
 
 voteBtn.addEventListener("click", async () => {
@@ -256,55 +206,3 @@ socket.on("connect", () => {
     loadQr();
   });
 });
-
-// 질문 은행 전문 (서버 테마와 동일 순서)
-window.OX_QUESTIONS = {
-  class: [
-    "나는 발표할 때 작은 모둠 앞이 더 편하다.",
-    "나는 수업에서 직접 만들어 보는 활동이 좋다.",
-    "나는 조용히 생각할 시간을 받은 뒤에 대답하는 게 좋다.",
-    "나는 모르는 것을 질문하는 것도 용기라고 생각한다.",
-    "나는 쉬는 시간에 움직이는 것이 좋다.",
-    "나는 학급 규칙을 함께 정하면 더 잘 지키게 된다.",
-    "나는 혼자 풀기보다 함께 문제를 푸는 게 좋다.",
-    "나는 정답이 여러 개인 질문이 재미있다.",
-    "나는 친구에게 설명하면서 더 잘 이해한 적이 있다.",
-    "나는 발표보다 글로 의견을 내는 것이 편하다.",
-  ],
-  friend: [
-    "나는 친구와 아무 말 없이 있어도 편할 때가 있다.",
-    "나는 친구의 생일을 기억하려고 따로 적어 둔다.",
-    "나는 친구를 사귈 때 공통 취미가 도움이 된다.",
-    "나는 오랜만에 만난 친구와 금방 편해지는 편이다.",
-    "나는 친구에게 조언보다 공감을 받고 싶은 날이 있다.",
-    "나는 친구와 함께라면 새로운 활동에 도전하기 쉽다.",
-    "나는 친구와 매일 연락하지 않아도 가깝다고 느낀다.",
-    "나는 친구가 웃으면 나도 따라 웃게 된다.",
-    "나는 친구와 취향이 달라도 친하게 지낼 수 있다.",
-    "나는 누군가의 이야기를 끝까지 들어 주는 편이다.",
-  ],
-  self: [
-    "나는 유행하는 것보다 내가 좋아하는 것이 더 중요하다.",
-    "나는 혼자만의 시간이 있어야 힘이 난다.",
-    "나는 좋아하는 분야라면 시간이 가는 줄 모른다.",
-    "나는 남들과 다른 의견을 말할 때 용기가 필요하다.",
-    "나는 결과보다 노력한 과정을 알아주면 더 기쁘다.",
-    "나는 계획에 없던 하루가 더 기억에 남을 때가 있다.",
-    "나는 칭찬을 받으면 어색해도 오래 기억한다.",
-    "나는 온라인 별명으로 나의 취향을 표현하는 게 좋다.",
-    "나는 처음 보는 음식도 한 입 먹어 보고 싶다.",
-    "나는 오늘 새롭게 알게 된 것이 있다.",
-  ],
-  fun: [
-    "나는 비 오는 날 장화를 신고 걷는 게 좋다.",
-    "나는 블록으로 아주 높은 탑을 쌓고 싶다.",
-    "나는 숨바꼭질에서 숨는 쪽이 더 좋다.",
-    "나는 구름을 보며 동물 모양을 찾은 적이 있다.",
-    "나는 약속이 취소되면 솔직히 조금 좋다.",
-    "나는 새 학기가 시작되면 설레는 편이다.",
-    "나는 문자보다 만나서 이야기하는 것이 편하다.",
-    "나는 시험이 끝나면 가장 먼저 하고 싶은 일이 있다.",
-    "나는 휴대전화 없이 산책해 보고 싶다.",
-    "나는 이번 달에 작은 도전 하나를 해 보고 싶다.",
-  ],
-};

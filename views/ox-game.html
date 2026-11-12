@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/ox-game.css?v=10" />
+  <link rel="stylesheet" href="/css/ox-game.css?v=11" />
 </head>
 <body class="ox-app ox-host ox-shop">
   <div class="ox-bg" aria-hidden="true"></div>
@@ -78,14 +78,10 @@
         </div>
 
         <h3 class="ox-h3">질문 내기</h3>
-        <textarea id="questionInput" rows="2" maxlength="120" placeholder="예: 나는 쉬는 시간에 움직이는 것이 좋다."></textarea>
+        <textarea id="questionInput" rows="3" maxlength="120" placeholder="예: 나는 쉬는 시간에 움직이는 것이 좋다."></textarea>
         <div class="ox-actions">
           <button type="button" id="askBtn" class="btn-green btn-wide" disabled>이 질문으로 시작</button>
         </div>
-
-        <h3 class="ox-h3">질문 은행</h3>
-        <div id="themeTabs" class="ox-themes"></div>
-        <div id="questionBank" class="ox-bank"></div>
       </aside>
     </div>
 
@@ -93,7 +89,7 @@
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
-  <script src="/js/ox-avatars.js?v=10"></script>
-  <script src="/js/ox-host.js?v=10"></script>
+  <script src="/js/ox-avatars.js?v=11"></script>
+  <script src="/js/ox-host.js?v=11"></script>
 </body>
 </html>
