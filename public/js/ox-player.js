@@ -34,7 +34,7 @@ const resultPanel = document.getElementById("resultPanel");
 const rankPanel = document.getElementById("rankPanel");
 const rankList = document.getElementById("rankList");
 const peerList = document.getElementById("peerList");
-const guessInput = document.getElementById("guessInput");
+const guessButtons = document.getElementById("guessButtons");
 const submitBtn = document.getElementById("submitBtn");
 const submitStatus = document.getElementById("submitStatus");
 
@@ -49,6 +49,8 @@ const PHASE_KO = {
 let state = null;
 let me = null;
 let selectedAnswer = null;
+let selectedGuess = null;
+let guessMaxShown = null;
 let timerTick = null;
 let joined = false;
 
@@ -136,6 +138,40 @@ nickInput.addEventListener("keydown", (e) => {
   if (e.key === "Enter") doJoin();
 });
 
+function renderGuessButtons(maxCount, locked) {
+  const max = Math.max(0, Number(maxCount) || 0);
+  if (selectedGuess != null && (selectedGuess < 0 || selectedGuess > max)) {
+    selectedGuess = null;
+  }
+  if (guessMaxShown === max && guessButtons.childElementCount === max + 1) {
+    guessButtons.querySelectorAll(".ox-guess-btn").forEach((btn) => {
+      const n = Number(btn.dataset.guess);
+      btn.setAttribute("aria-pressed", selectedGuess === n ? "true" : "false");
+      btn.disabled = !!locked;
+    });
+    return;
+  }
+  guessMaxShown = max;
+  guessButtons.innerHTML = "";
+  for (let i = 0; i <= max; i++) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "ox-guess-btn";
+    btn.dataset.guess = String(i);
+    btn.textContent = String(i);
+    btn.setAttribute("aria-pressed", selectedGuess === i ? "true" : "false");
+    btn.disabled = !!locked;
+    btn.addEventListener("click", () => {
+      if (locked) return;
+      selectedGuess = i;
+      guessButtons.querySelectorAll(".ox-guess-btn").forEach((b) => {
+        b.setAttribute("aria-pressed", Number(b.dataset.guess) === i ? "true" : "false");
+      });
+    });
+    guessButtons.appendChild(btn);
+  }
+}
+
 submitBtn.addEventListener("click", async () => {
   submitStatus.textContent = "";
   if (!selectedAnswer) {
@@ -143,8 +179,12 @@ submitBtn.addEventListener("click", async () => {
     submitStatus.classList.add("is-error");
     return;
   }
-  const guess = Number(guessInput.value);
-  const res = await emit("ox:submit", { answer: selectedAnswer, guess });
+  if (selectedGuess == null || !Number.isInteger(selectedGuess)) {
+    submitStatus.textContent = "O를 고른 사람 수를 눌러 주세요.";
+    submitStatus.classList.add("is-error");
+    return;
+  }
+  const res = await emit("ox:submit", { answer: selectedAnswer, guess: selectedGuess });
   if (!res.ok) {
     submitStatus.textContent = res.error || "제출 실패";
     submitStatus.classList.add("is-error");
@@ -153,6 +193,7 @@ submitBtn.addEventListener("click", async () => {
   submitStatus.textContent = "제출 완료! 결과가 열릴 때까지 기다려 주세요.";
   submitStatus.classList.remove("is-error");
   submitBtn.disabled = true;
+  renderGuessButtons(state?.onlineCount || 0, true);
 });
 
 function updateTimer() {
@@ -212,11 +253,13 @@ function render() {
   if (voting) {
     const already = state.players?.find((p) => p.clientId === clientId)?.submitted;
     submitBtn.disabled = !!already;
-    guessInput.max = String(state.onlineCount || 19);
+    renderGuessButtons(state.onlineCount || 0, !!already);
   } else {
     selectedAnswer = null;
+    selectedGuess = null;
+    guessMaxShown = null;
     document.querySelectorAll(".ox-choice").forEach((b) => b.setAttribute("aria-pressed", "false"));
-    guessInput.value = "";
+    guessButtons.innerHTML = "";
     submitBtn.disabled = false;
     submitStatus.textContent = "";
   }

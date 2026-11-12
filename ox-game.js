@@ -272,21 +272,18 @@ function schedulePhase(io, game, ms, fn) {
 }
 
 function beginAsking(io, game, question, themeId) {
-  game.phase = "asking";
   game.round += 1;
   game.question = String(question || "").trim().slice(0, 120);
   game.themeId = themeId || null;
   game.lastReveal = null;
-  resetRoundAnswers(game);
-  game.askEndsAt = Date.now() + ASK_SECONDS * 1000;
-  game.voteEndsAt = null;
-  game.voteStartedAt = null;
-  broadcastState(io, game);
-  schedulePhase(io, game, ASK_SECONDS * 1000, () => beginVoting(io, game));
+  game.askEndsAt = null;
+  // 질문과 투표를 동시에 — 대기 단계 없이 바로 투표 UI
+  game.phase = "asking";
+  beginVoting(io, game);
 }
 
 function beginVoting(io, game) {
-  if (game.phase !== "asking" && game.phase !== "lobby") return;
+  if (game.phase !== "asking" && game.phase !== "lobby" && game.phase !== "reveal") return;
   if (!game.question) return;
   game.phase = "voting";
   resetRoundAnswers(game);

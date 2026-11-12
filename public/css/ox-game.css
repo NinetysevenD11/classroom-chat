@@ -658,10 +658,53 @@
 .ox-guess-label {
   display: block;
   font-weight: 600;
-  margin: 4px 0 8px;
+  margin: 4px 0 10px;
   text-align: left;
   font-size: 0.9rem;
   color: #c5cce0;
+}
+
+.ox-guess-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
+  gap: 8px;
+  margin: 0 0 14px;
+}
+
+.ox-guess-btn {
+  min-height: 48px;
+  border-radius: 8px;
+  border: 1px solid var(--ox-line);
+  background: #141a27;
+  color: var(--ox-text);
+  font: inherit;
+  font-weight: 700;
+  font-size: 1.05rem;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: transform 0.08s ease, background 0.12s ease, border-color 0.12s ease;
+}
+
+.ox-guess-btn:hover:not(:disabled) {
+  border-color: #5a6a8a;
+  background: #1a2233;
+}
+
+.ox-guess-btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.ox-guess-btn[aria-pressed="true"] {
+  background: rgba(255, 225, 74, 0.16);
+  border-color: var(--ox-accent);
+  color: var(--ox-accent);
+  box-shadow: 0 0 0 1px rgba(255, 225, 74, 0.35);
+}
+
+.ox-guess-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .ox-my-result {
@@ -727,6 +770,16 @@ html.hub-embedded .ox-brand h1 {
 
   .ox-choice {
     min-height: 108px;
+  }
+
+  .ox-guess-grid {
+    grid-template-columns: repeat(auto-fill, minmax(56px, 1fr));
+    gap: 10px;
+  }
+
+  .ox-guess-btn {
+    min-height: 56px;
+    font-size: 1.1rem;
   }
 }
 
@@ -829,9 +882,13 @@ html.hub-embedded .ox-brand h1 {
     box-shadow: 3px 3px 0 #000;
   }
 
-  .ox-app input[type="number"] {
-    font-size: 1.2rem;
-    min-height: 48px;
+  .ox-guess-grid {
+    grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
+    gap: 8px;
+  }
+
+  .ox-guess-btn {
+    min-height: 52px;
   }
 }
 
