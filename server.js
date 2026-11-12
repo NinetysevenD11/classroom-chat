@@ -53,6 +53,7 @@ import {
 import { fetchBookmarkPreview } from "./bookmark-preview.js";
 import { scanExamPaper, questionsToStored, analyzeStudentTrend } from "./grading-ai.js";
 import { stylizePhoto, COMIC_STYLES } from "./comic-ai.js";
+import { registerOxGame, QUESTION_THEMES } from "./ox-game.js";
 import { createProxyMiddleware } from "http-proxy-middleware";
 import {
   startLessonService,
@@ -484,6 +485,43 @@ app.get("/app/comic", requireAuth, (req, res) => {
     return res.redirect("/admin");
   }
   res.sendFile(path.join(__dirname, "views", "comic.html"));
+});
+
+// 눈치 O/X (hiddenO 스타일)
+app.get("/app/ox-game", requireAuth, (req, res) => {
+  if (isAdminUserId(req.session.userId)) {
+    return res.redirect("/admin");
+  }
+  res.sendFile(path.join(__dirname, "views", "ox-game.html"));
+});
+
+app.get("/ox", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "ox.html"));
+});
+
+app.get("/api/ox/themes", (_req, res) => {
+  res.json({
+    ok: true,
+    themes: QUESTION_THEMES.map((t) => ({
+      id: t.id,
+      label: t.label,
+      questions: t.questions,
+    })),
+  });
+});
+
+app.get("/api/ox/student-url", requireAuth, async (req, res) => {
+  const userId = req.session.userId;
+  if (isAdminUserId(userId)) return res.status(403).json({ ok: false, error: "관리자는 사용할 수 없습니다." });
+  const roomCode = await ensureUserRoomCode(userId);
+  const base = studentBaseUrl(req);
+  const url = `${base}/ox?room=${encodeURIComponent(roomCode)}`;
+  try {
+    const dataUrl = await qrcode.toDataURL(url, { width: 320, margin: 1 });
+    res.json({ ok: true, url, dataUrl, room: roomCode });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
 });
 
 app.get("/api/comic/styles", requireAuth, (req, res) => {
@@ -1416,6 +1454,12 @@ function validateStudentAgainstRoster(userId, seat, name) {
   }
   return null;
 }
+
+registerOxGame(io, {
+  getTeacherUserId,
+  findUserIdByRoomCode,
+  ensureUserRoomCode,
+});
 
 io.on("connection", (socket) => {
   socket.on("teacher:join", () => {

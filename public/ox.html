@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>눈치 O/X · 학생</title>
+  <link rel="stylesheet" href="/css/cozy-meadow.css?v=3" />
+  <link rel="stylesheet" href="/css/user-background.css?v=1" />
+  <link rel="stylesheet" href="/css/ox-game.css?v=1" />
+  <script src="/js/user-background.js?v=1"></script>
+</head>
+<body class="ox-app ox-player">
+  <section id="joinView" class="ox-join">
+    <div class="ox-join-card">
+      <h1>눈치 O/X</h1>
+      <p>솔직하게 O/X · 친구들의 O는 몇 명일까요?</p>
+      <input id="nickInput" type="text" maxlength="12" placeholder="닉네임" autocomplete="off" />
+      <button type="button" id="joinBtn" class="btn-primary btn-lg">참여하기</button>
+      <p id="joinError" class="ox-status is-error"></p>
+    </div>
+  </section>
+
+  <section id="playView" class="ox-play" hidden>
+    <header class="ox-player-head">
+      <div>
+        <strong id="meLabel">—</strong>
+        <span class="muted" id="scoreLabel">0점</span>
+      </div>
+      <div class="ox-phase-pill" id="phasePill">대기</div>
+    </header>
+
+    <p id="timerPill" class="ox-timer-pill" hidden></p>
+    <p id="questionText" class="ox-question">선생님 질문을 기다려 주세요.</p>
+
+    <div id="votePanel" class="ox-vote" hidden>
+      <p class="ox-hint">내 진심은? (다른 사람에게 보이지 않아요)</p>
+      <div class="ox-ox-row">
+        <button type="button" class="ox-choice" data-answer="O" aria-pressed="false">O</button>
+        <button type="button" class="ox-choice" data-answer="X" aria-pressed="false">X</button>
+      </div>
+      <label class="ox-guess-label" for="guessInput">O를 고른 사람은 몇 명일까요? (나 포함)</label>
+      <input id="guessInput" type="number" inputmode="numeric" min="0" max="19" placeholder="숫자" />
+      <button type="button" id="submitBtn" class="btn-primary btn-lg">제출</button>
+      <p id="submitStatus" class="ox-status"></p>
+    </div>
+
+    <div id="resultPanel" class="ox-my-result" hidden></div>
+
+    <div id="rankPanel" class="ox-rank" hidden>
+      <h2>순위</h2>
+      <ol id="rankList"></ol>
+    </div>
+
+    <div class="ox-mini-list">
+      <h2>참가자</h2>
+      <ul id="peerList"></ul>
+    </div>
+  </section>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/ox-player.js?v=1"></script>
+</body>
+</html>

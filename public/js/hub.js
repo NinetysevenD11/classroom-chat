@@ -26,6 +26,12 @@ const APPS = [
     path: "/app/comic",
   },
   {
+    id: "ox-game",
+    label: "눈치 O/X",
+    icon: "👁️",
+    path: "/app/ox-game",
+  },
+  {
     id: "lesson",
     label: "수업 자료 생성",
     icon: "📚",
