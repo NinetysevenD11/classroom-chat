@@ -7,80 +7,61 @@
   <script src="/js/hub-embed.js?v=1"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/ox-game.css?v=11" />
+  <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Jua&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/ox-game.css?v=20" />
 </head>
-<body class="ox-app ox-host ox-shop">
-  <div class="ox-bg" aria-hidden="true"></div>
+<body class="ox-app ox-host ox-kawaii">
+  <div class="ox-room" aria-hidden="true">
+    <div class="ox-wall"></div>
+    <div class="ox-floor"></div>
+  </div>
   <div class="ox-shell">
     <header class="ox-hud">
       <div class="ox-brand">
-        <span class="ox-brand-mark" aria-hidden="true">OX</span>
-        <div>
-          <h1 class="ox-title">눈치 O/X</h1>
-          <p class="ox-sub">답은 비밀 · 예측만 승부</p>
-        </div>
+        <h1 class="ox-title">눈치 O/X</h1>
+        <p class="ox-sub">답은 비밀 · 예측만 승부</p>
       </div>
-      <div class="ox-hud-stats" aria-live="polite">
-        <div class="ox-stat"><span>단계</span><strong id="phaseLabel">대기</strong></div>
-        <div class="ox-stat"><span>라운드</span><strong id="roundLabel">0</strong></div>
-        <div class="ox-stat"><span>접속</span><strong id="onlineLabel">0</strong></div>
-        <div class="ox-stat"><span>제출</span><strong id="submittedLabel">0</strong></div>
-        <div id="timerLabel" class="ox-timer" hidden></div>
+      <div class="ox-hud-chips" aria-live="polite">
+        <div class="ox-chip"><span>단계</span><strong id="phaseLabel">대기</strong></div>
+        <div class="ox-chip"><span>라운드</span><strong id="roundLabel">0</strong></div>
+        <div class="ox-chip"><span>접속</span><strong id="onlineLabel">0</strong></div>
+        <div class="ox-chip"><span>제출</span><strong id="submittedLabel">0</strong></div>
+        <div id="timerLabel" class="ox-chip ox-chip--timer" hidden></div>
       </div>
-      <div class="ox-join-dock">
-        <div class="ox-code-box">
-          <span class="ox-code-label">학생 접속</span>
-          <strong id="joinUrl">—</strong>
-          <button type="button" id="copyLinkBtn" class="btn-blue">링크 복사</button>
-        </div>
+      <div class="ox-qr-only">
+        <span class="ox-qr-label">학생 QR</span>
         <img id="qrImg" class="ox-qr" alt="학생 QR" hidden />
       </div>
     </header>
 
     <section class="ox-panel ox-lobby-panel" aria-label="대기실">
-      <div class="ox-panel-pin" aria-hidden="true"></div>
-      <div class="ox-banner">
-        <span class="ox-rivet" aria-hidden="true"></span>
-        <span>대기실</span>
-        <span class="ox-rivet" aria-hidden="true"></span>
-      </div>
+      <h2 class="ox-panel-title">대기실</h2>
       <div id="playerList" class="ox-char-grid"></div>
     </section>
 
     <div class="ox-grid">
       <section class="ox-panel ox-stage" aria-label="무대">
-        <div class="ox-panel-pin" aria-hidden="true"></div>
-        <div class="ox-banner">
-          <span class="ox-rivet" aria-hidden="true"></span>
-          <span>현재 질문</span>
-          <span class="ox-rivet" aria-hidden="true"></span>
-        </div>
+        <h2 class="ox-panel-title">현재 질문</h2>
         <p id="currentQuestion" class="ox-question">아직 질문이 없어요.</p>
         <div id="revealBox" class="ox-reveal">라운드 결과가 여기 표시됩니다.</div>
       </section>
 
       <aside class="ox-panel ox-console" aria-label="진행 콘솔">
-        <div class="ox-panel-pin" aria-hidden="true"></div>
-        <div class="ox-banner">
-          <span class="ox-rivet" aria-hidden="true"></span>
-          <span>선생님 조작</span>
-          <span class="ox-rivet" aria-hidden="true"></span>
-        </div>
+        <h2 class="ox-panel-title">선생님 조작</h2>
         <div class="ox-actions ox-actions--end">
-          <button type="button" id="endBtn" class="btn-red btn-wide">게임 종료</button>
+          <button type="button" id="endBtn" class="btn-soft btn-soft--pink btn-wide">게임 종료</button>
         </div>
         <div class="ox-actions" id="hostActions">
-          <button type="button" id="startBtn" class="btn-yellow">게임 준비</button>
-          <button type="button" id="voteBtn" class="btn-blue" disabled>투표 시작</button>
-          <button type="button" id="revealBtn" class="btn-blue" disabled>결과 공개</button>
-          <button type="button" id="resetBtn" class="btn-ghost">로비로</button>
+          <button type="button" id="startBtn" class="btn-soft btn-soft--cream">게임 준비</button>
+          <button type="button" id="voteBtn" class="btn-soft btn-soft--mint" disabled>투표 시작</button>
+          <button type="button" id="revealBtn" class="btn-soft btn-soft--orange" disabled>결과 공개</button>
+          <button type="button" id="resetBtn" class="btn-soft btn-soft--cream">로비로</button>
         </div>
 
         <h3 class="ox-h3">질문 내기</h3>
         <textarea id="questionInput" rows="3" maxlength="120" placeholder="예: 나는 쉬는 시간에 움직이는 것이 좋다."></textarea>
         <div class="ox-actions">
-          <button type="button" id="askBtn" class="btn-green btn-wide" disabled>이 질문으로 시작</button>
+          <button type="button" id="askBtn" class="btn-soft btn-soft--green btn-wide" disabled>이 질문으로 시작</button>
         </div>
       </aside>
     </div>
@@ -89,7 +70,7 @@
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
-  <script src="/js/ox-avatars.js?v=11"></script>
-  <script src="/js/ox-host.js?v=11"></script>
+  <script src="/js/ox-avatars.js?v=20"></script>
+  <script src="/js/ox-host.js?v=20"></script>
 </body>
 </html>

@@ -1,1 +1,1 @@
-Original classroom doodle avatars for OX game. Not derived from any copyrighted character collage.
+Original kawaii animal doodles for OX lobby. Not copied from Claw Master or any IP collage.

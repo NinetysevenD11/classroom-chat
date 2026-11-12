@@ -6,21 +6,22 @@
   <title>눈치 O/X · 학생</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/ox-game.css?v=11" />
+  <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Jua&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/ox-game.css?v=20" />
 </head>
-<body class="ox-app ox-player ox-shop">
-  <div class="ox-bg" aria-hidden="true"></div>
+<body class="ox-app ox-player ox-kawaii">
+  <div class="ox-room" aria-hidden="true">
+    <div class="ox-wall"></div>
+    <div class="ox-floor"></div>
+  </div>
 
   <section id="joinView" class="ox-join">
     <div class="ox-panel ox-join-card">
-      <div class="ox-panel-pin" aria-hidden="true"></div>
-      <span class="ox-brand-mark ox-brand-mark--lg" aria-hidden="true">OX</span>
       <h1 class="ox-title">눈치 O/X</h1>
       <p class="ox-join-lead">솔직한 답은 비밀.<br />O를 고른 사람 수만 맞히면 됩니다.</p>
       <label class="ox-sr-only" for="nickInput">닉네임</label>
       <input id="nickInput" type="text" maxlength="12" placeholder="닉네임" autocomplete="off" enterkeyhint="done" />
-      <button type="button" id="joinBtn" class="btn-green btn-lg">입장</button>
+      <button type="button" id="joinBtn" class="btn-soft btn-soft--green btn-lg">입장</button>
       <p id="joinError" class="ox-status is-error"></p>
     </div>
   </section>
@@ -34,23 +35,17 @@
           <span id="scoreLabel" class="ox-score">0점</span>
         </div>
       </div>
-      <div class="ox-phase-pill" id="phasePill">대기</div>
+      <div class="ox-chip ox-chip--phase" id="phasePill">대기</div>
     </header>
 
     <p id="timerPill" class="ox-timer-pill" hidden></p>
 
     <div class="ox-panel ox-q-card">
-      <div class="ox-panel-pin" aria-hidden="true"></div>
-      <div class="ox-banner ox-banner--sm">
-        <span class="ox-rivet" aria-hidden="true"></span>
-        <span>질문</span>
-        <span class="ox-rivet" aria-hidden="true"></span>
-      </div>
+      <h2 class="ox-panel-title">질문</h2>
       <p id="questionText" class="ox-question">선생님 질문을 기다려 주세요.</p>
     </div>
 
     <div id="votePanel" class="ox-panel ox-vote" hidden>
-      <div class="ox-panel-pin" aria-hidden="true"></div>
       <p class="ox-hint">내 답은 보이지 않습니다</p>
       <div class="ox-ox-row">
         <button type="button" class="ox-choice ox-choice--o" data-answer="O" aria-pressed="false">O</button>
@@ -58,33 +53,25 @@
       </div>
       <p class="ox-guess-label" id="guessLabel">O를 고른 사람 수 (나 포함)</p>
       <div id="guessButtons" class="ox-guess-grid" role="group" aria-labelledby="guessLabel"></div>
-      <button type="button" id="submitBtn" class="btn-yellow btn-lg">제출</button>
+      <button type="button" id="submitBtn" class="btn-soft btn-soft--orange btn-lg">제출</button>
       <p id="submitStatus" class="ox-status"></p>
     </div>
 
     <div id="resultPanel" class="ox-panel ox-my-result" hidden></div>
 
     <div id="rankPanel" class="ox-panel ox-rank" hidden>
-      <div class="ox-banner ox-banner--sm">
-        <span class="ox-rivet" aria-hidden="true"></span>
-        <span>순위</span>
-        <span class="ox-rivet" aria-hidden="true"></span>
-      </div>
+      <h2 class="ox-panel-title">순위</h2>
       <ol id="rankList"></ol>
     </div>
 
     <div class="ox-panel ox-mini-list">
-      <div class="ox-banner ox-banner--sm">
-        <span class="ox-rivet" aria-hidden="true"></span>
-        <span>대기실</span>
-        <span class="ox-rivet" aria-hidden="true"></span>
-      </div>
+      <h2 class="ox-panel-title">대기실</h2>
       <div id="peerList" class="ox-char-grid ox-char-grid--compact"></div>
     </div>
   </section>
 
   <script src="/socket.io/socket.io.js"></script>
-  <script src="/js/ox-avatars.js?v=11"></script>
-  <script src="/js/ox-player.js?v=11"></script>
+  <script src="/js/ox-avatars.js?v=20"></script>
+  <script src="/js/ox-player.js?v=20"></script>
 </body>
 </html>

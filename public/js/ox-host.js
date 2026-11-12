@@ -7,7 +7,6 @@ const roundLabel = document.getElementById("roundLabel");
 const onlineLabel = document.getElementById("onlineLabel");
 const submittedLabel = document.getElementById("submittedLabel");
 const timerLabel = document.getElementById("timerLabel");
-const joinUrlEl = document.getElementById("joinUrl");
 const qrImg = document.getElementById("qrImg");
 const questionInput = document.getElementById("questionInput");
 const currentQuestion = document.getElementById("currentQuestion");
@@ -21,11 +20,9 @@ const voteBtn = document.getElementById("voteBtn");
 const revealBtn = document.getElementById("revealBtn");
 const endBtn = document.getElementById("endBtn");
 const resetBtn = document.getElementById("resetBtn");
-const copyLinkBtn = document.getElementById("copyLinkBtn");
 
 let state = null;
 let timerTick = null;
-let joinUrl = "";
 
 const PHASE_KO = {
   lobby: "대기실",
@@ -88,7 +85,6 @@ function renderReveal() {
 function updateAskLabel() {
   const round = Number(state?.round) || 0;
   const phase = state?.phase || "lobby";
-  // 라운드 시작 전이거나 종료·초기화 후 로비(round 0)면 첫 질문 문구
   const freshStart = round <= 0 && (phase === "lobby" || phase === "finished");
   askBtn.textContent = freshStart ? "이 질문으로 시작" : "다음 질문";
 }
@@ -133,26 +129,16 @@ async function loadQr() {
     const res = await fetch("/api/ox/student-url", { credentials: "include" });
     const data = await res.json();
     if (!data.ok) throw new Error(data.error || "QR 실패");
-    joinUrl = data.url;
-    joinUrlEl.textContent = data.url;
     if (data.dataUrl) {
       qrImg.src = data.dataUrl;
       qrImg.hidden = false;
+    } else {
+      setStatus("QR을 불러오지 못했어요.", true);
     }
   } catch {
-    joinUrlEl.textContent = "QR을 불러오지 못했어요.";
+    setStatus("QR을 불러오지 못했어요.", true);
   }
 }
-
-copyLinkBtn.addEventListener("click", async () => {
-  if (!joinUrl) return;
-  try {
-    await navigator.clipboard.writeText(joinUrl);
-    setStatus("참여 링크를 복사했어요.");
-  } catch {
-    setStatus("복사에 실패했어요. 주소를 직접 선택해 주세요.", true);
-  }
-});
 
 startBtn.addEventListener("click", async () => {
   const res = await emit("ox:start");

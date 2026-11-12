@@ -1,3 +1,7 @@
+/**
+ * Original kawaii animal doodle avatars for 눈치 O/X.
+ * Not derived from any copyrighted character collage or game art.
+ */
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -6,78 +10,121 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const dir = path.join(__dirname, "..", "public", "ox-avatars");
 fs.mkdirSync(dir, { recursive: true });
 
-const bodies = [
-  "#FFB4A2", "#FFD6A5", "#FDFFB6", "#CAFFBF", "#9BF6FF", "#A0C4FF", "#BDB2FF", "#FFC6FF",
-  "#FFADAD", "#FFE066", "#98D8C8", "#F7A072", "#E0BBE4", "#B5EAD7", "#FFDAC1", "#C7CEEA",
-  "#FF9AA2", "#B5EAD7", "#E2F0CB", "#FFB7B2", "#A2D2FF", "#CDB4DB", "#FFC8DD", "#BDE0FE",
-  "#A8E6CF", "#FFD3B6", "#DCEDC1", "#FFAAA5", "#D4A5A5", "#A8DADC", "#F1FAEE", "#E9C46A",
+const kinds = [
+  "bunny", "bunny", "bunny", "bunny",
+  "cat", "cat", "cat", "cat",
+  "frog", "frog", "frog", "frog",
+  "hedgehog", "hedgehog", "hedgehog", "hedgehog",
+  "dog", "dog", "dog", "dog",
+  "bunny", "cat", "frog", "hedgehog",
+  "dog", "bunny", "cat", "frog",
+  "hedgehog", "dog", "bunny", "cat",
 ];
-const accents = [
-  "#2A1C16", "#5C3A21", "#1D3557", "#E76F51", "#2A9D8F", "#E9C46A", "#264653", "#F4A261", "#9B2226", "#005F73",
-];
-const hats = ["none", "beanie", "earCat", "earBunny", "sprout", "bow", "antenna", "cap", "flower", "star"];
 
-function hatSvg(hat, body, accent) {
-  switch (hat) {
-    case "beanie":
-      return `<ellipse cx="50" cy="28" rx="28" ry="14" fill="${accent}" stroke="#1a120e" stroke-width="3"/><rect x="22" y="28" width="56" height="10" rx="3" fill="${accent}" stroke="#1a120e" stroke-width="3"/>`;
-    case "earCat":
-      return `<path d="M28 40 L34 18 L44 38" fill="${body}" stroke="#1a120e" stroke-width="3" stroke-linejoin="round"/><path d="M56 38 L66 18 L72 40" fill="${body}" stroke="#1a120e" stroke-width="3" stroke-linejoin="round"/>`;
-    case "earBunny":
-      return `<ellipse cx="36" cy="18" rx="7" ry="16" fill="${body}" stroke="#1a120e" stroke-width="3"/><ellipse cx="64" cy="18" rx="7" ry="16" fill="${body}" stroke="#1a120e" stroke-width="3"/><ellipse cx="36" cy="18" rx="3" ry="9" fill="#FFC6FF"/><ellipse cx="64" cy="18" rx="3" ry="9" fill="#FFC6FF"/>`;
-    case "sprout":
-      return `<path d="M50 34 C50 20 62 16 66 24" fill="none" stroke="#2F8F45" stroke-width="3" stroke-linecap="round"/><ellipse cx="68" cy="22" rx="8" ry="5" fill="#57C46A" stroke="#1a120e" stroke-width="2"/>`;
-    case "bow":
-      return `<circle cx="50" cy="30" r="5" fill="#E85A5A" stroke="#1a120e" stroke-width="2"/><path d="M50 30 L30 22 L32 38 Z" fill="#E85A5A" stroke="#1a120e" stroke-width="2"/><path d="M50 30 L70 22 L68 38 Z" fill="#E85A5A" stroke="#1a120e" stroke-width="2"/>`;
-    case "antenna":
-      return `<line x1="50" y1="34" x2="50" y2="14" stroke="#1a120e" stroke-width="3"/><circle cx="50" cy="12" r="6" fill="${accent}" stroke="#1a120e" stroke-width="3"/>`;
-    case "cap":
-      return `<path d="M22 40 Q50 18 78 40" fill="${accent}" stroke="#1a120e" stroke-width="3"/><rect x="48" y="34" width="30" height="8" rx="3" fill="${accent}" stroke="#1a120e" stroke-width="2"/>`;
-    case "flower":
-      return `<circle cx="62" cy="24" r="5" fill="#FFD23A" stroke="#1a120e" stroke-width="2"/><circle cx="70" cy="28" r="5" fill="#FF8FAB" stroke="#1a120e" stroke-width="2"/><circle cx="58" cy="30" r="5" fill="#9BF6FF" stroke="#1a120e" stroke-width="2"/><circle cx="64" cy="30" r="3" fill="#FFE066"/>`;
-    case "star":
-      return `<polygon points="50,10 54,22 66,22 56,30 60,42 50,34 40,42 44,30 34,22 46,22" fill="#FFD23A" stroke="#1a120e" stroke-width="2"/>`;
-    default:
-      return "";
-  }
+const fills = {
+  bunny: ["#FFF8F0", "#FFE8F0", "#FFF5E6", "#F0F7FF"],
+  cat: ["#F7B267", "#E8A87C", "#FFD6A5", "#D4A373"],
+  frog: ["#8FCB8F", "#A8E6A1", "#7BC47F", "#B5E48C"],
+  hedgehog: ["#C4A484", "#A67C52", "#D2B48C", "#B08968"],
+  dog: ["#F5E6C8", "#E6D5B8", "#FFEFD5", "#DECBAA"],
+};
+
+function eyes() {
+  return `<circle cx="40" cy="48" r="2.2" fill="#1a1a1a"/><circle cx="60" cy="48" r="2.2" fill="#1a1a1a"/>`;
 }
 
-function mouthSvg(id) {
-  const m = id % 4;
-  if (m === 0) return `<path d="M44 68 Q50 74 56 68" fill="none" stroke="#1a120e" stroke-width="3" stroke-linecap="round"/>`;
-  if (m === 1) return `<ellipse cx="50" cy="70" rx="5" ry="3" fill="#1a120e"/>`;
-  if (m === 2) return `<path d="M45 69 Q50 66 55 69" fill="none" stroke="#1a120e" stroke-width="3" stroke-linecap="round"/>`;
-  return `<circle cx="50" cy="69" r="2.5" fill="#1a120e"/>`;
+function blush() {
+  return `<ellipse cx="32" cy="56" rx="4" ry="2.5" fill="#FFB4C0" opacity="0.7"/><ellipse cx="68" cy="56" rx="4" ry="2.5" fill="#FFB4C0" opacity="0.7"/>`;
 }
 
-function svg(id) {
-  const body = bodies[id % bodies.length];
-  const accent = accents[id % accents.length];
-  const hat = hats[id % hats.length];
-  const eyeY = 52;
-  const speck = id % 3 === 0 ? `<circle cx="70" cy="60" r="3" fill="${accent}" opacity="0.5"/>` : "";
+function mouth(i) {
+  const m = i % 3;
+  if (m === 0) return `<path d="M46 58 Q50 62 54 58" fill="none" stroke="#1a1a1a" stroke-width="1.6" stroke-linecap="round"/>`;
+  if (m === 1) return `<circle cx="50" cy="59" r="1.4" fill="#1a1a1a"/>`;
+  return `<path d="M47 59 Q50 57 53 59" fill="none" stroke="#1a1a1a" stroke-width="1.6" stroke-linecap="round"/>`;
+}
+
+function shadow() {
+  return `<ellipse cx="50" cy="90" rx="22" ry="4" fill="#000" opacity="0.08"/>`;
+}
+
+function bunny(fill, i) {
+  return `${shadow()}
+  <ellipse cx="36" cy="28" rx="9" ry="16" fill="${fill}" stroke="#1a1a1a" stroke-width="1.8"/>
+  <ellipse cx="64" cy="28" rx="9" ry="16" fill="${fill}" stroke="#1a1a1a" stroke-width="1.8"/>
+  <ellipse cx="36" cy="30" rx="4" ry="10" fill="#FFD6E0"/>
+  <ellipse cx="64" cy="30" rx="4" ry="10" fill="#FFD6E0"/>
+  <ellipse cx="50" cy="58" rx="28" ry="26" fill="${fill}" stroke="#1a1a1a" stroke-width="1.8"/>
+  ${blush()}${eyes()}${mouth(i)}`;
+}
+
+function cat(fill, i) {
+  return `${shadow()}
+  <path d="M28 42 L34 22 L44 40" fill="${fill}" stroke="#1a1a1a" stroke-width="1.8" stroke-linejoin="round"/>
+  <path d="M56 40 L66 22 L72 42" fill="${fill}" stroke="#1a1a1a" stroke-width="1.8" stroke-linejoin="round"/>
+  <ellipse cx="50" cy="58" rx="28" ry="26" fill="${fill}" stroke="#1a1a1a" stroke-width="1.8"/>
+  <path d="M38 44 Q42 48 38 52" fill="none" stroke="#C47A3A" stroke-width="1.4"/>
+  <path d="M62 44 Q58 48 62 52" fill="none" stroke="#C47A3A" stroke-width="1.4"/>
+  ${blush()}${eyes()}${mouth(i)}
+  <path d="M50 54 L48 58 L52 58 Z" fill="#FF9AA2" stroke="#1a1a1a" stroke-width="1"/>`;
+}
+
+function frog(fill, i) {
+  return `${shadow()}
+  <ellipse cx="50" cy="60" rx="30" ry="24" fill="${fill}" stroke="#1a1a1a" stroke-width="1.8"/>
+  <circle cx="36" cy="42" r="10" fill="${fill}" stroke="#1a1a1a" stroke-width="1.8"/>
+  <circle cx="64" cy="42" r="10" fill="${fill}" stroke="#1a1a1a" stroke-width="1.8"/>
+  <circle cx="36" cy="42" r="3.5" fill="#1a1a1a"/>
+  <circle cx="64" cy="42" r="3.5" fill="#1a1a1a"/>
+  <circle cx="37.5" cy="40.5" r="1.2" fill="#fff"/>
+  <circle cx="65.5" cy="40.5" r="1.2" fill="#fff"/>
+  <path d="M30 62 Q50 55 70 62 L70 72 Q50 78 30 72 Z" fill="#7EB6D9" stroke="#1a1a1a" stroke-width="1.6"/>
+  ${mouth(i)}`;
+}
+
+function hedgehog(fill, i) {
+  return `${shadow()}
+  <path d="M22 58 Q30 28 50 24 Q70 28 78 58 Q70 78 50 80 Q30 78 22 58 Z" fill="${fill}" stroke="#1a1a1a" stroke-width="1.8"/>
+  <path d="M30 40 L26 28 M40 32 L38 20 M50 28 L50 16 M60 32 L62 20 M70 40 L74 28" stroke="#6B4F3A" stroke-width="2" stroke-linecap="round"/>
+  <ellipse cx="50" cy="62" rx="18" ry="14" fill="#F8E8D0" stroke="#1a1a1a" stroke-width="1.5"/>
+  ${blush()}${eyes()}${mouth(i)}`;
+}
+
+function dog(fill, i) {
+  const hat = i % 2 === 0
+    ? `<ellipse cx="50" cy="30" rx="22" ry="8" fill="#E8C07A" stroke="#1a1a1a" stroke-width="1.6"/><rect x="38" y="30" width="24" height="6" rx="2" fill="#E8C07A" stroke="#1a1a1a" stroke-width="1.2"/>`
+    : "";
+  return `${shadow()}
+  ${hat}
+  <ellipse cx="28" cy="52" rx="10" ry="14" fill="${fill}" stroke="#1a1a1a" stroke-width="1.8"/>
+  <ellipse cx="72" cy="52" rx="10" ry="14" fill="${fill}" stroke="#1a1a1a" stroke-width="1.8"/>
+  <ellipse cx="50" cy="58" rx="28" ry="26" fill="${fill}" stroke="#1a1a1a" stroke-width="1.8"/>
+  <ellipse cx="50" cy="62" rx="8" ry="6" fill="#F5D0C0" stroke="#1a1a1a" stroke-width="1.3"/>
+  ${blush()}${eyes()}${mouth(i)}`;
+}
+
+function draw(id) {
+  const kind = kinds[id % kinds.length];
+  const palette = fills[kind];
+  const fill = palette[id % palette.length];
+  let body = "";
+  if (kind === "bunny") body = bunny(fill, id);
+  else if (kind === "cat") body = cat(fill, id);
+  else if (kind === "frog") body = frog(fill, id);
+  else if (kind === "hedgehog") body = hedgehog(fill, id);
+  else body = dog(fill, id);
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
-  <ellipse cx="50" cy="92" rx="28" ry="5" fill="#000" opacity="0.15"/>
-  ${hatSvg(hat, body, accent)}
-  <ellipse cx="50" cy="58" rx="32" ry="34" fill="${body}" stroke="#1a120e" stroke-width="3.5"/>
-  <ellipse cx="34" cy="60" rx="6" ry="4" fill="#FF8FAB" opacity="0.85"/>
-  <ellipse cx="66" cy="60" rx="6" ry="4" fill="#FF8FAB" opacity="0.85"/>
-  <ellipse cx="38" cy="${eyeY}" rx="5" ry="6" fill="#1a120e"/>
-  <ellipse cx="62" cy="${eyeY}" rx="5" ry="6" fill="#1a120e"/>
-  <circle cx="39.5" cy="${eyeY - 2}" r="1.6" fill="#fff"/>
-  <circle cx="63.5" cy="${eyeY - 2}" r="1.6" fill="#fff"/>
-  ${mouthSvg(id)}
-  ${speck}
+${body}
 </svg>
 `;
 }
 
 for (let i = 0; i < 32; i++) {
-  fs.writeFileSync(path.join(dir, `${i}.svg`), svg(i));
+  fs.writeFileSync(path.join(dir, `${i}.svg`), draw(i));
 }
 fs.writeFileSync(
   path.join(dir, "README.txt"),
-  "Original classroom doodle avatars for OX game. Not derived from any copyrighted character collage.\n"
+  "Original kawaii animal doodles for OX lobby. Not copied from Claw Master or any IP collage.\n"
 );
-console.log("wrote 32 avatars to", dir);
+console.log("wrote 32 animal doodle avatars");
