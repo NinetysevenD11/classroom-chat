@@ -6,8 +6,7 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "postinstall": "node scripts/render-postinstall.mjs",
-    "setup:lesson": "pip install -r lesson-app/requirements.txt && python -m playwright install chromium"
+    "postinstall": "node scripts/render-postinstall.mjs"
   },
   "engines": {
     "node": "20.x"
@@ -16,7 +15,6 @@
     "connect-mongo": "^6.0.0",
     "express": "^4.19.2",
     "express-session": "^1.19.0",
-    "http-proxy-middleware": "^3.0.7",
     "mongodb": "^7.2.0",
     "qrcode": "^1.5.4",
     "session-file-store": "^1.5.0",

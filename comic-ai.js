@@ -109,7 +109,7 @@ async function callImageModel(apiKey, model, prompt, mimeType, data) {
 export async function stylizePhoto({ dataUrl, styleId, apiKey }) {
   const key = String(apiKey || "").trim();
   if (!key) {
-    throw new Error("Gemini API 키가 필요합니다. 채점도구에서 Gemini 키를 저장해 주세요.");
+    throw new Error("Gemini API 키가 필요합니다. 서버 환경 변수 GEMINI_API_KEY를 설정해 주세요.");
   }
 
   const style = STYLE_PROMPTS[styleId] ? styleId : "anime";

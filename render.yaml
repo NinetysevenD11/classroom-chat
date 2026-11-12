@@ -1,6 +1,4 @@
 # Render — classroom-chat-h1ll.onrender.com
-# Node 런타임 + 빌드 시 Python 자동 설치(postinstall)
-# Docker 전환 시 루트 Dockerfile 사용 가능
 
 services:
   - type: web
@@ -15,14 +13,8 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-      - key: CLASSROOM_INTEGRATED
-        value: "1"
-      - key: LESSON_PORT
-        value: "18080"
       - key: DATA_DIR
         value: /data
-      - key: LESSON_PERSIST_DIR
-        value: /data/lesson-data
     disk:
       name: classroom-data
       mountPath: /data

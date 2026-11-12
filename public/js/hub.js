@@ -14,12 +14,6 @@ const APPS = [
     path: "/app/chalkboard",
   },
   {
-    id: "grading",
-    label: "채점도구",
-    icon: "📝",
-    path: "/app/grading",
-  },
-  {
     id: "comic",
     label: "네컷 만화",
     icon: "🖼️",
@@ -30,13 +24,6 @@ const APPS = [
     label: "눈치 O/X",
     icon: "👁️",
     path: "/app/ox-game",
-  },
-  {
-    id: "lesson",
-    label: "수업 자료 생성",
-    icon: "📚",
-    path: "/lesson-svc/",
-    direct: true,
   },
 ];
 
@@ -164,14 +151,6 @@ function selectApp(appId) {
   const app = APPS.find((a) => a.id === appId) || APPS[0];
   localStorage.setItem(APP_KEY, app.id);
   renderFabMenu(app.id);
-  if (app.direct && app.id === "lesson") {
-    closeMenu();
-    updateFabIcon(app.id);
-    if (window.LessonHub?.openLessonInFrame) {
-      window.LessonHub.openLessonInFrame(appFrame);
-    }
-    return;
-  }
   const currentPath = new URL(appFrame.getAttribute("src") || app.path, window.location.origin)
     .pathname;
   if (currentPath !== app.path) {
@@ -193,16 +172,9 @@ function initAppFromUrl() {
   const app = APPS.find((a) => a.id === id) || APPS[0];
   localStorage.setItem(APP_KEY, app.id);
   renderFabMenu(app.id);
-  if (app.direct && app.id === "lesson") {
-    updateFabIcon(app.id);
-    if (window.LessonHub?.openLessonInFrame) {
-      window.LessonHub.openLessonInFrame(appFrame);
-    }
-  } else {
-    appFrame.src = app.path;
-    appFrame.title = app.label;
-    updateFabIcon(app.id);
-  }
+  appFrame.src = app.path;
+  appFrame.title = app.label;
+  updateFabIcon(app.id);
   if (path !== "/" && path !== "/index.html") {
     history.replaceState(null, "", "/");
   }
@@ -218,16 +190,20 @@ async function onLogout() {
 
 async function loadHubProfile() {
   try {
-    const res = await fetch("/api/grading/me", { credentials: "include" });
+    const res = await fetch("/api/auth/me", { credentials: "include" });
     if (res.status === 401) {
       window.location.href = "/login";
       return;
     }
     const me = await res.json();
+    if (!me.ok) {
+      window.location.href = "/login";
+      return;
+    }
     hubProfile = {
       email: me.userId ? String(me.userId) : "—",
-      name: me.displayName || me.userId || "선생님",
-      school: me.school || "우리반",
+      name: me.userId || "선생님",
+      school: "우리반",
     };
   } catch (_) {
     hubProfile = { email: "—", name: "선생님", school: "—" };
