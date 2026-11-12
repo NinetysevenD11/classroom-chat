@@ -7,17 +7,17 @@
   <script src="/js/hub-embed.js?v=1"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/ox-game.css?v=5" />
+  <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/ox-game.css?v=6" />
 </head>
 <body class="ox-app ox-host">
-  <div class="ox-noise" aria-hidden="true"></div>
+  <div class="ox-bg" aria-hidden="true"></div>
   <div class="ox-shell">
     <header class="ox-hud">
       <div class="ox-brand">
         <span class="ox-brand-mark" aria-hidden="true">OX</span>
         <div>
-          <h1>눈치 O/X</h1>
+          <h1 class="ox-title">눈치 O/X</h1>
           <p class="ox-sub">답은 비밀 · 예측만 승부</p>
         </div>
       </div>
@@ -32,29 +32,43 @@
         <div class="ox-code-box">
           <span class="ox-code-label">학생 접속</span>
           <strong id="joinUrl">—</strong>
-          <button type="button" id="copyLinkBtn" class="btn-ghost">링크 복사</button>
+          <button type="button" id="copyLinkBtn" class="btn-blue">링크 복사</button>
         </div>
         <img id="qrImg" class="ox-qr" alt="학생 QR" hidden />
       </div>
     </header>
 
     <div class="ox-grid">
-      <section class="ox-stage" aria-label="무대">
-        <p class="ox-stage-kicker">현재 질문</p>
+      <section class="ox-panel ox-stage" aria-label="무대">
+        <div class="ox-panel-pin" aria-hidden="true"></div>
+        <div class="ox-banner">
+          <span class="ox-rivet" aria-hidden="true"></span>
+          <span>현재 질문</span>
+          <span class="ox-rivet" aria-hidden="true"></span>
+        </div>
         <p id="currentQuestion" class="ox-question">아직 질문이 없어요.</p>
         <div id="revealBox" class="ox-reveal">라운드 결과가 여기 표시됩니다.</div>
         <div class="ox-roster">
-          <h2>참가자</h2>
+          <div class="ox-banner ox-banner--sm">
+            <span class="ox-rivet" aria-hidden="true"></span>
+            <span>참가자</span>
+            <span class="ox-rivet" aria-hidden="true"></span>
+          </div>
           <ol id="playerList" class="ox-players"></ol>
         </div>
       </section>
 
-      <aside class="ox-console" aria-label="진행 콘솔">
-        <h2 class="ox-console-title">진행</h2>
+      <aside class="ox-panel ox-console" aria-label="진행 콘솔">
+        <div class="ox-panel-pin" aria-hidden="true"></div>
+        <div class="ox-banner">
+          <span class="ox-rivet" aria-hidden="true"></span>
+          <span>진행</span>
+          <span class="ox-rivet" aria-hidden="true"></span>
+        </div>
         <div class="ox-actions" id="hostActions">
-          <button type="button" id="startBtn" class="btn-primary">게임 준비</button>
-          <button type="button" id="voteBtn" class="btn-secondary" disabled>투표 시작</button>
-          <button type="button" id="revealBtn" class="btn-secondary" disabled>결과 공개</button>
+          <button type="button" id="startBtn" class="btn-yellow">게임 준비</button>
+          <button type="button" id="voteBtn" class="btn-blue" disabled>투표 시작</button>
+          <button type="button" id="revealBtn" class="btn-blue" disabled>결과 공개</button>
           <button type="button" id="endBtn" class="btn-ghost">최종 순위</button>
           <button type="button" id="resetBtn" class="btn-ghost">로비로</button>
         </div>
@@ -62,7 +76,7 @@
         <h3 class="ox-h3">질문 내기</h3>
         <textarea id="questionInput" rows="2" maxlength="120" placeholder="예: 나는 쉬는 시간에 움직이는 것이 좋다."></textarea>
         <div class="ox-actions">
-          <button type="button" id="askBtn" class="btn-primary" disabled>이 질문으로 시작</button>
+          <button type="button" id="askBtn" class="btn-green btn-wide" disabled>이 질문으로 시작</button>
         </div>
 
         <h3 class="ox-h3">질문 은행</h3>
@@ -75,6 +89,6 @@
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
-  <script src="/js/ox-host.js?v=3"></script>
+  <script src="/js/ox-host.js?v=4"></script>
 </body>
 </html>
